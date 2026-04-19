@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rootva>
+  <api_endpoints>
+    <endpoint>
+      <path>register.php</path>
+      <method>POST</method>
+      <description>User Registration</description>
+      <params>name, number, password, referredBy</params>
+    </endpoint>
+    <endpoint>
+      <path>login.php</path>
+      <method>POST</method>
+      <description>User Login</description>
+      <params>number, password</params>
+    </endpoint>
+    <endpoint>
+      <path>get_banners.php</path>
+      <method>GET</method>
+      <description>Get Home Banners</description>
+      <params>None</params>
+    </endpoint>
+    <endpoint>
+      <path>get_Data.php</path>
+      <method>POST</method>
+      <description>Fetch complete user data</description>
+      <params>number</params>
+    </endpoint>
+    <endpoint>
+      <path>get_social_links.php</path>
+      <method>GET</method>
+      <description>Get Support and Social links</description>
+      <params>None</params>
+    </endpoint>
+    <endpoint>
+      <path>get_latest_update.php</path>
+      <method>GET</method>
+      <description>Check App Update</description>
+      <params>None</params>
+    </endpoint>
+  </api_endpoints>
+</rootva>
