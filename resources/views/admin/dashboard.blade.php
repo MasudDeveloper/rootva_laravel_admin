@@ -141,7 +141,7 @@
                         <span class="badge bg-danger-soft text-danger rounded-pill" id="badge-withdraw">{{ $stats['pending_requests']['withdraw'] }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3">
-                        <a href="{{ route('admin.microjobs.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                        <a href="{{ route('admin.microjobs.index', ['status' => 'pending']) }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-warning-soft p-2 rounded-pill text-warning"><i class="fa-solid fa-briefcase"></i></div>
                             <span>Microjob Posts</span>
                         </a>
