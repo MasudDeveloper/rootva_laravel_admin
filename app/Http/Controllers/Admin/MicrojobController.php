@@ -14,7 +14,7 @@ class MicrojobController extends Controller
 {
     public function index(Request $request)
     {
-        $status = $request->input('status', 'Pending');
+        $status = $request->input('status', 'pending');
         
         $jobs = Microjob::with('user')
             ->select('microjobs.*', 'sign_up.name', 'sign_up.referCode')
@@ -31,21 +31,21 @@ class MicrojobController extends Controller
 
     public function update(Request $request, $id)
     {
-        $action = $request->input('action'); // 'Approved' or 'Rejected'
+        $action = $request->input('action'); // 'approved' or 'rejected'
         $reason = $request->input('reject_reason');
         $job = Microjob::findOrFail($id);
 
-        if ($job->status !== 'Pending') {
+        if ($job->status !== 'pending') {
             return back()->with('error', 'This job has already been processed.');
         }
 
         DB::transaction(function () use ($job, $action, $reason) {
-            if ($action === 'Approved') {
+            if ($action === 'approved') {
                 $job->update([
-                    'status' => 'Approved',
+                    'status' => 'approved',
                     'updated_at' => now()->toDateTimeString(),
                 ]);
-            } elseif ($action === 'Rejected') {
+            } elseif ($action === 'rejected') {
                 // Refund Money
                 $user = SignUp::findOrFail($job->user_id);
                 $user->increment('voucher_balance', $job->total_amount);
@@ -56,7 +56,7 @@ class MicrojobController extends Controller
                 }
 
                 $job->update([
-                    'status' => 'Rejected',
+                    'status' => 'rejected',
                     'reject_reason' => $reason,
                     'updated_at' => now()->toDateTimeString(),
                 ]);

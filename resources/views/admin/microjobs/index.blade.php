@@ -8,22 +8,22 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="fw-bold mb-0">
-                @if($status === 'Pending') Pending @elseif($status === 'Approved') Approved @else Rejected @endif
+                @if($status === 'pending') Pending @elseif($status === 'approved') Approved @else Rejected @endif
                 Jobs: {{ $jobs->total() }}
             </h4>
             <p class="text-muted small mb-0">Review and approve user-submitted microtasks</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.microjobs.index', ['status' => 'Pending']) }}"
-               class="btn btn-{{ $status === 'Pending' ? 'warning' : 'light' }} rounded-pill px-4 shadow-sm">
+            <a href="{{ route('admin.microjobs.index', ['status' => 'pending']) }}"
+               class="btn btn-{{ $status === 'pending' ? 'warning' : 'light' }} rounded-pill px-4 shadow-sm">
                 <i class="fa-solid fa-clock me-2"></i>Pending
             </a>
-            <a href="{{ route('admin.microjobs.index', ['status' => 'Approved']) }}"
-               class="btn btn-{{ $status === 'Approved' ? 'success' : 'light' }} rounded-pill px-4 shadow-sm">
+            <a href="{{ route('admin.microjobs.index', ['status' => 'approved']) }}"
+               class="btn btn-{{ $status === 'approved' ? 'success' : 'light' }} rounded-pill px-4 shadow-sm">
                 <i class="fa-solid fa-check me-2"></i>Approved
             </a>
-            <a href="{{ route('admin.microjobs.index', ['status' => 'Rejected']) }}"
-               class="btn btn-{{ $status === 'Rejected' ? 'danger' : 'light' }} rounded-pill px-4 shadow-sm">
+            <a href="{{ route('admin.microjobs.index', ['status' => 'rejected']) }}"
+               class="btn btn-{{ $status === 'rejected' ? 'danger' : 'light' }} rounded-pill px-4 shadow-sm">
                 <i class="fa-solid fa-xmark me-2"></i>Rejected
             </a>
         </div>
@@ -79,12 +79,12 @@
                             ৳{{ number_format($job->total_amount, 2) }}
                         </td>
                         <td class="px-4 py-3 text-end">
-                            @if($job->status === 'Pending')
+                            @if($job->status === 'pending')
                             <div class="d-flex justify-content-end gap-2">
                                 <form action="{{ route('admin.microjobs.update', $job->id) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <input type="hidden" name="action" value="Approved">
+                                    <input type="hidden" name="action" value="approved">
                                     <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm" onclick="return confirm('Approve this job?')">
                                         <i class="fa-solid fa-check me-1"></i>Approve
                                     </button>
@@ -97,11 +97,11 @@
                                 <form id="reject-form-{{ $job->id }}" action="{{ route('admin.microjobs.update', $job->id) }}" method="POST" style="display: none;">
                                     @csrf
                                     @method('PATCH')
-                                    <input type="hidden" name="action" value="Rejected">
+                                    <input type="hidden" name="action" value="rejected">
                                     <input type="hidden" name="reject_reason" id="reject-reason-{{ $job->id }}">
                                 </form>
                             </div>
-                            @elseif($job->status === 'Approved')
+                            @elseif($job->status === 'approved')
                                 <span class="badge bg-success-soft text-success rounded-pill px-3 py-2">
                                     <i class="fa-solid fa-check-circle me-1"></i>Approved
                                 </span>
