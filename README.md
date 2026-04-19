@@ -57,3 +57,33 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+কোডটি সফলভাবে আপনার GitHub রিপোজিটরিতে পুশ করা হয়েছে! আপনি এখন [GitHub-এ আপনার রিপোজিটরি](https://github.com/MasudDeveloper/rootva_laravel_admin.git) চেক করে দেখতে পারেন।
+
+এখন **Shared Hosting**\-এ এটি পুল (Pull) করার জন্য নিচের ধাপগুলো অনুসরণ করুন:
+
+### ১. SSH বা Terminal ব্যবহার করে (সবচেয়ে সহজ):
+
+যদি আপনার হোস্টিংয়ে SSH বা cPanel Terminal এক্সেস থাকে, তবে নিচের কমান্ডগুলো দিন:
+
+*   bashcd public\_html/your-project-folder
+    
+*   bashgit clone https://github.com/MasudDeveloper/rootva\_laravel\_admin.git ._(মনে রাখবেন, শেষ একটা ডট . আছে যাতে বর্তমান ফোল্ডারেই কোডগুলো আসে)_
+    
+
+### ২. সার্ভারে Laravel সেটআপ করার কিছু প্রয়োজনীয় কাজ:
+
+কোড পুল করার পর আপনাকে সার্ভারে এই কমান্ডগুলো দিতে হবে:
+
+*   bashcomposer install --optimize-autoloader --no-dev
+    
+*   **.env ফাইল তৈরি:** সার্ভারে পিসির মতো .env ফাইল থাকে না। তাই আপনাকে .env.example কপি করে একটি .env ফাইল বানাতে হবে এবং সেখানে সার্ভারের ডাটাবেজ ইউজার ও পাসওয়ার্ড দিতে হবে।
+    
+*   bashphp artisan key:generate
+    
+*   bashphp artisan migrate
+    
+*   bashphp artisan storage:link
+    
+
+**আপনার কি সার্ভারে SSH বা Terminal এক্সেস আছে?** যদি না থাকে, তবে আপনি cPanel-এর **"Git Version Control"** টুলটি ব্যবহার করতে পারেন। সেটি কিভাবে করতে হয় তা জানতে চাইলে আমাকে বলতে পারেন।
