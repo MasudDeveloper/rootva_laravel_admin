@@ -102,11 +102,7 @@
             </a>
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">System Management</div>
-            <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/services/settings*') ? 'active' : '' }}">
-                <i class="fa-solid fa-gears"></i>
-                <span>App Settings</span>
-            </a>
-
+            
             <a href="{{ route('admin.api-endpoints.index') }}" class="nav-link {{ request()->is('admin/api-endpoints*') ? 'active' : '' }}">
                 <i class="fa-solid fa-code"></i>
                 <span>API Endpoints</span>
