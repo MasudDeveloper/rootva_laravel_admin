@@ -58,7 +58,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/microjobs', [MicrojobController::class, 'index'])->name('microjobs.index');
     Route::patch('/microjobs/{id}', [MicrojobController::class, 'update'])->name('microjobs.update');
 
-    // Review Jobs
+    // Salary Requests
+    Route::get('/salary-requests', [\App\Http\Controllers\Admin\SalaryRequestController::class, 'index'])->name('salary-requests.index');
+    Route::post('/salary-requests/{id}/approve', [\App\Http\Controllers\Admin\SalaryRequestController::class, 'approve'])->name('salary-requests.approve');
+    Route::post('/salary-requests/{id}/reject', [\App\Http\Controllers\Admin\SalaryRequestController::class, 'reject'])->name('salary-requests.reject');
+
+    // Banners
     Route::get('/review-jobs', [ReviewJobManagementController::class, 'index'])->name('review-jobs.index');
     Route::get('/review-jobs/{job_id}/submissions', [ReviewJobManagementController::class, 'submissions'])->name('review-jobs.submissions');
     Route::post('/review-jobs/submissions/{id}/approve', [ReviewJobManagementController::class, 'approve'])->name('review-jobs.approve');
@@ -68,6 +73,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
     Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
     Route::delete('/banners/{id}', [BannerController::class, 'destroy'])->name('banners.destroy');
+
+    // Reviews
+    Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+    Route::post('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'store'])->name('reviews.store');
+    Route::delete('/reviews/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

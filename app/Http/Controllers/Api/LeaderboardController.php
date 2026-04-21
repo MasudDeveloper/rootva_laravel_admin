@@ -27,14 +27,13 @@ class LeaderboardController extends Controller
         // Apply Time Filter
         switch ($filter) {
             case 'today':
-                $query->whereDate('verified_at', Carbon::today());
+                $query->whereRaw("STR_TO_DATE(verified_at, '%d-%m-%Y') = ?", [Carbon::today()->toDateString()]);
                 break;
             case 'weekly':
-                $query->where('verified_at', '>=', Carbon::now()->startOfWeek());
+                $query->whereRaw("STR_TO_DATE(verified_at, '%d-%m-%Y') >= ?", [Carbon::now()->startOfWeek()->toDateString()]);
                 break;
             case 'monthly':
-                $query->whereYear('verified_at', Carbon::now()->year)
-                      ->whereMonth('verified_at', Carbon::now()->month);
+                $query->whereRaw("STR_TO_DATE(verified_at, '%d-%m-%Y') >= ?", [Carbon::now()->startOfMonth()->toDateString()]);
                 break;
             case 'all_time':
             default:
@@ -82,14 +81,34 @@ class LeaderboardController extends Controller
     {
         $date = $request->query('date', Carbon::today()->toDateString());
         
-        $winners = DB::table('daily_winners')
-            ->whereDate('date', $date)
-            ->get();
+        $winners = DB::table('transactions')
+            ->join('sign_up', 'transactions.user_id', '=', 'sign_up.id')
+            ->select(
+                'sign_up.id as user_id',
+                'sign_up.name',
+                'sign_up.profile_pic_url',
+                'transactions.description',
+                'transactions.created_at'
+            )
+            ->where('transactions.payment_gateway', 'Daily Bonus')
+            ->whereDate('transactions.created_at', $date)
+            ->get()
+            ->map(function($w) {
+                // Extract "X verifications" from description if available
+                preg_match('/(\d+)\s+verifications/', $w->description, $matches);
+                return [
+                    'user_id' => (string)$w->user_id,
+                    'name' => $w->name,
+                    'profile_pic_url' => $w->profile_pic_url,
+                    'total_verifications' => isset($matches[1]) ? $matches[1] : "4+",
+                ];
+            });
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'success' => true,
-            'winners' => $winners
+            'date' => $date,
+            'winner' => $winners // Android expects "winner"
         ]);
     }
 
@@ -107,14 +126,44 @@ class LeaderboardController extends Controller
      */
     public function getWeeklyWinner()
     {
-        $winner = DB::table('weekly_winners')
-            ->orderBy('week_start_date', 'desc')
+        $winner = DB::table('transactions')
+            ->join('sign_up', 'transactions.user_id', '=', 'sign_up.id')
+            ->select(
+                'sign_up.id as user_id',
+                'sign_up.name',
+                'sign_up.profile_pic_url',
+                'sign_up.referCode',
+                'sign_up.number',
+                'transactions.description',
+                'transactions.created_at'
+            )
+            ->where('transactions.payment_gateway', 'Weekly Bonus')
+            ->orderBy('transactions.created_at', 'desc')
             ->first();
 
+        $response = [];
+        if ($winner) {
+            // Mask phone
+            $maskedNumber = substr($winner->number, 0, 7) . '****';
+            
+            // Extract verifications
+            preg_match('/(\d+)\s+verifications/', $winner->description, $matches);
+            
+            $response[] = [
+                'rank' => 1,
+                'user_id' => (string)$winner->user_id,
+                'name' => $winner->name,
+                'number' => $maskedNumber,
+                'profile_pic_url' => $winner->profile_pic_url,
+                'total_verifications' => isset($matches[1]) ? (int)$matches[1] : 15,
+                'referCode' => $winner->referCode,
+            ];
+        }
+
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'success' => true,
-            'ranking' => $winner ? [$winner] : []
+            'ranking' => $response
         ]);
     }
 
@@ -134,15 +183,35 @@ class LeaderboardController extends Controller
     {
         $weekStart = $request->query('week_start_date');
         
-        $winners = DB::table('weekly_winners');
+        $query = DB::table('transactions')
+            ->join('sign_up', 'transactions.user_id', '=', 'sign_up.id')
+            ->select(
+                'sign_up.id as user_id',
+                'sign_up.name',
+                'sign_up.profile_pic_url',
+                'transactions.description',
+                'transactions.created_at'
+            )
+            ->where('transactions.payment_gateway', 'Weekly Bonus');
+
         if ($weekStart) {
-            $winners->where('week_start_date', $weekStart);
+            $query->whereDate('transactions.created_at', $weekStart);
         }
         
+        $winners = $query->get()->map(function($w) {
+            preg_match('/(\d+)\s+verifications/', $w->description, $matches);
+            return [
+                'user_id' => (string)$w->user_id,
+                'name' => $w->name,
+                'profile_pic_url' => $w->profile_pic_url,
+                'total_verifications' => isset($matches[1]) ? $matches[1] : "15+",
+            ];
+        });
+        
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'success' => true,
-            'winners' => $winners->get()
+            'winner' => $winners // Android expects "winner"
         ]);
     }
 }

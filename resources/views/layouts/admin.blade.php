@@ -120,6 +120,11 @@
                 <span>Withdrawal</span>
             </a>
 
+            <a href="{{ route('admin.salary-requests.index') }}" class="nav-link {{ request()->is('admin/salary-requests*') ? 'active' : '' }}">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>Salary Requests</span>
+            </a>
+
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Rewards & Bonuses</div>
             
             <a href="{{ route('admin.rewards.daily') }}" class="nav-link {{ request()->is('admin/rewards/daily*') ? 'active' : '' }}">
@@ -147,6 +152,11 @@
             <a href="{{ route('admin.banners.index') }}" class="nav-link {{ request()->is('admin/banners*') ? 'active' : '' }}">
                 <i class="fa-solid fa-images"></i>
                 <span>Banner Manager</span>
+            </a>
+
+            <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->is('admin/reviews*') ? 'active' : '' }}">
+                <i class="fa-solid fa-star-half-stroke"></i>
+                <span>Review Banners</span>
             </a>
 
             <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/settings*') ? 'active' : '' }}">

@@ -14,7 +14,11 @@ use App\Models\PaymentNumber;
 use App\Models\Microjob;
 use App\Models\Transaction;
 use App\Models\ReferralCommission;
+use App\Models\Review;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class LegacyApiController extends Controller
 {
@@ -60,7 +64,7 @@ class LegacyApiController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'ডেটা পাওয়া গেছে',
-                'data' => $user,
+                'users' => $user,
                 'show_verification_popup' => (bool)($user->is_verified == 1 && $user->verification_popup_shown == 0)
             ]);
         }
@@ -92,14 +96,32 @@ class LegacyApiController extends Controller
         $userId = $request->input('user_id');
         $user = SignUp::find($userId);
 
-        if ($user) {
-            return response()->json([
-                'wallet_balance' => (double) ($user->wallet_balance ?? 0),
-                'voucher_balance' => (double) ($user->voucher_balance ?? 0),
-                'success' => true
-            ]);
+        if (!$user) {
+            return response()->json(['message' => 'অবৈধ ডেটা'], 200);
         }
-        return response()->json(['success' => false]);
+
+        // Calculate total balance from transactions
+        // Credit types: add, commission, income
+        $credits = \App\Models\Transaction::where('user_id', $userId)
+            ->whereIn('type', ['add', 'commission', 'income'])
+            ->sum('amount');
+
+        // Debit types: withdraw, payment
+        $debits = \App\Models\Transaction::where('user_id', $userId)
+            ->whereIn('type', ['withdraw', 'payment'])
+            ->sum('amount');
+
+        $totalBalance = $credits - $debits;
+
+        // Update wallet balance in the database
+        $user->wallet_balance = $totalBalance;
+        $user->save();
+
+        return response()->json([
+            'message' => 'ব্যালেন্স সফলভাবে আপডেট হয়েছে',
+            'wallet_balance' => round((double)$totalBalance, 2),
+            'voucher_balance' => round((double)($user->voucher_balance ?? 0), 2)
+        ]);
     }
 
     /**
@@ -123,14 +145,74 @@ class LegacyApiController extends Controller
      */
     public function getIncomeReport(Request $request)
     {
+        $userId = $request->query('user_id');
+        if (!$userId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid data',
+                'data' => null
+            ]);
+        }
+
+        $calculate = function($startDate = null, $endDate = null) use ($userId) {
+            $query = \App\Models\Transaction::where('user_id', $userId)
+                ->whereIn('type', ['income', 'commission']);
+
+            if ($startDate && $endDate) {
+                $query->whereBetween(\Illuminate\Support\Facades\DB::raw('DATE(date)'), [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->whereDate('date', $startDate);
+            }
+
+            $total = $query->sum('amount');
+            return [
+                'total' => number_format((float)$total, 2, '.', ''),
+                'details' => []
+            ];
+        };
+
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $last7Days = now()->subDays(6)->toDateString();
+        $last30Days = now()->subDays(29)->toDateString();
+        $last365Days = now()->subDays(364)->toDateString();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Income report fetched successfully',
+            'data' => [
+                'today' => $calculate($today),
+                'yesterday' => $calculate($yesterday),
+                'week' => $calculate($last7Days, $today),
+                'month' => $calculate($last30Days, $today),
+                'year' => $calculate($last365Days, $today),
+                'total' => $calculate()
+            ]
+        ], 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Legacy Income History (get_income_history.php)
+     */
+    public function getIncomeHistory(Request $request)
+    {
         $userId = $request->input('user_id');
-        $commissions = ReferralCommission::where('user_id', $userId)
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User ID is missing',
+                'income_history' => []
+            ]);
+        }
+
+        $transactions = \App\Models\Transaction::where('user_id', $userId)
             ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([
             'success' => true,
-            'income_report' => $commissions
+            'income_history' => $transactions
         ]);
     }
 
@@ -480,7 +562,8 @@ class LegacyApiController extends Controller
      */
     public function getReviews()
     {
-        return response()->json(Banner::all());
+        $reviews = Review::orderBy('id', 'desc')->get();
+        return response()->json($reviews);
     }
 
     /**
@@ -624,14 +707,43 @@ class LegacyApiController extends Controller
      */
     public function salaryRequest(Request $request)
     {
-        $userId = $request->input('user_id');
-        \App\Models\SalaryRequest::create([
-            'user_id' => $userId,
-            'status' => 'Pending',
-            'created_at' => now()
-        ]);
+        try {
+            $userId = $request->input('user_id');
+            
+            if (!$userId) {
+                return response()->json(['success' => false, 'message' => 'User ID is missing']);
+            }
 
-        return response()->json(['success' => true, 'message' => 'Salary Request Submitted']);
+            // Check for existing pending request
+            $existing = \App\Models\SalaryRequest::where('user_id', $userId)
+                ->where('status', 'Pending')
+                ->exists();
+
+            if ($existing) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'আপনার একটি রিকোয়েস্ট অলরেডি পেন্ডিং আছে।'
+                ], 200);
+            }
+
+            \App\Models\SalaryRequest::create([
+                'user_id' => $userId,
+                'status' => 'Pending',
+                'request_type' => 'monthly_salary',
+                'requested_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true, 
+                'message' => 'Salary Request Submitted'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error: ' . $e->getMessage()
+            ], 200); // We return 200 so the app shows the actual message
+        }
     }
 
     /**
@@ -741,11 +853,24 @@ class LegacyApiController extends Controller
     public function getSalaryStatus(Request $request)
     {
         $userId = $request->query('user_id');
-        $lastRequest = \App\Models\SalaryRequest::where('user_id', $userId)->latest()->first();
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User ID is required',
+                'status' => 'None',
+                'admin_note' => null
+            ]);
+        }
+
+        $lastRequest = \App\Models\SalaryRequest::where('user_id', $userId)
+            ->latest('requested_at')
+            ->first();
         
         return response()->json([
             'success' => true,
-            'status' => $lastRequest ? $lastRequest->status : 'None'
+            'status' => $lastRequest ? $lastRequest->status : 'None',
+            'admin_note' => $lastRequest ? $lastRequest->admin_note : null
         ]);
     }
 
@@ -966,11 +1091,117 @@ class LegacyApiController extends Controller
         return response()->json(['status' => 'active']);
     }
 
+
     public function getSalaryProgress(Request $request)
     {
         $userId = $request->query('user_id');
-        // Return salary progress data
-        return response()->json(['success' => true, 'progress' => 0]);
+        Log::info("Salary progress request for user: " . $userId);
+
+        $user = SignUp::find($userId);
+
+        if (!$user) {
+            Log::warning("User not found for salary progress: " . $userId);
+            return response()->json(['success' => false, 'message' => 'User not found']);
+        }
+
+        $referCode = $user->referCode;
+
+        // 🟢 Step 1: Last monthly salary bonus date from bonus_tracker
+        $lastBonus = DB::table('bonus_tracker')
+            ->where('user_id', $userId)
+            ->where('bonus_type', 'monthly_salary')
+            ->latest('created_at')
+            ->first();
+        
+        $startDate = $lastBonus ? $lastBonus->created_at : '2000-01-01 00:00:00';
+
+        // 🟢 Step 2: Get Level 1 referrals
+        $level1 = DB::table('sign_up')
+            ->where('referredBy', $referCode)
+            ->get(['id', 'referCode', 'upline_changed_at']);
+
+        $level1VerifiedIds = [];
+        $level1Active = 0;
+        $level2VerifiedTotal = 0;
+
+        foreach ($level1 as $l1) {
+            $l1Id = $l1->id;
+            $l1ReferCode = $l1->referCode;
+            $transferDate = $l1->upline_changed_at;
+            $filterDate = $transferDate ? $transferDate : $startDate;
+
+            // 🔸 Check if Level 1 is verified after filterDate
+            $isL1Verified = DB::table('verification_requests')
+                ->where('user_id', $l1Id)
+                ->where('status', 'Approved')
+                ->where('verified_raw_time', '>', $filterDate)
+                ->exists();
+
+            if ($isL1Verified) {
+                $level1VerifiedIds[] = $l1Id;
+            }
+
+            // 🔸 Get Level 2 (referrals of Level 1)
+            if ($l1ReferCode) {
+                $level2Ids = DB::table('sign_up')
+                    ->where('referredBy', $l1ReferCode)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($level2Ids)) {
+                    // 🔸 Count Level 2 verified after filterDate
+                    $l2VerifiedCount = DB::table('verification_requests')
+                        ->whereIn('user_id', $level2Ids)
+                        ->where('status', 'Approved')
+                        ->where('verified_raw_time', '>', $filterDate)
+                        ->count();
+
+                    $level2VerifiedTotal += $l2VerifiedCount;
+
+                    // 🔹 Level-1 Active Condition: Verified + at least 2 verified Level 2
+                    if ($isL1Verified && $l2VerifiedCount >= 2) {
+                        $level1Active++;
+                    }
+                }
+            }
+        }
+
+        // 🟢 Step 3: Total Orders (only 'Delivered')
+        $totalOrders = \DB::table('orders')
+            ->where('user_id', $userId)
+            ->where('order_status', 'Delivered')
+            ->where('created_at', '>', $startDate)
+            ->count();
+
+        // 🟢 Step 4: Eligibility Check
+        $level1VerifiedCount = count($level1VerifiedIds);
+        $isEligible = ($level1VerifiedCount >= 30 && $level1Active >= 10 && $level2VerifiedTotal >= 60 && $totalOrders >= 1);
+
+        // 🟢 Step 5: Status
+        $lastRequest = \App\Models\SalaryRequest::where('user_id', $userId)
+            ->where('request_type', 'monthly_salary')
+            ->latest('requested_at')
+            ->first();
+        
+        $status = $lastRequest ? $lastRequest->status : 'None';
+
+        $responseData = [
+            'success' => true,
+            'referCode' => (string)$referCode,
+            'level1_verified' => (int)$level1VerifiedCount,
+            'level1_active' => (int)$level1Active,
+            'level2_verified' => (int)$level2VerifiedTotal,
+            'total_orders' => (int)$totalOrders,
+            'eligible' => (bool)$isEligible,
+            'status' => (string)$status,
+            'admin_note' => (string)($lastRequest ? ($lastRequest->admin_note ?? '') : ''),
+            'bonus_claimed' => false,
+            'last_bonus_date' => (string)$startDate
+        ];
+
+        Log::info("Response for user " . $userId . ": " . json_encode($responseData));
+
+        return response()->json($responseData);
     }
 
     public function getSpinProgress(Request $request)
