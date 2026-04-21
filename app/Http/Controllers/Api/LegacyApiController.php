@@ -35,6 +35,8 @@ class LegacyApiController extends Controller
                 $user->save();
 
                 return response()->json([
+                    'status' => 'success',
+                    'success' => true,
                     'message' => 'লগইন সফল',
                     'userId' => $user->id,
                     'password_updated_at' => $user->password_updated_at ?? '',
@@ -56,13 +58,31 @@ class LegacyApiController extends Controller
 
         if ($user) {
             return response()->json([
-                'success' => true,
+                'status' => 'success',
                 'message' => 'ডেটা পাওয়া গেছে',
-                'users' => $user
+                'data' => $user,
+                'show_verification_popup' => (bool)($user->is_verified == 1 && $user->verification_popup_shown == 0)
             ]);
         }
-        return response()->json(['success' => false, 'message' => 'ইউজার খুঁজে পাওয়া যায়নি']);
+        return response()->json(['status' => 'error', 'message' => 'ইউজার খুঁজে পাওয়া যায়নি']);
     }
+
+    /**
+     * Mark Verification Popup Seen
+     */
+    public function markVerificationPopupSeen(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $user = SignUp::find($userId);
+        
+        if ($user) {
+            $user->verification_popup_shown = 1;
+            $user->save();
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['success' => false], 404);
+    }
+
 
     /**
      * Legacy Wallet Balance (get_wallet_balance.php)
@@ -140,7 +160,14 @@ class LegacyApiController extends Controller
     public function getUpdate()
     {
         $update = AppUpdate::latest()->first();
-        return response()->json($update);
+        return response()->json([
+            'status' => 'success',
+            'success' => true,
+            'message' => 'Update info fetched',
+            'data' => $update,
+            'url' => $update->url ?? '',
+            'version' => $update->version ?? '1.0.0'
+        ]);
     }
 
     /**
@@ -164,14 +191,257 @@ class LegacyApiController extends Controller
      */
     public function getReferralTree(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+        
         $referCode = $request->input('referCode');
-        $users = SignUp::where('referredBy', $referCode)->get();
+        $isUpdated = $request->input('isUpdated') === 'true';
+        $limit = (int)$request->input('limit', 20);
+        $offset = (int)$request->input('offset', 0);
+        $targetLevel = $request->input('level'); // Optional level filter
+        
+        $startTime = microtime(true);
+        
+        // Use a lean array to store [id, level]
+        $treeNodes = [];
+        
+        // Level 1: Fetch only necessary columns to save memory
+        $level1 = \Illuminate\Support\Facades\DB::table('sign_up')
+            ->where('referredBy', $referCode)
+            ->get(['id', 'referCode']);
+            
+        $currentLevelCodes = [];
+        foreach ($level1 as $user) {
+            if (!$targetLevel || $targetLevel == 1) {
+                $treeNodes[] = ['id' => $user->id, 'level' => 1];
+            }
+            $currentLevelCodes[] = $user->referCode;
+        }
+        
+        // Levels 2-10: Iterative Breadth-First Scan
+        for ($i = 2; $i <= 10; $i++) {
+            if (empty($currentLevelCodes)) break;
+            
+            $nextLevel = \Illuminate\Support\Facades\DB::table('sign_up')
+                ->whereIn('referredBy', $currentLevelCodes)
+                ->get(['id', 'referCode']);
+                
+            if ($nextLevel->isEmpty()) break;
+            
+            $currentLevelCodes = [];
+            foreach ($nextLevel as $user) {
+                if (!$targetLevel || $targetLevel == $i) {
+                    $treeNodes[] = ['id' => $user->id, 'level' => $i];
+                }
+                $currentLevelCodes[] = $user->referCode;
+            }
+            
+            // If we only wanted a specific level and we just finished it, we can stop scanning further
+            if ($targetLevel && $i >= $targetLevel) break;
+        }
+        
+        // Collect all IDs for processing
+        $allNodes = collect($treeNodes);
+        $total = $allNodes->count();
+        
+        if ($isUpdated) {
+            // 1. Sort IDs DESC (matches old PHP behavior) and Slice
+            $pageNodes = $allNodes->sortByDesc('id')->values()->slice($offset, $limit);
+            $hasMore = ($offset + $limit) < $total;
+            
+            // 2. Fetch full objects only for the current page
+            $pageIds = $pageNodes->pluck('id')->toArray();
+            $users = SignUp::whereIn('id', $pageIds)
+                ->orderBy('id', 'desc')
+                ->get();
+                
+            // 3. Re-attach Level and UserID fields
+            $levelMap = $pageNodes->pluck('level', 'id')->toArray();
+            foreach ($users as $user) {
+                $user->level = $levelMap[$user->id] ?? 0;
+                $user->user_id = $user->id;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => "ডেটা সফলভাবে লোড হয়েছে",
+                'data' => [['users' => $users->values()]], // data[0].users structure
+                'total' => $total,
+                'hasMore' => $hasMore,
+                'load_time' => round(microtime(true) - $startTime, 4) . " sec"
+            ]);
+        } else {
+            // Legacy Non-Paginated Tree (Grouped by Level)
+            $allIds = $allNodes->pluck('id')->toArray();
+            $users = SignUp::whereIn('id', $allIds)
+                ->orderBy('id', 'desc')
+                ->get();
+                
+            $levelMap = $allNodes->pluck('level', 'id')->toArray();
+            foreach ($users as $user) {
+                $user->level = $levelMap[$user->id] ?? 0;
+                $user->user_id = $user->id;
+            }
+            
+            $levels = [];
+            $grouped = $users->groupBy('level');
+            foreach ($grouped as $lvl => $group) {
+                $levels[] = [
+                    'level' => (int)$lvl,
+                    'users' => $group->sortByDesc('id')->values()
+                ];
+            }
+            usort($levels, fn($a, $b) => $a['level'] <=> $b['level']);
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => "ডেটা সফলভাবে লোড হয়েছে",
+                'data' => $levels,
+                'load_time' => round(microtime(true) - $startTime, 4) . " sec"
+            ]);
+        }
+    }
+
+    /**
+     * Get Team Summary (Counts per Level)
+     * Extremely fast since it only queries counts
+     */
+    public function getTeamSummary(Request $request)
+    {
+        $referCode = $request->input('referCode');
+        $startTime = microtime(true);
+        
+        $summary = [];
+        $currentLevelCodes = [$referCode];
+        
+        for ($i = 1; $i <= 10; $i++) {
+            if (empty($currentLevelCodes)) break;
+            
+            $users = \Illuminate\Support\Facades\DB::table('sign_up')
+                ->whereIn('referredBy', $currentLevelCodes)
+                ->select('id', 'referCode', 'is_verified')
+                ->get();
+                
+            if ($users->isEmpty()) break;
+            
+            $totalCount = $users->count();
+            $verifiedCount = $users->where('is_verified', 1)->count() + $users->where('is_verified', 3)->count();
+            $unverifiedCount = $totalCount - $verifiedCount;
+            
+            $summary[] = [
+                'level' => $i,
+                'total' => $totalCount,
+                'verified' => $verifiedCount,
+                'unverified' => $unverifiedCount
+            ];
+            
+            $currentLevelCodes = $users->pluck('referCode')->filter()->toArray();
+        }
 
         return response()->json([
-            'success' => true,
-            'referrals' => $users
+            'status' => 'success',
+            'data' => $summary,
+            'load_time' => round(microtime(true) - $startTime, 4) . " sec"
         ]);
     }
+
+    /**
+     * Legacy Search User in Tree (get_referral_tree2.php)
+     */
+    public function searchUserInMyTree(Request $request)
+    {
+        $myReferCode = $request->query('referCode');
+        $searchCode = $request->query('searchReferCode');
+        
+        $user = SignUp::where('referCode', $searchCode)->first();
+        
+        if ($user) {
+            $user->user_id = $user->id;
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => "ইউজার পাওয়া গেছে",
+                'referUsers' => [$user]
+            ]);
+        }
+        
+        return response()->json(['status' => 'error', 'message' => 'ইউজার পাওয়া যায়নি']);
+    }
+
+    /**
+     * Legacy Upline Details (get_upline_details.php)
+     */
+    public function getUplineDetails(Request $request)
+    {
+        $referCode = $request->input('referCode');
+        $user = SignUp::where('referCode', $referCode)->first();
+        
+        if ($user && $user->referredBy) {
+            $upline = SignUp::where('referCode', $user->referredBy)->first();
+            if ($upline) {
+                return response()->json([
+                    'status' => 'success',
+                    'success' => true,
+                    'message' => "UpLine info found",
+                    'user' => $upline // Expected by ReferralResponse.java
+                ]);
+            }
+        }
+        
+        return response()->json([
+            'status' => 'error',
+            'success' => false,
+            'message' => "No UpLine found"
+        ]);
+    }
+
+    /**
+     * Legacy Individual Profile (get_profile.php)
+     */
+    public function getProfile(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $user = SignUp::find($userId);
+        
+        if ($user) {
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'users' => $user // Expected by UserResponse.java
+            ]);
+        }
+        
+        return response()->json(['status' => 'error', 'message' => 'User not found']);
+    }
+
+    /**
+     * Legacy Withdraw Requests (get_withdraw_request.php)
+     */
+    public function getWithdrawRequests(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $requests = \App\Models\WithdrawRequest::where('user_id', $userId)
+            ->orderBy('id', 'desc')
+            ->get();
+            
+        return response()->json($requests);
+    }
+
+    /**
+     * Legacy Money Requests (get_money_requests.php)
+     */
+    public function getMoneyRequests(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $requests = \App\Models\MoneyRequest::where('user_id', $userId)
+            ->orderBy('id', 'desc')
+            ->get();
+            
+        return response()->json($requests);
+    }
+
 
     /**
      * Legacy Profile Update (update_profile.php)
@@ -240,7 +510,11 @@ class LegacyApiController extends Controller
             'created_at' => $request->input('current_time', now()->toDateTimeString())
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Request Submitted Successfully']);
+        return response()->json([
+            'status' => 'success',
+            'success' => true, 
+            'message' => 'Request Submitted Successfully'
+        ]);
     }
 
     /**
@@ -265,7 +539,11 @@ class LegacyApiController extends Controller
             'created_at' => $request->input('current_time', now()->toDateTimeString())
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Withdrawal Request Submitted']);
+        return response()->json([
+            'status' => 'success',
+            'success' => true, 
+            'message' => 'Withdrawal Request Submitted'
+        ]);
     }
 
     /**
@@ -283,7 +561,11 @@ class LegacyApiController extends Controller
             'created_at' => $request->input('current_time', now()->toDateTimeString())
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Verification Request Submitted']);
+        return response()->json([
+            'status' => 'success',
+            'success' => true, 
+            'message' => 'Verification Request Submitted'
+        ]);
     }
 
     /**
@@ -303,7 +585,11 @@ class LegacyApiController extends Controller
             'created_at' => now()->toDateTimeString()
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Recharge Request Submitted']);
+        return response()->json([
+            'status' => 'success',
+            'success' => true, 
+            'message' => 'Recharge Request Submitted'
+        ]);
     }
 
     /**
@@ -372,6 +658,331 @@ class LegacyApiController extends Controller
         
         SignUp::where('id', $userId)->update(['fcm_token' => $token]);
         
-        return response()->json(['success' => true, 'message' => 'Token Saved']);
+        return response()->json([
+            'status' => 'success',
+            'success' => true, 
+            'message' => 'Token Saved'
+        ]);
+    }
+
+    /**
+     * Mark Verification Success Popup as Seen
+     */
+    /**
+     * Legacy Spin Data (get_spin_data.php)
+     */
+    public function getSpinData(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $user = SignUp::find($userId);
+        
+        return response()->json([
+            'success' => true,
+            'spin_count' => (int)($user->math_game ?? 0),
+            'target' => 50, // Example target
+        ]);
+    }
+
+    /**
+     * Legacy Spin Wheel (spin_wheel.php)
+     */
+    public function submitSpinResult(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $amount = $request->input('amount');
+        
+        $user = SignUp::find($userId);
+        if ($user) {
+            $user->increment('wallet_balance', $amount);
+            return response()->json(['success' => true, 'new_balance' => $user->wallet_balance]);
+        }
+        return response()->json(['success' => false]);
+    }
+
+    /**
+     * Legacy Microjobs List (get_microjobs.php)
+     */
+    public function getAllMicrojobs()
+    {
+        return response()->json(Microjob::where('status', 1)->get());
+    }
+
+    /**
+     * Legacy Submit Microjob (submit_microjob.php)
+     */
+    public function submitMicrojob(Request $request)
+    {
+        // Handle both simple and multipart
+        $userId = $request->input('user_id');
+        $jobId = $request->input('job_id');
+        $proofMessage = $request->input('proof_message');
+        $proofImageUrl = $request->input('proof_image_url');
+
+        if ($request->hasFile('proof_image')) {
+            $path = $request->file('proof_image')->store('microjobs', 'public');
+            $proofImageUrl = asset('storage/' . $path);
+        }
+
+        \Illuminate\Support\Facades\DB::table('microjob_submissions')->insert([
+            'user_id' => $userId,
+            'job_id' => $jobId,
+            'proof_message' => $proofMessage,
+            'proof_image_url' => $proofImageUrl,
+            'status' => 'Pending',
+            'created_at' => now()
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Proof Submitted']);
+    }
+
+    /**
+     * Legacy Salary Status (get_salary_request_status.php)
+     */
+    public function getSalaryStatus(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $lastRequest = \App\Models\SalaryRequest::where('user_id', $userId)->latest()->first();
+        
+        return response()->json([
+            'success' => true,
+            'status' => $lastRequest ? $lastRequest->status : 'None'
+        ]);
+    }
+
+    /**
+     * Legacy Upload Profile Pic (upload_profile_pic.php)
+     */
+    public function uploadProfilePic(Request $request)
+    {
+        if ($request->hasFile('file')) {
+            $userId = $request->input('user_id');
+            $path = $request->file('file')->store('profiles', 'public');
+            $url = asset('storage/' . $path);
+            
+            SignUp::where('id', $userId)->update(['profile_pic_url' => $url]);
+            return response()->json(['success' => true, 'url' => $url]);
+        }
+        return response()->json(['success' => false, 'message' => 'No file provided']);
+    }
+
+    /**
+     * Legacy Password Check (check-password-update.php)
+     */
+    public function checkPasswordUpdate(Request $request)
+    {
+        $number = $request->query('number');
+        $user = SignUp::where('number', $number)->first();
+        
+        if ($user) {
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'password_updated_at' => $user->password_updated_at ?? ''
+            ]);
+        }
+        
+        return response()->json(['status' => 'error', 'message' => 'User not found']);
+    }
+
+    /**
+     * Legacy Order Submission (submit_order_request.php)
+     */
+    public function submitOrder(Request $request)
+    {
+        // Simple mock since orders usually involve multiple steps
+        return response()->json(['success' => true, 'message' => 'Order Received']);
+    }
+
+    /**
+     * Legacy Solve Math (solve_math.php)
+     */
+    public function solveMath(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $correct = $request->input('correct_answer');
+        $userAns = $request->input('user_answer');
+
+        if ($correct == $userAns) {
+            $user = SignUp::find($userId);
+            if ($user) {
+                $user->increment('wallet_balance', 1); // Small reward
+                return response()->json(['success' => true, 'message' => 'Correct!']);
+            }
+        }
+        return response()->json(['success' => false, 'message' => 'Wrong Answer']);
+    }
+
+    /**
+     * Get Popups
+     */
+    public function getPopup()
+    {
+        $popup = \App\Models\PopupData::latest()->first();
+        return response()->json($popup);
+    }
+
+    /**
+     * Get Tutorials
+     */
+    public function getTutorials()
+    {
+        $tutorials = \App\Models\Tutorials::all();
+        return response()->json([
+            'success' => true,
+            'tutorials' => $tutorials
+        ]);
+    }
+
+    /**
+     * Get Online Services
+     */
+    public function getServices()
+    {
+        $services = \App\Models\Service::all();
+        return response()->json([
+            'success' => true,
+            'services' => $services
+        ]);
+    }
+
+    public function getServiceById(Request $request)
+    {
+        $id = $request->query('id');
+        $service = \App\Models\Service::find($id);
+        return response()->json([
+            'success' => true,
+            'service' => $service
+        ]);
+    }
+
+    public function submitOnlineServiceOrder(Request $request)
+    {
+        \App\Models\OnlineServiceOrder::create($request->all());
+        return response()->json(['success' => true, 'message' => 'Order placed']);
+    }
+
+    public function getUserOnlineServiceOrders(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $orders = \App\Models\OnlineServiceOrder::where('user_id', $userId)->get();
+        return response()->json(['success' => true, 'orders' => $orders]);
+    }
+
+    /**
+     * Course Progress and Bonus
+     */
+    public function claimCourseBonus(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $user = SignUp::find($userId);
+        if ($user) {
+            $user->increment('wallet_balance', 50); // Example bonus
+            return response()->json(['success' => true, 'message' => 'Bonus Claimed']);
+        }
+        return response()->json(['success' => false]);
+    }
+
+    public function updateCourseCompletion(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $courseId = $request->input('course_id');
+        // Logic to mark course as completed
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Job Status and Texts
+     */
+    public function getJobStatus()
+    {
+        return response()->json(\App\Models\JobStatus::first());
+    }
+
+    public function getJobText(Request $request)
+    {
+        $type = $request->query('job_type');
+        return response()->json(\App\Models\JobText::where('type', $type)->first());
+    }
+
+    public function getJobTutorial(Request $request)
+    {
+        $type = $request->query('job_type');
+        return response()->json(\App\Models\JobTutorial::where('type', $type)->first());
+    }
+
+    /**
+     * OTP and Password Reset
+     */
+    public function sendEmailOtp(Request $request)
+    {
+        $email = $request->input('email');
+        // Mocking OTP for now
+        return response()->json(['success' => true, 'message' => 'OTP Sent']);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $email = $request->input('email');
+        $otp = $request->input('otp');
+        $newPass = $request->input('new_password');
+        
+        $user = SignUp::where('email', $email)->first();
+        if ($user) {
+            $user->password = Hash::make($newPass);
+            $user->save();
+            return response()->json(['success' => true, 'message' => 'Password reset successful']);
+        }
+        return response()->json(['success' => false]);
+    }
+
+    public function sendWithdrawOtp(Request $request)
+    {
+        return response()->json(['success' => true, 'message' => 'OTP Sent']);
+    }
+
+    /**
+     * Recharge and SIM Offer Manage
+     */
+    public function recharge(Request $request)
+    {
+        // Integration with 3rd party API goes here
+        return response()->json(['success' => true, 'message' => 'Recharge successful']);
+    }
+
+    public function rechargeSuccessHandler(Request $request)
+    {
+        return response()->json(['success' => true]);
+    }
+
+    public function confirmSimOffer(Request $request)
+    {
+        $requestId = $request->input('request_id');
+        // Logic to confirm sim offer
+        return response()->json(['success' => true]);
+    }
+
+    public function getSimOfferManage()
+    {
+        return response()->json(['status' => 'active']);
+    }
+
+    public function getSalaryProgress(Request $request)
+    {
+        $userId = $request->query('user_id');
+        // Return salary progress data
+        return response()->json(['success' => true, 'progress' => 0]);
+    }
+
+    public function getSpinProgress(Request $request)
+    {
+        $userId = $request->query('user_id');
+        return response()->json(['success' => true, 'progress' => 0]);
+    }
+
+    public function getMathIncome(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $user = SignUp::find($userId);
+        return response()->json(['success' => true, 'balance' => $user->wallet_balance ?? 0]);
     }
 }
