@@ -99,8 +99,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         // SIM Offers
         Route::get('/sim-offers', [SimOfferController::class, 'index'])->name('sim-offers.index');
         Route::post('/sim-offers', [SimOfferController::class, 'store'])->name('sim-offers.store');
-        Route::post('/sim-offers/bulk-store', [SimOfferController::class, 'bulkStore'])->name('sim-offers.bulk-store');
-        Route::delete('/sim-offers/{id}', [SimOfferController::class, 'destroy'])->name('sim-offers.destroy');
+        Route::prefix('sim-offers')->name('sim-offers.')->group(function () {
+            Route::post('/bulk-store', [SimOfferController::class, 'bulkStore'])->name('bulk-store');
+            Route::post('/update-settings', [SimOfferController::class, 'updateSettings'])->name('update-settings');
+            Route::post('/requests/{id}/update', [SimOfferController::class, 'updateRequestStatus'])->name('update-request-status');
+            Route::delete('/{id}', [SimOfferController::class, 'destroy'])->name('destroy');
+        });
 
         // Reselling Shop
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');

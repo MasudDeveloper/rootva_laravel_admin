@@ -1,6 +1,5 @@
 @extends('layouts.admin')
 
-@section('title', 'SIM Offers')
 @section('page_title', 'Mobile Package Management')
 
 @section('content')
@@ -14,8 +13,18 @@
             </button>
         </li>
         <li class="nav-item">
+            <button class="nav-link px-4 rounded-pill" onclick="switchTab('requests')">
+                <i class="fa-solid fa-envelope-open-text me-2"></i>Requests
+            </button>
+        </li>
+        <li class="nav-item">
             <button class="nav-link px-4 rounded-pill" onclick="switchTab('paste')">
                 <i class="fa-solid fa-paste me-2"></i>Paste & Parse
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link px-4 rounded-pill" onclick="switchTab('settings')">
+                <i class="fa-solid fa-gear me-2"></i>Settings
             </button>
         </li>
     </ul>
@@ -30,98 +39,154 @@
     <div id="tab-list">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h4 class="fw-bold mb-0">Active Offers: {{ $offers->total() }}</h4>
-                <p class="text-muted small mb-0">Manage and update mobile data/minute packages</p>
+                <h4 class="fw-bold mb-1">Available SIM Offers</h4>
+                <p class="text-muted small mb-0">Manage mobile data and minute packages across operators.</p>
             </div>
             <button class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="openAddModal()">
                 <i class="fa-solid fa-plus me-2"></i>Add New Offer
             </button>
         </div>
 
-        <div class="card-modern p-0 overflow-hidden border-0 shadow-lg">
+        <div class="card-modern p-0 overflow-hidden shadow-lg border-0 mb-4">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 bg-white">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold">Operator</th>
-                            <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Offer Title</th>
-                            <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-center">Regular Price</th>
-                            <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-center">Offer Price</th>
-                            <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold text-end">Actions</th>
+                            <th class="px-4 py-3 text-muted small text-uppercase fw-bold border-0">Operator</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0">Package Details</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-center">Price</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-end px-4">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white">
+                    <tbody>
                         @forelse($offers as $offer)
-                        <tr>
-                            <td class="px-4 py-3">
-                                @php
-                                    $colors = [
-                                        'Grameenphone' => 'bg-info',
-                                        'Robi'         => 'bg-danger',
-                                        'Banglalink'   => 'bg-warning',
-                                        'Airtel'       => 'bg-danger',
-                                        'Teletalk'     => 'bg-success'
-                                    ];
-                                    $color = $colors[$offer->operator_name] ?? 'bg-secondary';
-                                @endphp
-                                <div class="{{ $color }} text-white rounded-pill px-3 py-1 small fw-bold shadow-sm d-inline-block">
-                                    {{ $offer->operator_name }}
-                                </div>
-                            </td>
-                            <td class="py-3">
-                                <div class="fw-bold text-dark">{{ $offer->title }}</div>
-                                <div class="text-muted extra-small">{{ Str::limit($offer->offer_details, 50) }}</div>
-                            </td>
-                            <td class="py-3 text-center text-muted">
-                                <del>৳{{ number_format($offer->regular_price, 2) }}</del>
-                            </td>
-                            <td class="py-3 text-center fw-extrabold text-primary">
-                                ৳{{ number_format($offer->offer_price, 2) }}
-                            </td>
-                            <td class="px-4 py-3 text-end">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button"
-                                        class="btn btn-light btn-sm rounded-circle shadow-sm text-primary"
-                                        title="Copy & Add Similar Offer"
-                                        onclick="copyOffer(
-                                            '{{ addslashes($offer->operator_name) }}',
-                                            '{{ addslashes($offer->title) }}',
-                                            '{{ addslashes($offer->offer_details) }}',
-                                            '{{ $offer->regular_price }}',
-                                            '{{ $offer->offer_price }}'
-                                        )">
-                                        <i class="fa-solid fa-copy"></i>
-                                    </button>
-                                    <form action="{{ route('admin.sim-offers.destroy', $offer->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-light btn-sm rounded-circle text-danger shadow-sm" onclick="return confirm('Delete this offer?')">
-                                            <i class="fa-solid fa-trash-can"></i>
+                            <tr>
+                                <td class="px-4">
+                                    <div class="d-flex align-items-center">
+                                        @php
+                                            $logo = match($offer->operator_name) {
+                                                'Grameenphone' => 'gp_logo.png',
+                                                'Robi' => 'robi_logo.png',
+                                                'Banglalink' => 'bl_logo.png',
+                                                'Airtel' => 'airtel_logo.png',
+                                                'Teletalk' => 'teletalk_logo.png',
+                                                default => 'default_sim.png'
+                                            };
+                                        @endphp
+                                        <img src="{{ asset('assets/img/operators/' . $logo) }}" class="me-3 rounded-circle border" width="40" height="40" alt="{{ $offer->operator_name }}">
+                                        <div class="fw-bold">{{ $offer->operator_name }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark mb-0">{{ $offer->title }}</div>
+                                    <div class="text-muted small">{{ $offer->offer_details }}</div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="fw-bold text-primary">৳{{ $offer->offer_price }}</div>
+                                    <div class="text-muted extra-small text-decoration-line-through">৳{{ $offer->regular_price }}</div>
+                                </td>
+                                <td class="text-end px-4">
+                                    <div class="btn-group shadow-sm rounded-pill bg-white border p-1">
+                                        <button class="btn btn-sm btn-light border-0 rounded-circle text-primary me-1" 
+                                                onclick="copyOffer('{{ addslashes($offer->operator_name) }}', '{{ addslashes($offer->title) }}', '{{ addslashes($offer->offer_details) }}', {{ $offer->regular_price }}, {{ $offer->offer_price }})"
+                                                title="Copy & Add New">
+                                            <i class="fa-solid fa-copy"></i>
                                         </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                                        <form action="{{ route('admin.sim-offers.destroy', $offer->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this offer?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-light border-0 rounded-circle text-danger">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
                         @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-sim-card fa-3x mb-3 d-block opacity-25"></i>
-                                No active SIM offers found.
-                            </td>
-                        </tr>
+                            <tr><td colspan="4" class="text-center py-5 text-muted">No SIM offers found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            @if($offers->hasPages())
-            <div class="px-4 py-3 bg-light border-top d-flex justify-content-center">
-                {{ $offers->links() }}
+        </div>
+        {{ $offers->appends(['requests_page' => $requests->currentPage()])->links() }}
+    </div>
+
+    {{-- ===== TAB 2: Requests ===== --}}
+    <div id="tab-requests" style="display:none;">
+        <div class="card-modern p-4 shadow-lg">
+            <h5 class="fw-bold mb-4">📥 SIM Offer Requests</h5>
+            <div class="table-responsive rounded-3 border shadow-sm mb-3">
+                <table class="table table-hover align-middle mb-0 bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-3 text-muted small text-uppercase fw-bold border-0">User</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0">Offer</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0">Phone</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0">Price</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-center">Status</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($requests as $req)
+                            <tr>
+                                <td class="px-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-primary-soft text-primary rounded-circle me-2 d-flex align-items-center justify-content-center fw-bold" style="width:32px; height:32px; font-size:12px;">
+                                            {{ substr($req->user->name ?? 'U', 0, 1) }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold small">{{ $req->user->name ?? 'Unknown' }}</div>
+                                            <div class="text-muted extra-small">{{ $req->user->number ?? '' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small fw-bold text-truncate" style="max-width:200px">{{ $req->offer->title ?? 'Deleted Offer' }}</div>
+                                    <div class="extra-small text-muted">{{ $req->offer->operator_name ?? '' }}</div>
+                                </td>
+                                <td class="small fw-bold">{{ $req->phone_number }}</td>
+                                <td class="small">৳{{ $req->price }}</td>
+                                <td class="text-center">
+                                    @php
+                                        $badgeClass = match($req->status) {
+                                            'pending' => 'bg-warning-soft text-warning',
+                                            'approved' => 'bg-success-soft text-success',
+                                            'rejected' => 'bg-danger-soft text-danger',
+                                            'confirmed' => 'bg-info-soft text-info',
+                                            default => 'bg-secondary-soft text-secondary'
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }} rounded-pill px-3">{{ ucfirst($req->status) }}</span>
+                                </td>
+                                <td class="text-end">
+                                    @if($req->status == 'pending')
+                                        <div class="btn-group">
+                                            <form action="{{ route('admin.sim-offers.update-request-status', $req->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="status" value="approved">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 me-1">Approve</button>
+                                            </form>
+                                            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" 
+                                                    onclick="showRejectModal({{ $req->id }})">Reject</button>
+                                        </div>
+                                    @elseif($req->status == 'rejected')
+                                        <span class="text-muted extra-small" title="{{ $req->reject_reason }}">Reason: {{ Str::limit($req->reject_reason, 15) }}</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="text-center py-5 text-muted small">No requests found.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            @endif
+            {{ $requests->appends(['offers_page' => $offers->currentPage()])->links() }}
         </div>
     </div>
 
-    {{-- ===== TAB 2: Paste & Parse ===== --}}
+    {{-- ===== TAB 3: Paste & Parse ===== --}}
     <div id="tab-paste" style="display:none;">
         <div class="card-modern p-4 shadow-lg">
             <h5 class="fw-bold mb-1">📋 Paste & Parse Offers</h5>
@@ -194,6 +259,48 @@
             </div>
         </div>
     </div>
+
+    {{-- ===== TAB 4: Settings ===== --}}
+    <div id="tab-settings" style="display:none;">
+        <div class="card-modern p-4 shadow-lg">
+            <h5 class="fw-bold mb-4">⚙️ SIM Offer Settings</h5>
+            
+            <form action="{{ route('admin.sim-offers.update-settings') }}" method="POST">
+                @csrf
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card bg-light border-0 rounded-4 p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="fw-bold mb-1">Service Status</h6>
+                                    <p class="text-muted small mb-0">Enable or disable SIM offers globally</p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input h4" type="checkbox" name="status" 
+                                           {{ ($settings && $settings->status) ? 'checked' : '' }} id="serviceStatus">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card bg-light border-0 rounded-4 p-4 h-100">
+                            <h6 class="fw-bold mb-3">Scrolling Notice</h6>
+                            <textarea name="notice_text" class="form-control rounded-3 border-0 shadow-sm p-3" 
+                                      rows="3" placeholder="Enter scrolling notice here...">{{ $settings->notice_text ?? '' }}</textarea>
+                            <p class="text-muted extra-small mt-2 mb-0">This text will scroll at the top of the SIM Offer screen in the app.</p>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
+                            <i class="fa-solid fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 {{-- Add / Copy Offer Modal --}}
@@ -250,6 +357,30 @@
     </div>
 </div>
 
+{{-- Reject Modal --}}
+<div class="modal fade" id="rejectRequestModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold mb-0">Reject Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="" method="POST" id="rejectForm">
+                @csrf
+                <input type="hidden" name="status" value="rejected">
+                <div class="modal-body p-4">
+                    <label class="form-label small fw-bold">Reject Reason</label>
+                    <textarea name="reject_reason" class="form-control rounded-3 shadow-sm" rows="3" required placeholder="e.g. Invalid number or technical issue"></textarea>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 shadow-sm">Confirm Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
     .bg-gray-50 { background-color: #f9fafb; }
     .extra-small { font-size: 0.75rem; }
@@ -257,6 +388,12 @@
     .nav-pills .nav-link { color: var(--primary); }
     .nav-pills .nav-link.active { background: var(--primary); color: white; }
     .font-monospace { font-family: 'Courier New', monospace; font-size: 0.85rem; }
+    .bg-primary-soft { background-color: rgba(var(--primary-rgb), 0.1); }
+    .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+    .bg-info-soft { background-color: rgba(13, 202, 240, 0.1); }
+    .bg-secondary-soft { background-color: rgba(108, 117, 125, 0.1); }
 </style>
 
 @endsection
@@ -265,10 +402,18 @@
 <script>
     // ─── Tab switching ───────────────────────────────────────────
     function switchTab(tab) {
-        document.getElementById('tab-list').style.display  = (tab === 'list')  ? '' : 'none';
-        document.getElementById('tab-paste').style.display = (tab === 'paste') ? '' : 'none';
+        document.getElementById('tab-list').style.display     = (tab === 'list')     ? '' : 'none';
+        document.getElementById('tab-requests').style.display = (tab === 'requests') ? '' : 'none';
+        document.getElementById('tab-paste').style.display    = (tab === 'paste')    ? '' : 'none';
+        document.getElementById('tab-settings').style.display = (tab === 'settings') ? '' : 'none';
+        
         document.querySelectorAll('#simTabs .nav-link').forEach((btn, i) => {
-            btn.classList.toggle('active', (i === 0 && tab === 'list') || (i === 1 && tab === 'paste'));
+            btn.classList.toggle('active', 
+                (i === 0 && tab === 'list') || 
+                (i === 1 && tab === 'requests') || 
+                (i === 2 && tab === 'paste') || 
+                (i === 3 && tab === 'settings')
+            );
         });
     }
 
@@ -295,6 +440,12 @@
         new bootstrap.Modal(document.getElementById('addOfferModal')).show();
     }
 
+    function showRejectModal(requestId) {
+        const form = document.getElementById('rejectForm');
+        form.action = `/admin/services/sim-offers/requests/${requestId}/update`;
+        new bootstrap.Modal(document.getElementById('rejectRequestModal')).show();
+    }
+
     // ─── Paste & Parse Logic ─────────────────────────────────────
     function makeBanglaTitle(gb, minutes, days) {
         let title = '✅ ';
@@ -305,10 +456,7 @@
     }
 
     function parseOfferLine(line) {
-        // Normalize arrows
         line = line.replace(/[→►\-\>]/g, '👉');
-
-        // Pattern: 1987👉1976TK 180GB 1200M 180D
         const match = line.match(/^\s*(\d+)\s*👉\s*(\d+)[Tt][Kk]\s+(.+)$/u);
         if (!match) return null;
 
@@ -390,7 +538,6 @@
         document.getElementById('parse_empty').style.display   = 'none';
     }
 
-    // Submit validation
     document.getElementById('bulkSaveForm').addEventListener('submit', function(e) {
         const op = document.getElementById('bulk_operator_hidden').value;
         if (!op) {

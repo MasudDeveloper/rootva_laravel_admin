@@ -551,9 +551,21 @@ class LegacyApiController extends Controller
      */
     public function getPaymentNumbers()
     {
+        $numbers = PaymentNumber::first();
+        if (!$numbers) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No payment numbers found'
+            ]);
+        }
+        
         return response()->json([
             'success' => true,
-            'payment_numbers' => PaymentNumber::all()
+            'bkash' => $numbers->bkash,
+            'nagad' => $numbers->nagad,
+            'rocket' => $numbers->rocket,
+            'upay' => $numbers->upay,
+            'verify_amount' => $numbers->verify_amount
         ]);
     }
 
@@ -689,17 +701,71 @@ class LegacyApiController extends Controller
     }
 
     /**
+     * Legacy Course List (get_courses.php)
+     */
+    public function getAllVideos(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $videos = \App\Models\Course::all();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'ভিডিও সফলভাবে লোড হয়েছে',
+            'videos' => $videos
+        ]);
+    }
+
+    /**
      * Legacy Course Progress (get_course_progress.php)
      */
     public function getCourseProgress(Request $request)
     {
-        $userId = $request->input('user_id');
-        // Simple mapping, might need more detail from course_progress_videos table
-        $progress = \Illuminate\Support\Facades\DB::table('course_progress_videos')
+        $userId = $request->query('user_id');
+        
+        $totalVideos = \App\Models\Course::count();
+        $watchedVideos = \Illuminate\Support\Facades\DB::table('course_progress_videos')
             ->where('user_id', $userId)
-            ->get();
+            ->where('is_complete', 1)
+            ->count();
+            
+        $percent = $totalVideos > 0 ? (int)(($watchedVideos / $totalVideos) * 100) : 0;
 
-        return response()->json(['success' => true, 'data' => ['watched_videos' => $progress->count()]]);
+        return response()->json([
+            'success' => true,
+            'message' => 'প্রগ্রেস সফলভাবে লোড হয়েছে',
+            'progress' => [
+                'total_videos' => $totalVideos,
+                'watched_videos' => $watchedVideos,
+                'progress_percent' => $percent,
+                'completed_videos' => $watchedVideos
+            ]
+        ]);
+    }
+
+    /**
+     * Update Course Progress (update_course_progress.php)
+     */
+    public function updateCourseProgress(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $videoId = $request->input('video_id');
+        $watchedVideos = $request->input('watched_videos');
+        $watchedSeconds = $request->input('watched_seconds');
+
+        if ($videoId) {
+            // Detailed progress update
+            \Illuminate\Support\Facades\DB::table('course_progress_videos')->updateOrInsert(
+                ['user_id' => $userId, 'video_id' => $videoId],
+                [
+                    'watched_seconds' => $watchedSeconds,
+                    'is_complete' => $request->input('is_complete', 1),
+                    'updated_at' => now()
+                ]
+            );
+        }
+
+        // Return updated progress
+        return $this->getCourseProgress($request);
     }
 
     /**
@@ -1002,17 +1068,25 @@ class LegacyApiController extends Controller
         $user = SignUp::find($userId);
         if ($user) {
             $user->increment('wallet_balance', 50); // Example bonus
-            return response()->json(['success' => true, 'message' => 'Bonus Claimed']);
+            return response()->json([
+                'success' => true, 
+                'message' => 'বোনাস সফলভাবে আপনার ওয়ালেটে যোগ করা হয়েছে'
+            ]);
         }
-        return response()->json(['success' => false]);
+        return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
     }
 
     public function updateCourseCompletion(Request $request)
     {
         $userId = $request->input('user_id');
         $courseId = $request->input('course_id');
-        // Logic to mark course as completed
-        return response()->json(['success' => true]);
+        
+        // Logic to mark course as completed can be added here if needed
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'কোর্স সম্পন্ন হয়েছে'
+        ]);
     }
 
     /**
@@ -1020,19 +1094,33 @@ class LegacyApiController extends Controller
      */
     public function getJobStatus()
     {
-        return response()->json(\App\Models\JobStatus::first());
+        $status = \App\Models\JobStatus::first();
+        if (!$status) {
+            return response()->json((object)[]);
+        }
+        
+        $data = $status->toArray();
+        // Force all status fields to integers for Android compatibility
+        foreach ($data as $key => $value) {
+            if (in_array($key, ['id', 'updated_at', 'created_at'])) continue;
+            $data[$key] = (int)$value;
+        }
+        
+        return response()->json($data);
     }
 
     public function getJobText(Request $request)
     {
         $type = $request->query('job_type');
-        return response()->json(\App\Models\JobText::where('type', $type)->first());
+        $text = \App\Models\JobText::where('job_type', $type)->first();
+        return response()->json($text ?: (object)[]);
     }
 
     public function getJobTutorial(Request $request)
     {
         $type = $request->query('job_type');
-        return response()->json(\App\Models\JobTutorial::where('type', $type)->first());
+        $tutorial = \App\Models\JobTutorial::where('job_type', $type)->first();
+        return response()->json($tutorial ?: (object)[]);
     }
 
     /**
@@ -1079,16 +1167,103 @@ class LegacyApiController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function confirmSimOffer(Request $request)
-    {
-        $requestId = $request->input('request_id');
-        // Logic to confirm sim offer
-        return response()->json(['success' => true]);
-    }
-
     public function getSimOfferManage()
     {
-        return response()->json(['status' => 'active']);
+        $settings = \App\Models\SimOfferManage::first();
+        
+        return response()->json([
+            'success'       => true,
+            'status_on_off' => $settings ? (int)$settings->status : 1,
+            'notice_text'   => $settings ? $settings->notice_text : 'No notice available'
+        ]);
+    }
+
+    public function getUserOfferHistory(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $history = \App\Models\SimOfferRequest::where('user_id', $userId)
+            ->with('offer')
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(function($req) {
+                return [
+                    'id'            => $req->id,
+                    'request_id'    => $req->id,
+                    'title'         => $req->offer ? $req->offer->title : 'Deleted Offer',
+                    'operator_name' => $req->offer ? $req->offer->operator_name : 'Unknown',
+                    'offer_price'   => (double) $req->price,
+                    'phone_number'  => $req->phone_number,
+                    'status'        => $req->status,
+                    'reject_reason' => $req->reject_reason,
+                    'created_at'    => $req->created_at instanceof \Carbon\Carbon ? $req->created_at->toDateTimeString() : $req->created_at,
+                ];
+            });
+        
+        return response()->json($history);
+    }
+
+    public function submitSimOfferRequest(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $offerId = $request->input('offer_id');
+        $phone = $request->input('phone_number');
+        $price = (double)$request->input('price');
+
+        $user = SignUp::find($userId);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
+        }
+
+        if ($user->voucher_balance < $price) {
+            return response()->json(['success' => false, 'message' => 'পর্যাপ্ত ব্যালেন্স নেই']);
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // ব্যালেন্স কমানো
+            $user->update([
+                'voucher_balance' => $user->voucher_balance - $price
+            ]);
+
+            // রিকোয়েস্ট সেভ করা
+            $req = \App\Models\SimOfferRequest::create([
+                'user_id' => $userId,
+                'offer_id' => $offerId,
+                'phone_number' => $phone,
+                'price' => $price,
+                'status' => 'pending'
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+            return response()->json(['success' => true, 'message' => 'রিকোয়েস্টটি সফলভাবে পাঠানো হয়েছে']);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'রিকোয়েস্ট পাঠাতে ব্যর্থ হয়েছে']);
+        }
+    }
+
+    /**
+     * Confirm SIM Offer (confirm_sim_offer.php)
+     */
+    public function confirmSimOffer(\Illuminate\Http\Request $request)
+    {
+        $id = $request->input('request_id');
+        $simRequest = \App\Models\SimOfferRequest::find($id);
+        
+        if ($simRequest) {
+            $simRequest->status = 'confirmed';
+            $simRequest->save();
+
+            return \Illuminate\Support\Facades\Response::json([
+                'success' => true
+            ]);
+        }
+        
+        return \Illuminate\Support\Facades\Response::json([
+            'success' => false, 
+            'message' => 'Request not found'
+        ], 404);
     }
 
 
@@ -1215,5 +1390,201 @@ class LegacyApiController extends Controller
         $userId = $request->input('user_id');
         $user = SignUp::find($userId);
         return response()->json(['success' => true, 'balance' => $user->wallet_balance ?? 0]);
+    }
+
+    public function convertToVoucher(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $amount = (double) $request->input('amount');
+
+        $user = SignUp::find($userId);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
+        }
+
+        $walletBalance = (double) $user->wallet_balance;
+        $voucherBalance = (double) $user->voucher_balance;
+
+        if ($amount <= 0 || $walletBalance < $amount) {
+            return response()->json(['success' => false, 'message' => 'পর্যাপ্ত ব্যালেন্স নেই']);
+        }
+
+        // 2% charge
+        $charge = $amount * 0.02;
+        $finalAmount = $amount - $charge;
+
+        $newWallet = $walletBalance - $amount;
+        $newVoucher = $voucherBalance + $finalAmount;
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $user->update([
+                'wallet_balance' => $newWallet,
+                'voucher_balance' => $newVoucher
+            ]);
+
+            $currentTime = date("d-m-Y h:i A");
+            $now = date("Y-m-d H:i:s");
+
+            // 1. Transaction for Wallet deduction
+            \App\Models\Transaction::create([
+                'user_id' => $user->id,
+                'refer_id' => $user->referCode,
+                'amount' => $amount,
+                'type' => 'payment',
+                'payment_gateway' => 'Wallet',
+                'description' => 'Voucher Balance Convert',
+                'update_at' => $currentTime,
+                'created_at' => $currentTime,
+                'date' => $now
+            ]);
+
+            // 2. Transaction for Voucher addition
+            \App\Models\Transaction::create([
+                'user_id' => $user->id,
+                'refer_id' => $user->referCode,
+                'amount' => $finalAmount,
+                'type' => 'voucher_convert',
+                'payment_gateway' => 'Voucher',
+                'description' => 'Voucher Balance Added (After 2% charge)',
+                'update_at' => $currentTime,
+                'created_at' => $currentTime,
+                'date' => $now
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'converted_amount' => $finalAmount,
+                'charge' => $charge,
+                'wallet_balance' => $newWallet,
+                'voucher_balance' => $newVoucher
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'ব্যালেন্স আপডেট ব্যর্থ হয়েছে']);
+        }
+    }
+
+    public function getVoucherBalance(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $user = SignUp::find($userId);
+
+        if ($user) {
+            return response()->json([
+                'wallet_balance' => $user->wallet_balance,
+                'voucher_balance' => $user->voucher_balance
+            ]);
+        } else {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+    }
+
+    /**
+     * Review Job Endpoints
+     */
+
+    public function getAvailableReviewJobs(Request $request)
+    {
+        $userId = $request->input('user_id');
+        
+        // Fetch jobs that are not locked by others, or locked by this user, and have remaining target
+        $jobs = \App\Models\ReviewJob::where('remaining_target', '>', 0)
+            ->where(function($query) use ($userId) {
+                $query->whereNull('locked_by')
+                      ->orWhere('locked_by', 0)
+                      ->orWhere('locked_by', $userId);
+            })
+            ->get();
+            
+        return response()->json($jobs);
+    }
+
+    public function getLockReviewJobs(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $jobs = \App\Models\ReviewJob::where('locked_by', $userId)->get();
+        return response()->json($jobs);
+    }
+
+    public function getReviewJobSocial()
+    {
+        $socials = \Illuminate\Support\Facades\DB::table('review_job_socials')->first();
+        return response()->json([
+            'success' => true,
+            'review_job_socials' => $socials
+        ]);
+    }
+
+    public function lockReviewJob(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $jobId = $request->input('job_id');
+        
+        $job = \App\Models\ReviewJob::find($jobId);
+        if ($job) {
+            if ($job->locked_by && $job->locked_by != $userId) {
+                return response()->json(['success' => false, 'message' => 'Job already locked by another user']);
+            }
+            
+            $job->update([
+                'locked_by' => $userId,
+                'scheduled_at' => now()
+            ]);
+            return response()->json(['success' => true, 'message' => 'Job locked successfully']);
+        }
+        return response()->json(['success' => false, 'message' => 'Job not found']);
+    }
+
+    public function unlockReviewJob(Request $request)
+    {
+        $jobId = $request->input('job_id');
+        $job = \App\Models\ReviewJob::find($jobId);
+        if ($job) {
+            $job->update([
+                'locked_by' => null,
+                'scheduled_at' => null
+            ]);
+            return response()->json(['success' => true, 'message' => 'Job unlocked']);
+        }
+        return response()->json(['success' => false, 'message' => 'Job not found']);
+    }
+
+    public function submitReviewJobProof(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $jobId = $request->input('job_id');
+        $referId = $request->input('refer_id');
+        $message = $request->input('message');
+        $number = $request->input('number');
+        
+        $proofImageUrl = null;
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('review_proofs', 'public');
+            $proofImageUrl = asset('storage/' . $path);
+        }
+
+        \App\Models\ReviewSubmission::create([
+            'job_id' => $jobId,
+            'worker_user_id' => $userId,
+            'refer_id' => $referId,
+            'number' => $number,
+            'proof_image_url' => $proofImageUrl,
+            'proof_message' => $message,
+            'status' => 'Pending',
+            'created_at' => now()
+        ]);
+
+        // Unlock the job and decrement remaining target
+        $job = \App\Models\ReviewJob::find($jobId);
+        if ($job) {
+            $job->decrement('remaining_target');
+            $job->update(['locked_by' => null, 'scheduled_at' => null]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Proof submitted successfully']);
     }
 }

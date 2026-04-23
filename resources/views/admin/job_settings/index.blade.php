@@ -48,7 +48,20 @@
                                 'ads' => 'Ads Job',
                                 'dollar' => 'Dollar Income',
                                 'recharge' => 'Mobile Recharge',
-                                'sim_offer' => 'Sim Offer'
+                                'sim_offer' => 'Sim Offer',
+                                'microjob' => 'Micro Job',
+                                'job_post' => 'Job Post',
+                                'spin_bonus' => 'Spin Bonus',
+                                'math_game' => 'Math Game',
+                                'leadership' => 'Leadership',
+                                'daily_bonus' => 'Daily Target Bonus',
+                                'weekly_salary' => 'Weekly Salary',
+                                'monthly_salary' => 'Monthly Salary',
+                                'leaderboard' => 'Leaderboard',
+                                'reselling_shop' => 'Reselling Shop',
+                                'course' => 'Course',
+                                'freelancing_course' => 'Freelancing Course',
+                                'online_service' => 'Online Service'
                             ];
                         @endphp
 

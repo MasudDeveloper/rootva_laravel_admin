@@ -24,15 +24,28 @@ class JobSettingsController extends Controller
         $status = JobStatus::first();
         
         $data = [
-            'facebook' => $request->has('facebook'),
-            'instagram' => $request->has('instagram'),
-            'email' => $request->has('email'),
-            'tiktok' => $request->has('tiktok'),
-            'review' => $request->has('review'),
-            'ads' => $request->has('ads'),
-            'dollar' => $request->has('dollar'),
-            'recharge' => $request->has('recharge'),
-            'sim_offer' => $request->has('sim_offer'),
+            'facebook' => $request->has('facebook') ? 1 : 0,
+            'instagram' => $request->has('instagram') ? 1 : 0,
+            'email' => $request->has('email') ? 1 : 0,
+            'tiktok' => $request->has('tiktok') ? 1 : 0,
+            'review' => $request->has('review') ? 1 : 0,
+            'ads' => $request->has('ads') ? 1 : 0,
+            'dollar' => $request->has('dollar') ? 1 : 0,
+            'recharge' => $request->has('recharge') ? 1 : 0,
+            'sim_offer' => $request->has('sim_offer') ? 1 : 0,
+            'microjob' => $request->has('microjob') ? 1 : 0,
+            'job_post' => $request->has('job_post') ? 1 : 0,
+            'spin_bonus' => $request->has('spin_bonus') ? 1 : 0,
+            'math_game' => $request->has('math_game') ? 1 : 0,
+            'leadership' => $request->has('leadership') ? 1 : 0,
+            'daily_bonus' => $request->has('daily_bonus') ? 1 : 0,
+            'weekly_salary' => $request->has('weekly_salary') ? 1 : 0,
+            'monthly_salary' => $request->has('monthly_salary') ? 1 : 0,
+            'leaderboard' => $request->has('leaderboard') ? 1 : 0,
+            'reselling_shop' => $request->has('reselling_shop') ? 1 : 0,
+            'course' => $request->has('course') ? 1 : 0,
+            'freelancing_course' => $request->has('freelancing_course') ? 1 : 0,
+            'online_service' => $request->has('online_service') ? 1 : 0,
         ];
 
         $status->update($data);

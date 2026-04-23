@@ -5,13 +5,30 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimOffer;
+use App\Models\SimOfferManage;
 
 class SimOfferController extends Controller
 {
     public function index()
     {
-        $offers = SimOffer::orderBy('id', 'desc')->paginate(25);
-        return view('admin.sim_offers.index', compact('offers'));
+        $offers = SimOffer::orderBy('id', 'desc')->paginate(25, ['*'], 'offers_page');
+        $requests = \App\Models\SimOfferRequest::with(['offer', 'user'])->orderBy('id', 'desc')->paginate(25, ['*'], 'requests_page');
+        $settings = SimOfferManage::first();
+        return view('admin.sim_offers.index', compact('offers', 'requests', 'settings'));
+    }
+
+    public function updateRequestStatus(Request $request, $id)
+    {
+        $simRequest = \App\Models\SimOfferRequest::findOrFail($id);
+        $status = $request->input('status');
+        
+        $simRequest->status = $status;
+        if ($status == 'rejected') {
+            $simRequest->reject_reason = $request->input('reject_reason');
+        }
+        $simRequest->save();
+
+        return back()->with('success', 'Request updated successfully!');
     }
 
     /**
@@ -81,5 +98,19 @@ class SimOfferController extends Controller
     {
         SimOffer::findOrFail($id)->delete();
         return back()->with('success', 'SIM Offer deleted successfully!');
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $settings = SimOfferManage::first();
+        if (!$settings) {
+            $settings = new SimOfferManage();
+        }
+
+        $settings->status = $request->has('status') ? 1 : 0;
+        $settings->notice_text = $request->notice_text;
+        $settings->save();
+
+        return back()->with('success', 'SIM Offer settings updated successfully!');
     }
 }
