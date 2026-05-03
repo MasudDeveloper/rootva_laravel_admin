@@ -41,8 +41,7 @@ Route::get('get_referral_tree2.php', [LegacyApiController::class, 'searchUserInM
 Route::post('get_upline_details.php', [LegacyApiController::class, 'getUplineDetails']);
 Route::post('update_profile.php', [LegacyApiController::class, 'updateProfile']);
 Route::get('get_payment_numbers.php', [LegacyApiController::class, 'getPaymentNumbers']);
-Route::post('get_microjobs2.php', [LegacyApiController::class, 'getAvailableJobs']);
-Route::get('get_microjobs.php', [LegacyApiController::class, 'getAllMicrojobs']);
+Route::post('get_microjobs.php', [LegacyApiController::class, 'getAllMicrojobs']);
 Route::post('submit_microjob.php', [LegacyApiController::class, 'submitMicrojob']);
 Route::post('add_money_request.php', [LegacyApiController::class, 'addMoneyRequest']);
 Route::get('get_money_requests.php', [LegacyApiController::class, 'getMoneyRequests']);
@@ -53,16 +52,20 @@ Route::post('recharge_request.php', [LegacyApiController::class, 'doRecharge']);
 Route::get('get_recharge_history.php', [LegacyApiController::class, 'getRechargeHistory']);
 Route::get('get_courses.php', [LegacyApiController::class, 'getAllVideos']);
 Route::get('get_course_progress.php', [LegacyApiController::class, 'getCourseProgress']);
-Route::post('salary_request.php', [LegacyApiController::class, 'salaryRequest']);
-Route::get('get_salary_request_status.php', [LegacyApiController::class, 'getSalaryStatus']);
+Route::post('salary_request.php', [LegacyApiController::class, 'applySalaryRequest']);
+Route::get('get_salary_request_status.php', [LegacyApiController::class, 'getSalaryRequestStatus']);
 Route::post('getRefer.php', [LegacyApiController::class, 'checkReferCode']);
 Route::post('save_fcm_token.php', [LegacyApiController::class, 'saveFcmToken']);
+Route::post('verify_password.php', [LegacyApiController::class, 'verifyPassword']);
 Route::post('get_spin_data.php', [LegacyApiController::class, 'getSpinData']);
+Route::get('get_notifications.php', [LegacyApiController::class, 'getNotifications']);
+Route::post('mark_notifications_read.php', [LegacyApiController::class, 'markNotificationsAsRead']);
 Route::post('spin_wheel.php', [LegacyApiController::class, 'submitSpinResult']);
 Route::get('check-password-update.php', [LegacyApiController::class, 'checkPasswordUpdate']);
 Route::post('upload_profile_pic.php', [LegacyApiController::class, 'uploadProfilePic']);
 Route::post('submit_order_request.php', [LegacyApiController::class, 'submitOrder']);
-Route::post('solve_math.php', [LegacyApiController::class, 'solveMath']);
+Route::get('get_user_orders.php', [LegacyApiController::class, 'getUserOrders']);
+Route::post('solve_math.php', [LegacyApiController::class, 'submitMathAnswer']);
 Route::get('get_profile.php', [LegacyApiController::class, 'getProfile']);
 Route::post('get_review_job.php', [LegacyApiController::class, 'getAvailableReviewJobs']);
 Route::post('get_lock_review_job.php', [LegacyApiController::class, 'getLockReviewJobs']);
@@ -74,19 +77,18 @@ Route::post('mark_verification_popup_seen.php', [LegacyApiController::class, 'ma
 
 // Missing Endpoints added for functional parity
 Route::get('get_daily_winners.php', [LeaderboardController::class, 'getDailyWinners']);
-Route::get('get_daily_winners_by_date.php', [LeaderboardController::class, 'getDailyWinners']);
-Route::get('get_daily_live_ranking.php', [LeaderboardController::class, 'getTodayLiveRanking']);
-Route::get('get_weekly_winner.php', [LeaderboardController::class, 'getWeeklyWinner']);
-Route::get('get_weekly_ranking.php', [LeaderboardController::class, 'getWeeklyRanking']);
-Route::get('get_weekly_winners_by_date.php', [LeaderboardController::class, 'getWeeklyWinnersByDate']);
+Route::get('get_weekly_winner.php', [LegacyApiController::class, 'getWeeklyWinner']);
+Route::get('get_weekly_ranking.php', [LegacyApiController::class, 'getWeeklyRanking']);
+Route::get('get_weekly_winners_by_date.php', [LegacyApiController::class, 'getWeeklyWinnersByDate']);
 
-Route::get('get_popup.php', [LegacyApiController::class, 'getPopup']);
+Route::get('get_popup.php', [LegacyApiController::class, 'getPopupData']);
 Route::get('get_tutorials.php', [LegacyApiController::class, 'getTutorials']);
 Route::post('get_math_income.php', [LegacyApiController::class, 'getMathIncome']);
 Route::get('get_salary_progress.php', [LegacyApiController::class, 'getSalaryProgress']);
 Route::get('get_spin_progress.php', [LegacyApiController::class, 'getSpinProgress']);
 
-Route::get('get_services.php', [LegacyApiController::class, 'getServices']);
+Route::get('get_services.php', [LegacyApiController::class, 'getOnlineServices']);
+Route::get('get_online_services.php', [LegacyApiController::class, 'getOnlineServices']);
 Route::get('get_service.php', [LegacyApiController::class, 'getServiceById']);
 Route::post('submit_online_service_order.php', [LegacyApiController::class, 'submitOnlineServiceOrder']);
 Route::get('get_user_online_service_orders.php', [LegacyApiController::class, 'getUserOnlineServiceOrders']);
@@ -109,8 +111,23 @@ Route::post('confirm_sim_offer.php', [LegacyApiController::class, 'confirmSimOff
 Route::get('get_sim_offer_history.php', [LegacyApiController::class, 'getUserOfferHistory']);
 Route::post('submit_sim_offer_request.php', [LegacyApiController::class, 'submitSimOfferRequest']);
 Route::post('convert_to_voucher.php', [LegacyApiController::class, 'convertToVoucher']);
-Route::post('get_voucher_balance.php', [LegacyApiController::class, 'getVoucherBalance']);
+Route::get('get_voucher_balance.php', [LegacyApiController::class, 'getVoucherBalance']);
 Route::get('sim_offer_manage_api.php', [LegacyApiController::class, 'getSimOfferManage']);
+
+Route::get('check_leadership_level.php', [LegacyApiController::class, 'checkLeadershipLevel']);
+Route::get('check_leadership_level2.php', [LegacyApiController::class, 'checkLeadershipLevel']);
+Route::get('check_spin_target_bonus.php', [LegacyApiController::class, 'checkSpinTargetBonus']);
+Route::post('claim_spin_bonus.php', [LegacyApiController::class, 'claimSpinBonus']);
+Route::post('payment_sms_hook.php', [LegacyApiController::class, 'handlePaymentSmsHook']);
+
+Route::post('create_microjob.php', [LegacyApiController::class, 'addMicrojob']);
+Route::get('get_posted_jobs.php', [LegacyApiController::class, 'getPostedJobs']);
+Route::get('get_job_submissions.php', [LegacyApiController::class, 'getJobSubmissions']);
+Route::post('update_submission_status.php', [LegacyApiController::class, 'updateSubmissionStatus']);
+Route::post('update_microjob_status.php', [LegacyApiController::class, 'updateMicrojobStatus']);
+Route::get('get_users_microjobs_posts.php', [LegacyApiController::class, 'getUserMicrojobsPosts']);
+Route::get('get_daily_winners_by_date.php', [LegacyApiController::class, 'getWinnersByDate']);
+Route::get('get_daily_live_ranking.php', [LegacyApiController::class, 'getTodayLiveRanking']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();

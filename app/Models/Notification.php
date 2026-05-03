@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class RechargeTransaction extends Model
+class Notification extends Model
 {
-    protected $table = 'recharge_transactions';
+    protected $table = 'notifications';
     public $timestamps = false;
     protected $guarded = [];
 }

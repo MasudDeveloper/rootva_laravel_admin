@@ -1,0 +1,1012 @@
+﻿diff --git a/app/Http/Controllers/Api/LegacyApiController.php b/app/Http/Controllers/Api/LegacyApiController.php
+index 8c1e699..91ba64c 100644
+--- a/app/Http/Controllers/Api/LegacyApiController.php
++++ b/app/Http/Controllers/Api/LegacyApiController.php
+@@ -5,19 +5,40 @@
+ use App\Http\Controllers\Controller;
+ use Illuminate\Http\Request;
+ use App\Models\SignUp;
+-use App\Models\Banner;
+ use App\Models\SocialLink;
++use App\Models\PaymentNumber;
+ use App\Models\AppUpdate;
++use App\Models\Banner;
++use App\Models\Review;
++use App\Models\Transaction;
++use App\Models\Microjob;
++use App\Models\MicrojobSubmission;
++use App\Models\MoneyRequest;
++use App\Models\WithdrawRequest;
++use App\Models\VerificationRequest;
++use App\Models\CourseVideo;
++use App\Models\CourseProgress;
++use App\Models\SalaryRequest;
++use App\Models\SpinHistory;
++use App\Models\PopupBanner;
++use App\Models\OnlineService;
++use App\Models\OnlineServiceOrder;
++use App\Models\Order;
++use App\Models\IncomingPaymentSms;
++use App\Models\BonusTracker;
++use App\Models\LeadershipClaim;
++use App\Models\LeadershipRewardRequest;
++use App\Models\RechargeTransaction;
+ use App\Models\SimOffer;
+ use App\Models\ProductCategory;
+-use App\Models\PaymentNumber;
+-use App\Models\Microjob;
+-use App\Models\Transaction;
+-use App\Models\ReferralCommission;
+-use App\Models\Review;
++use App\Models\Product;
++use App\Models\WheelSpinInfo;
+ use Illuminate\Support\Facades\Hash;
+ use Illuminate\Support\Facades\DB;
+ use Illuminate\Support\Facades\Log;
++use Illuminate\Support\Facades\Http;
++use Illuminate\Support\Facades\File;
++use Illuminate\Support\Str;
+ use Carbon\Carbon;
+ 
+ class LegacyApiController extends Controller
+@@ -33,23 +54,22 @@ public function login(Request $request)
+         $user = SignUp::where('number', $number)->first();
+ 
+         if ($user) {
+-            if (Hash::check($password, $user->password) || $password === $user->password) {
++            if (password_verify($password, $user->password)) {
+                 $token = bin2hex(random_bytes(32));
+-                $user->api_token = $token;
+-                $user->save();
+-
++                $user->update(['api_token' => $token]);
++                
+                 return response()->json([
+-                    'status' => 'success',
+-                    'success' => true,
+                     'message' => 'αª▓αªùαªçαª¿ αª╕αª½αª▓',
+                     'userId' => $user->id,
+                     'password_updated_at' => $user->password_updated_at ?? '',
+-                    'api_token' => $token,
++                    'api_token' => $token
+                 ]);
++            } else {
++                return response()->json(['message' => 'αª¡αºüαª▓ αª¬αª╛αª╕αªôαª»αª╝αª╛αª░αºìαªí']);
+             }
+-            return response()->json(['message' => 'αª¡αºüαª▓ αª¬αª╛αª╕αªôαºƒαª╛αª░αºìαªí']);
++        } else {
++            return response()->json(['message' => 'αª¿αª«αºìαª¼αª░αªƒαª┐ αª¬αª╛αªôαª»αª╝αª╛ αª»αª╛αª»αª╝αª¿αª┐']);
+         }
+-        return response()->json(['message' => 'αª¿αª«αºìαª¼αª░αªƒαª┐ αª¬αª╛αªôαºƒαª╛ αª»αª╛αºƒαª¿αª┐']);
+     }
+ 
+     /**
+@@ -59,16 +79,15 @@ public function getUserData(Request $request)
+     {
+         $number = $request->input('number');
+         $user = SignUp::where('number', $number)->first();
+-
+         if ($user) {
+             return response()->json([
+                 'status' => 'success',
+-                'message' => 'αªíαºçαªƒαª╛ αª¬αª╛αªôαºƒαª╛ αªùαºçαª¢αºç',
++                'message' => 'αªçαªëαª£αª╛αª░ αªñαªÑαºìαª» αª╕αª½αª▓αª¡αª╛αª¼αºç αª¬αª╛αªôαª»αª╝αª╛ αªùαºçαª¢αºç',
+                 'users' => $user,
+                 'show_verification_popup' => (bool)($user->is_verified == 1 && $user->verification_popup_shown == 0)
+             ]);
+         }
+-        return response()->json(['status' => 'error', 'message' => 'αªçαªëαª£αª╛αª░ αªûαºüαªüαª£αºç αª¬αª╛αªôαºƒαª╛ αª»αª╛αºƒαª¿αª┐']);
++        return response()->json(['status' => 'error', 'message' => 'αªçαªëαª£αª╛αª░ αª¬αª╛αªôαª»αª╝αª╛ αª»αª╛αª»αª╝αª¿αª┐']);
+     }
+ 
+     /**
+@@ -591,25 +610,46 @@ public function getAvailableJobs(Request $request)
+      */
+     public function addMoneyRequest(Request $request)
+     {
+-        $userId = $request->input('user_id');
+-        $amount = $request->input('amount');
++        $userId = trim($request->input('user_id', ''));
++        $amount = trim($request->input('amount', ''));
++        $paymentGateway = trim($request->input('payment_gateway', ''));
++
++        if (empty($userId) || empty($amount) || empty($paymentGateway)) {
++            return response()->json([
++                'status' => 'error',
++                'message' => 'αª╕αª¼αªùαºüαª▓αºï αª½αª┐αª▓αºìαªí αª¬αºéαª░αªú αªòαª░αºüαª¿'
++            ]);
++        }
++
++        if (!is_numeric($amount)) {
++            return response()->json([
++                'status' => 'error',
++                'message' => 'αªàαª¼αºêαªº αªàαºìαª»αª╛αª«αª╛αªëαª¿αºìαªƒ'
++            ]);
++        }
+         
+-        \App\Models\MoneyRequest::create([
+-            'user_id' => $userId,
+-            'title' => $request->input('title', 'Add Money'),
+-            'account_number' => $request->input('account_number'),
+-            'amount' => $amount,
+-            'transaction_id' => $request->input('transaction_id'),
+-            'payment_gateway' => $request->input('payment_gateway'),
+-            'status' => 'Pending',
+-            'created_at' => $request->input('current_time', now()->toDateTimeString())
+-        ]);
++        try {
++            \App\Models\MoneyRequest::create([
++                'user_id' => $userId,
++                'title' => trim($request->input('title', '')),
++                'account_number' => trim($request->input('account_number', '')),
++                'amount' => $amount,
++                'transaction_id' => trim($request->input('transaction_id', '')),
++                'payment_gateway' => $paymentGateway,
++                'status' => 'Pending',
++                'created_at' => $request->input('current_time', date("Y-m-d H:i:s"))
++            ]);
+ 
+-        return response()->json([
+-            'status' => 'success',
+-            'success' => true, 
+-            'message' => 'Request Submitted Successfully'
+-        ]);
++            return response()->json([
++                'status' => 'success',
++                'message' => 'αª░αª┐αªòαºïαª»αª╝αºçαª╕αºìαªƒ αª╕αª½αª▓αª¡αª╛αª¼αºç αª╕αª╛αª¼αª«αª┐αªƒ αª╣αª»αª╝αºçαª¢αºç'
++            ]);
++        } catch (\Exception $e) {
++            return response()->json([
++                'status' => 'error',
++                'message' => 'αª░αª┐αªòαºïαª»αª╝αºçαª╕αºìαªƒ αª╕αª╛αª¼αª«αª┐αªƒ αªòαª░αªñαºç αª¼αºìαª»αª░αºìαªÑ'
++            ]);
++        }
+     }
+ 
+     /**
+@@ -646,21 +686,76 @@ public function withdrawRequest(Request $request)
+      */
+     public function submitVerificationRequest(Request $request)
+     {
+-        \App\Models\VerificationRequest::create([
+-            'user_id' => $request->input('user_id'),
+-            'account_number' => $request->input('account_number'),
+-            'transaction_id' => $request->input('transaction_id'),
+-            'amount' => $request->input('amount'),
+-            'payment_gateway' => $request->input('payment_gateway'),
+-            'status' => 'Pending',
+-            'created_at' => $request->input('current_time', now()->toDateTimeString())
+-        ]);
++        $user_id = $request->input('user_id');
++        $refer_id = $request->input('refer_id');
++        $account_number = $request->input('account_number');
++        $transaction_id = $request->input('transaction_id');
++        $amount = $request->input('amount');
++        $payment_gateway = $request->input('payment_gateway');
++        $current_time = $request->input('current_time', now()->toDateTimeString());
+ 
+-        return response()->json([
+-            'status' => 'success',
+-            'success' => true, 
+-            'message' => 'Verification Request Submitted'
+-        ]);
++        if (!$user_id || !$account_number || !$transaction_id || !$amount) {
++            return response()->json(['message' => 'αªàαª¼αºêαªº αªíαºçαªƒαª╛']);
++        }
++
++        // 1. Check if this transaction_id is already used in an approved request
++        $existingApproved = \App\Models\VerificationRequest::where('transaction_id', $transaction_id)
++            ->where('status', 'Approved')
++            ->first();
++
++        if ($existingApproved) {
++            return response()->json([
++                'message' => "ΓÜá∩╕Å αªÅαªç αªƒαºìαª░αª╛αª¿αª£αºçαªòαª╢αª¿ αªåαªçαªíαª┐ αªçαªñαºïαª«αªºαºìαª»αºç αª¼αºìαª»αª¼αª╣αºâαªñ αª╣αª»αª╝αºçαª¢αºçαÑñ αªàαª¿αºüαªùαºìαª░αª╣ αªòαª░αºç αªÅαªòαªƒαª┐ αª¼αºêαªº αªƒαºìαª░αª╛αª¿αª£αºçαªòαª╢αª¿ αªåαªçαªíαª┐ αªªαª┐αª¿αÑñ"
++            ]);
++        }
++
++        // 2. Check user verification status
++        $user = SignUp::find($user_id);
++
++        if (!$user) {
++            return response()->json(['message' => "αªçαªëαª£αª╛αª░ αªûαºüαªüαª£αºç αª¬αª╛αªôαª»αª╝αª╛ αª»αª╛αª»αª╝αª¿αª┐"]);
++        }
++
++        if ($user->is_verified != 0) {
++            return response()->json(['message' => "αªçαªëαª£αª╛αª░ αªçαªñαª┐αª«αªºαºìαª»αºç αª¡αºçαª░αª┐αª½αª╛αªçαªí αª¼αª╛ αª░αª┐αªòαºïαºƒαºçαª╕αºìαªƒ αª¬αºçαª¿αºìαªíαª┐αªé αªåαª¢αºç"]);
++        }
++
++        // 3. Update sign_up status to pending (2)
++        $user->is_verified = 2;
++        $user->save();
++
++        // 4. Insert verification request
++        try {
++            \App\Models\VerificationRequest::create([
++                'user_id' => $user_id,
++                'refer_id' => $refer_id ?? '',
++                'account_number' => $account_number,
++                'transaction_id' => $transaction_id,
++                'amount' => $amount,
++                'payment_gateway' => $payment_gateway,
++                'status' => 'Pending',
++                'created_at' => $current_time,
++                'updated_at' => now()->toDateTimeString()
++            ]);
++
++            return response()->json([
++                'message' => "αª¡αºçαª░αª┐αª½αª┐αªòαºçαª╢αª¿ αª░αª┐αªòαºïαª»αª╝αºçαª╕αºìαªƒ αª╕αª½αª▓αª¡αª╛αª¼αºç αª╕αª╛αª¼αª«αª┐αªƒ αª╣αª»αª╝αºçαª¢αºç"
++            ]);
++        } catch (\Exception $e) {
++            // Restore status if failed
++            $user->is_verified = 0;
++            $user->save();
++
++            if ($e->getCode() == 23000) { // Integrity constraint violation (likely duplicate)
++                return response()->json([
++                    'message' => "αªåαª¬αª¿αª╛αª░ αªÅαªòαªƒαª┐ αª¡αºçαª░αª┐αª½αª┐αªòαºçαª╢αª¿ αª░αª┐αªòαºïαª»αª╝αºçαª╕αºìαªƒ αªçαªñαª┐αª«αªºαºìαª»αºç αª¬αºçαª¿αºìαªíαª┐αªé αªåαª¢αºç αª¼αª╛ αªƒαºìαª░αª╛αª¿αª£αºçαªòαª╢αª¿ αªåαªçαªíαª┐ αª¼αºìαª»αª¼αª╣αºâαªñ αª╣αºƒαºçαª¢αºç!"
++                ]);
++            }
++
++            return response()->json([
++                'message' => "Server error: " . $e->getMessage()
++            ]);
++        }
+     }
+ 
+     /**
+@@ -980,8 +1075,138 @@ public function checkPasswordUpdate(Request $request)
+      */
+     public function submitOrder(Request $request)
+     {
+-        // Simple mock since orders usually involve multiple steps
+-        return response()->json(['success' => true, 'message' => 'Order Received']);
++        $user_id = intval($request->input('user_id', 0));
++        $product_id = intval($request->input('product_id', 0));
++        $product_name = trim($request->input('product_name', ''));
++        $product_price = floatval($request->input('product_price', 0));
++        $quantity = intval($request->input('quantity', 0));
++        $total_price = floatval($request->input('total_price', 0));
++        $total_earning = floatval($request->input('total_earning', 0));
++        $total_product_price = floatval($request->input('total_product_price', 0));
++        $delivery_charge = floatval($request->input('delivery_charge', 0));
++        $customer_name = trim($request->input('customer_name', ''));
++        $customer_number = trim($request->input('customer_number', ''));
++        $customer_address = trim($request->input('customer_address', ''));
++        $account_number = trim($request->input('account_number', ''));
++        $transaction_id = intval($request->input('transaction_id', 0));
++        $amount = floatval($request->input('amount', 0));
++        $payment_gateway = trim($request->input('payment_gateway', ''));
++
++        // Basic validation
++        if (
++            $user_id <= 0 || 
++            $product_id <= 0 || 
++            empty($product_name) || 
++            $product_price <= 0 || 
++            empty($customer_name) || 
++            empty($customer_number)
++        ) {
++            return response()->json([
++                'success' => false,
++                'message' => 'Required fields are missing or invalid.'
++            ]);
++        }
++
++        $user = SignUp::find($user_id);
++        if (!$user) {
++            return response()->json(['success' => false, 'message' => 'User not found']);
++        }
++
++        if ($user->voucher_balance < $delivery_charge) {
++            return response()->json(['success' => false, 'message' => 'Insufficient balance']);
++        }
++
++        DB::beginTransaction();
++        try {
++            // Create Order
++            $order = Order::create([
++                'user_id' => $user_id,
++                'product_id' => $product_id,
++                'product_name' => $product_name,
++                'product_price' => $product_price,
++                'customer_name' => $customer_name,
++                'customer_number' => $customer_number,
++                'quantity' => $quantity,
++                'total_price' => $total_price,
++                'total_earning' => $total_earning,
++                'total_product_price' => $total_product_price,
++                'delivery_charge' => $delivery_charge,
++                'customer_address' => $customer_address,
++                'account_number' => $account_number,
++                'transaction_id' => $transaction_id,
++                'payment_gateway' => $payment_gateway,
++                'amount' => $amount,
++                'created_at' => date('Y-m-d H:i:s'),
++                'order_status' => 'Pending'
++            ]);
++
++            // Create Transaction
++            $currentTime2 = date('d-m-Y h:i A');
++            $transaction = Transaction::create([
++                'user_id' => $user_id,
++                'refer_id' => $user->referCode,
++                'amount' => $delivery_charge,
++                'payment_gateway' => 'Reselling Advance',
++                'type' => 'voucher_payment',
++                'description' => 'Payment For Reselling',
++                'update_at' => $currentTime2,
++                'created_at' => date('Y-m-d H:i:s'), // Added missing created_at
++                'date' => date('Y-m-d H:i:s')
++            ]);
++
++            Log::info('Transaction created', ['id' => $transaction->id]);
++
++            // Deduct Balance
++            $user->decrement('voucher_balance', $delivery_charge);
++
++            // Update Order with Transaction ID
++            $order->update(['transaction_id' => $transaction->id]);
++
++            DB::commit();
++
++            return response()->json([
++                'success' => true,
++                'message' => 'Order submitted successfully.',
++                'order_id' => $order->id,
++                'transaction_id' => $transaction->id
++            ]);
++
++        } catch (\Exception $e) {
++            DB::rollBack();
++            Log::error('Order Submission Error: ' . $e->getMessage(), [
++                'user_id' => $user_id,
++                'trace' => $e->getTraceAsString()
++            ]);
++            return response()->json([
++                'success' => false,
++                'message' => 'Failed to submit order.',
++                'error' => $e->getMessage(),
++                'file' => $e->getFile(),
++                'line' => $e->getLine()
++            ]);
++        }
++    }
++
++    /**
++     * Legacy User Orders (get_user_orders.php)
++     */
++    public function getUserOrders(Request $request)
++    {
++        $userId = $request->query('user_id');
++        
++        if (!$userId || $userId <= 0) {
++            return response()->json(['success' => false, 'message' => 'Invalid user ID']);
++        }
++
++        $orders = Order::where('user_id', $userId)
++            ->select('id', 'product_name', 'product_price', 'order_status', 'cancel_reason', 'created_at')
++            ->orderBy('created_at', 'desc')
++            ->get();
++
++        return response()->json([
++            'success' => true,
++            'orders' => $orders
++        ]);
+     }
+ 
+     /**
+@@ -1153,18 +1378,358 @@ public function sendWithdrawOtp(Request $request)
+         return response()->json(['success' => true, 'message' => 'OTP Sent']);
+     }
+ 
++
+     /**
+-     * Recharge and SIM Offer Manage
++     * Legacy Leadership Level (check_leadership_level2.php)
+      */
+-    public function recharge(Request $request)
++    public function checkLeadershipLevel(Request $request)
+     {
+-        // Integration with 3rd party API goes here
+-        return response()->json(['success' => true, 'message' => 'Recharge successful']);
++        $user_id = $request->query('user_id');
++        if (!$user_id) return response()->json(["status" => "error", "message" => "User ID is required"]);
++
++        $user = SignUp::find($user_id);
++        if (!$user) return response()->json(["status" => "error", "message" => "User not found"]);
++
++        $referCode = $user->referCode;
++
++        // Step 1: L1 users
++        $level1 = SignUp::where('referredBy', $referCode)->get(['id', 'name', 'referCode', 'referredBy']);
++        
++        if ($level1->isEmpty()) {
++            return response()->json([
++                "status" => "success",
++                "user_id" => $user_id,
++                "reward" => "None",
++                "level1_summary" => ["total_referred" => 0, "verified" => 0, "leaders" => 0, "remaining_to_leader" => 15]
++            ]);
++        }
++
++        $level1_ids = $level1->pluck('id')->toArray();
++        $level1_codes = $level1->pluck('referCode')->toArray();
++
++        // Step 2: L2 users
++        $level2 = SignUp::whereIn('referredBy', $level1_codes)->get(['id', 'name', 'referCode', 'referredBy']);
++        $l2_by_parent_code = $level2->groupBy('referredBy');
++        $level2_codes = $level2->pluck('referCode')->toArray();
++
++        // Step 3: L3 users
++        $level3 = SignUp::whereIn('referredBy', $level2_codes)->get(['id', 'name', 'referCode', 'referredBy']);
++        $l3_by_parent_code = $level3->groupBy('referredBy');
++
++        // Step 4: Bulk verification map
++        $all_ids = array_unique(array_merge([$user_id], $level1_ids, $level2->pluck('id')->toArray(), $level3->pluck('id')->toArray()));
++        $verified_map = VerificationRequest::whereIn('user_id', $all_ids)
++            ->where('status', 'Approved')
++            ->select('user_id', DB::raw('COUNT(*) as count'))
++            ->groupBy('user_id')
++            ->pluck('count', 'user_id');
++
++        // Step 5: Orders map
++        $last_claim = LeadershipClaim::where('user_id', $user_id)->where('leadership_type', 'Silver')->max('claimed_at') ?? '1970-01-01';
++        $orders_map = Order::whereIn('user_id', $all_ids)
++            ->where('order_status', 'Delivered')
++            ->where('created_at', '>', $last_claim)
++            ->select('user_id', DB::raw('COUNT(*) as count'))
++            ->groupBy('user_id')
++            ->pluck('count', 'user_id');
++
++        $orderCount = $orders_map[$user_id] ?? 0;
++
++        // Step 6: Compute
++        $verifiedCount = 0;
++        $leaderCount = 0;
++        $silverCandidates = [];
++        $goldCandidates = [];
++        $diamondCandidates = [];
++        $topCandidates = [];
++
++        foreach ($level1 as $m) {
++            $l2_under = $l2_by_parent_code[$m->referCode] ?? collect();
++            $verifiedL2 = $l2_under->filter(fn($l2) => ($verified_map[$l2->id] ?? 0) > 0)->count();
++
++            $leaderTimes = intdiv($verifiedL2, 15);
++            if ($leaderTimes >= 1) {
++                $leaderCount++;
++                $cand = [
++                    "id" => $m->id,
++                    "name" => $m->name,
++                    "referCode" => $m->referCode,
++                    "verified_referrals" => $verifiedL2,
++                    "is_leader" => true,
++                    "leader_times" => $leaderTimes
++                ];
++                $silverCandidates[] = $cand;
++
++                // Sub-leaders check
++                $subs = $l2_under;
++                $subLeaders = 0;
++                foreach ($subs as $sub) {
++                    $l3_under = $l3_by_parent_code[$sub->referCode] ?? collect();
++                    $vL3 = $l3_under->filter(fn($u3) => ($verified_map[$u3->id] ?? 0) > 0)->count();
++                    if ($vL3 >= 15) $subLeaders++;
++                }
++
++                if ($subLeaders >= 10) {
++                    $goldCandidates[] = $cand;
++                    if ($orderCount >= 3) $diamondCandidates[] = $cand;
++                    if ($orderCount >= 10) $topCandidates[] = $cand;
++                }
++            }
++
++            if (($verified_map[$m->id] ?? 0) > 0) $verifiedCount++;
++        }
++
++        $leaderTimesOverall = intdiv($verifiedCount, 15);
++        $silverTimes = ($orderCount >= 1) ? intdiv($leaderCount, 10) : 0;
++        $goldTimes = (count($goldCandidates) >= 10 && $orderCount >= 3) ? intdiv(count($goldCandidates), 10) : 0;
++        $diamondTimes = (count($diamondCandidates) >= 10 && $orderCount >= 5) ? intdiv(count($diamondCandidates), 10) : 0;
++        $topTimes = (count($topCandidates) >= 10 && $orderCount >= 10) ? intdiv(count($topCandidates), 10) : 0;
++
++        $reward = "None";
++        if ($topTimes >= 1) $reward = "Top $topTimes";
++        elseif ($diamondTimes >= 1) $reward = "Diamond $diamondTimes";
++        elseif ($goldTimes >= 1) $reward = "Gold $goldTimes";
++        elseif ($silverTimes >= 1) $reward = "Silver $silverTimes";
++        elseif ($leaderTimesOverall >= 1) $reward = "Rootva Leader $leaderTimesOverall";
++
++        // Auto-insert Leader Transactions (Optimized)
++        if ($leaderTimesOverall > 0) {
++            $alreadyGiven = Transaction::where('user_id', $user_id)->where('description', 'Rootva Leader reward')->count();
++            if ($leaderTimesOverall > $alreadyGiven) {
++                for ($i = 0; $i < ($leaderTimesOverall - $alreadyGiven); $i++) {
++                    Transaction::create([
++                        'user_id' => $user_id,
++                        'refer_id' => $referCode,
++                        'amount' => 80,
++                        'type' => 'income',
++                        'payment_gateway' => 'Leadership Bonus',
++                        'description' => 'Rootva Leader reward',
++                        'update_at' => date('d-m-Y h:i A'),
++                        'created_at' => date('d-m-Y h:i A'),
++                        'date' => now()
++                    ]);
++                }
++            }
++        }
++
++        // Handle Silver/Gold/Diamond/Top Requests
++        $leaderships = ["Silver" => $silverTimes, "Gold" => $goldTimes, "Diamond" => $diamondTimes, "Top" => $topTimes];
++        $amounts = ["Silver" => 500, "Gold" => 1000, "Diamond" => 2000, "Top" => 4000];
++        foreach ($leaderships as $type => $times) {
++            if ($times <= 0) continue;
++            if (LeadershipRewardRequest::where('user_id', $user_id)->where('reward_type', $type)->where('status', 'Pending')->exists()) continue;
++            
++            $approvedTimes = LeadershipRewardRequest::where('user_id', $user_id)->where('reward_type', $type)->where('status', 'Approved')->sum('times');
++            if ($times > $approvedTimes) {
++                $newTimes = $times - $approvedTimes;
++                LeadershipRewardRequest::create([
++                    'user_id' => $user_id,
++                    'reward_type' => $type,
++                    'times' => $newTimes,
++                    'amount' => $amounts[$type] * $newTimes,
++                    'status' => 'Pending'
++                ]);
++            }
++        }
++
++        return response()->json([
++            "status" => "success",
++            "user_id" => $user_id,
++            "reward" => $reward,
++            "orders" => $orderCount,
++            "level1_summary" => [
++                "total_referred" => count($level1),
++                "verified" => $verifiedCount,
++                "leaders" => $leaderCount,
++                "remaining_to_leader" => max(0, 15 - $verifiedCount),
++                "reward" => ($leaderTimesOverall >= 1) ? "Rootva Leader $leaderTimesOverall" : null
++            ],
++            "silver_summary" => ["total_candidates" => count($silverCandidates), "times" => $silverTimes, "total_orders" => $orderCount, "reward" => ($silverTimes >= 1) ? "Silver $silverTimes" : null],
++            "gold_summary" => ["total_candidates" => count($goldCandidates), "times" => $goldTimes, "total_orders" => $orderCount, "reward" => ($goldTimes >= 1) ? "Gold $goldTimes" : null],
++            "diamond_summary" => ["total_candidates" => count($diamondCandidates), "times" => $diamondTimes, "total_orders" => $orderCount, "reward" => ($diamondTimes >= 1) ? "Diamond $diamondTimes" : null],
++            "top_summary" => ["total_candidates" => count($topCandidates), "times" => $topTimes, "total_orders" => $orderCount, "reward" => ($topTimes >= 1) ? "Top $topTimes" : null],
++            "silver_candidates" => $silverCandidates,
++            "gold_candidates" => $goldCandidates,
++            "diamond_candidates" => $diamondCandidates,
++            "top_candidates" => $topCandidates,
++            "user_level_rewards" => [
++                "Rootva Leader" => $leaderTimesOverall,
++                "Silver" => $silverTimes,
++                "Gold" => $goldTimes,
++                "Diamond" => $diamondTimes,
++                "Top" => $topTimes
++            ]
++        ]);
+     }
+ 
+-    public function rechargeSuccessHandler(Request $request)
++    /**
++     * Legacy Spin Target Bonus (check_spin_target_bonus.php)
++     */
++    public function checkSpinTargetBonus(Request $request)
+     {
+-        return response()->json(['success' => true]);
++        $user_id = $request->query('user_id');
++        if (!$user_id) return response()->json(["status" => "error", "message" => "User ID missing."]);
++
++        $bonus_type = 'spin_target';
++        $bonus_amount = 500.00;
++
++        if (BonusTracker::where('user_id', $user_id)->where('bonus_type', $bonus_type)->exists()) {
++            return response()->json(["status" => "already_given", "message" => "Bonus already given to this user."]);
++        }
++
++        $user = SignUp::find($user_id);
++        $level1 = SignUp::where('referredBy', $user->referCode)->get();
++        
++        if ($level1->count() < 10) {
++            return response()->json(["status" => "incomplete", "message" => "Not enough Level 1 referrals.", "level1" => $level1->count()]);
++        }
++
++        $level1_verified = VerificationRequest::whereIn('user_id', $level1->pluck('id'))->where('status', 'Approved')->count();
++        if ($level1_verified < 10) {
++            return response()->json(["status" => "incomplete", "message" => "Not enough verified users in Level 1.", "level1_verified" => $level1_verified]);
++        }
++
++        $level2 = SignUp::whereIn('referredBy', $level1->pluck('referCode'))->get();
++        if ($level2->count() < 10) {
++            return response()->json(["status" => "incomplete", "message" => "Not enough Level 2 referrals.", "level2" => $level2->count()]);
++        }
++
++        $level2_verified = VerificationRequest::whereIn('user_id', $level2->pluck('id'))->where('status', 'Approved')->count();
++        if ($level2_verified < 10) {
++            return response()->json(["status" => "incomplete", "message" => "Not enough verified users in Level 2.", "level2_verified" => $level2_verified]);
++        }
++
++        // Target Met
++        BonusTracker::create(['user_id' => $user_id, 'bonus_type' => $bonus_type, 'amount' => $bonus_amount]);
++        Transaction::create([
++            'user_id' => $user_id,
++            'amount' => $bonus_amount,
++            'type' => 'income',
++            'payment_gateway' => 'bonus',
++            'description' => "≡ƒÄü Spin Target Bonus (Level1: $level1_verified, Level2: $level2_verified)",
++            'created_at' => now()->format('Y-m-d H:i:s'),
++            'update_at' => now()->format('Y-m-d H:i:s')
++        ]);
++
++        return response()->json([
++            "status" => "success",
++            "message" => "Γ£à Spin Target Bonus added!",
++            "amount" => $bonus_amount,
++            "level1_verified" => $level1_verified,
++            "level2_verified" => $level2_verified
++        ]);
++    }
++
++    /**
++     * Legacy Payment SMS Hook (payment_sms_hook.php)
++     */
++    public function handlePaymentSmsHook(Request $request)
++    {
++        $secret = 'nOiNnz6Pl72tUFwxVeifvhCD0YsGzKhZRPZ9YYzxwfI=';
++        $signature = $request->header('X-Signature');
++        $deviceId = $request->header('X-Device-Id');
++        
++        $body = $request->getContent();
++        $calcSig = base64_encode(hash_hmac('sha256', $body, $secret, true));
++
++        if (!$deviceId || $calcSig !== $signature) {
++            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
++        }
++
++        $payload = $request->all();
++        $gateway = strtolower(trim($payload['gateway'] ?? ''));
++        $txnId = trim($payload['transaction_id'] ?? '');
++        $amount = (float)($payload['amount'] ?? 0);
++
++        if (!$gateway || !$txnId || $amount <= 0) {
++            return response()->json(['success' => false, 'message' => 'Missing fields'], 422);
++        }
++
++        IncomingPaymentSms::updateOrCreate(
++            ['transaction_id' => $txnId, 'gateway' => $gateway],
++            [
++                'sender' => $payload['sender'] ?? '',
++                'account_number' => $payload['account_number'] ?? null,
++                'amount' => $amount,
++                'received_at' => $payload['received_at'] ?? now(),
++                'raw_text' => $payload['raw_text'] ?? '',
++                'device_id' => $deviceId
++            ]
++        );
++
++        $match = VerificationRequest::where('status', 'Pending')
++            ->where('transaction_id', $txnId)
++            ->where('amount', $amount)
++            ->first();
++
++        if ($match && $amount >= 250) {
++            DB::transaction(function () use ($match, $txnId, $gateway) {
++                $user = SignUp::find($match->user_id);
++                $time = date("d-m-Y h:i A");
++                $raw_time = now()->toDateTimeString();
++
++                $user->update(['is_verified' => 1, 'verified_at' => $time, 'verified_raw_time' => $raw_time]);
++                \App\Models\Notification::create(['user_id' => $user->id, 'message' => "αªåαª¬αª¿αª╛αª░ αª¡αºçαª░αª┐αª½αª┐αªòαºçαª╢αª¿ αª╕αª½αª▓ αª╣αºƒαºçαª¢αºç", 'created_at' => $time]);
++                $match->update(['status' => 'Approved', 'updated_at' => $time, 'verified_raw_time' => $raw_time]);
++                IncomingPaymentSms::where('transaction_id', $txnId)->where('gateway', $gateway)->update(['processed' => 'Matched', 'matched_request_id' => $match->id]);
++            });
++            return response()->json(['success' => true, 'message' => 'Matched & Approved']);
++        }
++
++        return response()->json(['success' => true, 'message' => 'Logged']);
++    }
++
++    /**
++     * Legacy Recharge (recharge.php)
++     */
++    public function recharge(Request $request)
++    {
++        if ($request->input('secret_key') !== 'Masud@1234567890') {
++            return response()->json(["status" => false, "message" => "Unauthorized"], 401);
++        }
++
++        $user_id = $request->input('user_id');
++        $amount = $request->input('amount');
++        $user = SignUp::find($user_id);
++
++        if (!$user || $user->voucher_balance < $amount) {
++            return response()->json(["status" => false, "message" => "Insufficient balance"]);
++        }
++
++        $tran_id = uniqid("TRX_");
++        DB::transaction(function () use ($user, $amount, $tran_id, $request) {
++            $user->decrement('voucher_balance', $amount);
++            RechargeTransaction::create([
++                'user_id' => $user->id,
++                'number' => $request->input('number'),
++                'operator' => $request->input('operator'),
++                'package_id' => $request->input('package_id'),
++                'package_title' => $request->input('title'),
++                'amount' => $amount,
++                'tran_id' => $tran_id,
++                'status' => 'pending'
++            ]);
++        });
++
++        // SohojPay API Call
++        $response = Http::withHeaders(['SOHOJPAY-API-KEY' => 'F3Jj0G6ipwXrlZg985y7wiN0yUxQ8IFiCQSw1kdwmZy6IniniHf5MqoiBozf'])
++            ->post('https://secure.sohojpaybd.com/recharge/request/create', [
++                "number" => $request->input('number'),
++                "type" => 1,
++                "operator" => $request->input('operator'),
++                "package_id" => $request->input('package_id'),
++                "tran_id" => $tran_id,
++                "amount" => $amount
++            ]);
++
++        $status = $response->successful() && $response->json('status') ? 'success' : 'failed';
++        if ($status === 'failed') {
++            $user->increment('voucher_balance', $amount);
++        }
++
++        RechargeTransaction::where('tran_id', $tran_id)->update(['status' => $status, 'api_response' => $response->body()]);
++
++        return response()->json(["status" => ($status === 'success'), "message" => ($status === 'success' ? "Recharge successful" : "Recharge failed"), "tran_id" => $tran_id]);
+     }
+ 
+     public function getSimOfferManage()
+@@ -1251,59 +1816,7 @@ public function confirmSimOffer(\Illuminate\Http\Request $request)
+         $id = $request->input('request_id');
+         $simRequest = \App\Models\SimOfferRequest::find($id);
+         
+-        if ($simRequest) {
+-            $simRequest->status = 'confirmed';
+-            $simRequest->save();
+-
+-            return \Illuminate\Support\Facades\Response::json([
+-                'success' => true
+-            ]);
+-        }
+-        
+-        return \Illuminate\Support\Facades\Response::json([
+-            'success' => false, 
+-            'message' => 'Request not found'
+-        ], 404);
+-    }
+-
+-
+-    public function getSalaryProgress(Request $request)
+-    {
+-        $userId = $request->query('user_id');
+-        Log::info("Salary progress request for user: " . $userId);
+-
+-        $user = SignUp::find($userId);
+-
+-        if (!$user) {
+-            Log::warning("User not found for salary progress: " . $userId);
+-            return response()->json(['success' => false, 'message' => 'User not found']);
+-        }
+-
+-        $referCode = $user->referCode;
+-
+-        // ≡ƒƒó Step 1: Last monthly salary bonus date from bonus_tracker
+-        $lastBonus = DB::table('bonus_tracker')
+-            ->where('user_id', $userId)
+-            ->where('bonus_type', 'monthly_salary')
+-            ->latest('created_at')
+-            ->first();
+-        
+-        $startDate = $lastBonus ? $lastBonus->created_at : '2000-01-01 00:00:00';
+-
+-        // ≡ƒƒó Step 2: Get Level 1 referrals
+-        $level1 = DB::table('sign_up')
+-            ->where('referredBy', $referCode)
+-            ->get(['id', 'referCode', 'upline_changed_at']);
+-
+-        $level1VerifiedIds = [];
+-        $level1Active = 0;
+-        $level2VerifiedTotal = 0;
+-
+-        foreach ($level1 as $l1) {
+-            $l1Id = $l1->id;
+-            $l1ReferCode = $l1->referCode;
+-            $transferDate = $l1->upline_changed_at;
+-            $filterDate = $transferDate ? $transferDate : $startDate;
++        if ($si            $filterDate = $transferDate ? $transferDate : $startDate;
+ 
+             // ≡ƒö╕ Check if Level 1 is verified after filterDate
+             $isL1Verified = DB::table('verification_requests')
+@@ -1587,4 +2100,187 @@ public function submitReviewJobProof(Request $request)
+ 
+         return response()->json(['success' => true, 'message' => 'Proof submitted successfully']);
+     }
++
++    /**
++     * Legacy Notifications (get_notifications.php)
++     */
++    public function getNotifications(Request $request)
++    {
++        $userId = $request->query('user_id');
++        $notifications = \App\Models\Notification::where('user_id', $userId)
++            ->orderBy('id', 'desc')
++            ->get();
++            
++        return response()->json([
++            'success' => true,
++            'notifications' => $notifications
++        ]);
++    }
++
++    /**
++     * Legacy Mark Notifications Read (mark_notifications_read.php)
++     */
++    public function markNotificationsAsRead(Request $request)
++    {
++        $userId = $request->input('user_id');
++        \App\Models\Notification::where('user_id', $userId)->update(['is_read' => 1]);
++        
++        return response()->json(['success' => true]);
++    }
++
++    /**
++     * Legacy Add Microjob (add_microjob.php)
++     */
++    public function addMicrojob(Request $request)
++    {
++        $userId = $request->input('user_id');
++        $title = $request->input('title');
++        $description = $request->input('description');
++        $amount = $request->input('amount_per_worker');
++        $target = $request->input('total_target');
++        
++        $imageUrl = '';
++        if ($request->hasFile('image')) {
++            $path = $request->file('image')->store('microjobs', 'public');
++            $imageUrl = asset('storage/' . $path);
++        }
++
++        try {
++            $job = Microjob::create([
++                'user_id' => $userId,
++                'title' => $title,
++                'description' => $description,
++                'amount_per_worker' => $amount,
++                'total_target' => $target,
++                'image_url' => $imageUrl,
++                'status' => 'Pending',
++                'created_at' => now()
++            ]);
++
++            if ($job) {
++                return response()->json(["success" => true, "message" => "Microjob Added Successfully"]);
++            }
++        } catch (\Exception $e) {
++            return response()->json(["success" => false, "message" => "Failed to Add Job", "error" => $e->getMessage()]);
++        }
++
++        return response()->json(["success" => false, "message" => "Failed to Add Job"]);
++    }
++
++    /**
++     * Legacy Claim Spin Bonus (claim_spin_bonus.php)
++     */
++    public function claimSpinBonus(Request $request)
++    {
++        $userId = $request->input('user_id');
++        if (!$userId) return response()->json(['error' => true, 'message' => 'Invalid user ID']);
++
++        try {
++            return DB::transaction(function () use ($userId) {
++                $spinInfo = WheelSpinInfo::where('user_id', $userId)->lockForUpdate()->first();
++
++                if (!$spinInfo) {
++                    throw new \Exception("User spin info not found");
++                }
++
++                if ($spinInfo->spin_balance < 200) {
++                    throw new \Exception("Minimum αº│200 required to claim");
++                }
++
++                if ($spinInfo->claimed == 1) {
++                    throw new \Exception("Already claimed");
++                }
++
++                $amount = 200;
++                $currentTime = date("d-m-Y h:i A");
++
++                Transaction::create([
++                    'user_id' => $userId,
++                    'amount' => $amount,
++                    'type' => 'income',
++                    'payment_gateway' => 'Spin Bonus',
++                    'description' => 'Spin bonus claim',
++                    'created_at' => $currentTime,
++                    'update_at' => $currentTime
++                ]);
++
++                $spinInfo->update([
++                    'spin_balance' => 0,
++                    'claimed' => 1
++                ]);
++
++                return response()->json([
++                    'error' => false,
++                    'message' => 'Successfully claimed αº│200',
++                    'transaction_id' => "SPIN-" . time() . "-" . $userId,
++                    'new_balance' => 0,
++                    'spin_balance' => 0,
++                    'claimed' => true
++                ]);
++            });
++        } catch (\Exception $e) {
++            return response()->json([
++                'error' => true,
++                'message' => $e->getMessage()
++            ]);
++        }
++    }
++}
++
++            ]);
++        }
++    }
++}
++
++    }
++
++    /**
++     * Legacy Mark Notifications Read (mark_notifications_read.php)
++     */
++    public function markNotificationsAsRead(Request $request)
++    {
++        $userId = $request->input('user_id');
++        \App\Models\Notification::where('user_id', $userId)->update(['is_read' => 1]);
++        
++        return response()->json(['success' => true]);
++    }
++
++    /**
++     * Legacy Add Microjob (add_microjob.php)
++     */
++    public function addMicrojob(Request $request)
++    {
++        $userId = $request->input('user_id');
++        $title = $request->input('title');
++        $description = $request->input('description');
++        $amount = $request->input('amount_per_worker');
++        $target = $request->input('total_target');
++        
++        $imageUrl = '';
++        if ($request->hasFile('image')) {
++            $path = $request->file('image')->store('microjobs', 'public');
++            $imageUrl = asset('storage/' . $path);
++        }
++
++        try {
++            $job = Microjob::create([
++                'user_id' => $userId,
++                'title' => $title,
++                'description' => $description,
++                'amount_per_worker' => $amount,
++                'total_target' => $target,
++                'image_url' => $imageUrl,
++                'status' => 'Pending',
++                'created_at' => now()
++            ]);
++
++            if ($job) {
++                return response()->json(["success" => true, "message" => "Microjob Added Successfully"]);
++            }
++        } catch (\Exception $e) {
++            return response()->json(["success" => false, "message" => "Failed to Add Job", "error" => $e->getMessage()]);
++        }
++
++        return response()->json(["success" => false, "message" => "Failed to Add Job"]);
++    }
+ }

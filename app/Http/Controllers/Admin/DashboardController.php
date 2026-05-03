@@ -8,6 +8,11 @@ use App\Models\VerificationRequest;
 use App\Models\MoneyRequest;
 use App\Models\WithdrawRequest;
 use App\Models\Microjob;
+use App\Models\Order;
+use App\Models\SimOfferRequest;
+use App\Models\OnlineServiceOrder;
+use App\Models\SalaryRequest;
+use App\Models\LeadershipRewardRequest;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -30,6 +35,11 @@ class DashboardController extends Controller
                 'money' => MoneyRequest::where('status', 'Pending')->count(),
                 'withdraw' => WithdrawRequest::where('status', 'Pending')->count(),
                 'microjobs' => Microjob::where('status', 'pending')->count(),
+                'reselling' => Order::where('order_status', 'Pending')->count(),
+                'sim_offers' => SimOfferRequest::where('status', 'pending')->count(),
+                'services' => OnlineServiceOrder::where('status', 'pending')->count(),
+                'salary' => SalaryRequest::where('status', 'Pending')->count(),
+                'leadership' => LeadershipRewardRequest::where('status', 'Pending')->count(),
             ]
         ];
 
@@ -51,6 +61,11 @@ class DashboardController extends Controller
             'money_requests' => MoneyRequest::where('status', 'Pending')->count(),
             'withdraw_requests' => WithdrawRequest::where('status', 'Pending')->count(),
             'microjobs_requests' => Microjob::where('status', 'pending')->count(),
+            'reselling_orders' => Order::where('order_status', 'Pending')->count(),
+            'sim_requests' => SimOfferRequest::where('status', 'pending')->count(),
+            'service_orders' => OnlineServiceOrder::where('status', 'pending')->count(),
+            'salary_requests' => SalaryRequest::where('status', 'Pending')->count(),
+            'leadership_requests' => LeadershipRewardRequest::where('status', 'Pending')->count(),
         ];
 
         return response()->json($stats);

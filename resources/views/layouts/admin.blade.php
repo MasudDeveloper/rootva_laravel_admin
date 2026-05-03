@@ -76,6 +76,11 @@
                 <span>Reselling Shop</span>
             </a>
 
+            <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->is('admin/orders*') ? 'active' : '' }}">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span>Reselling Orders</span>
+            </a>
+
             <a href="{{ route('admin.courses.index') }}" class="nav-link {{ request()->is('admin/services/courses*') ? 'active' : '' }}">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span>Courses</span>
@@ -89,6 +94,16 @@
             <a href="{{ route('admin.online-service-orders.index') }}" class="nav-link {{ request()->is('admin/services/online-service-orders*') ? 'active' : '' }}">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Online Service Orders</span>
+            </a>
+
+            <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
+            <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications*') ? 'active' : '' }}">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>Push Notifications</span>
+            </a>
+            <a href="{{ route('admin.popups.index') }}" class="nav-link {{ request()->is('admin/popups*') ? 'active' : '' }}">
+                <i class="fa-solid fa-window-maximize"></i>
+                <span>Popup Banners</span>
             </a>
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Leadership & Rewards</div>

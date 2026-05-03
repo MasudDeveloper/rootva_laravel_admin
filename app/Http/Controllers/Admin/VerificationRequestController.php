@@ -37,32 +37,37 @@ class VerificationRequestController extends Controller
 
         DB::transaction(function () use ($verificationRequest) {
             $user = SignUp::findOrFail($verificationRequest->user_id);
-            
-            // Update User status to verified
+            $current_time = date("d-m-Y h:i A");
+            $verified_raw_time = now()->toDateTimeString();
+
+            // 1. Update User status to verified
             $user->update([
                 'is_verified' => 1,
-                'verified_at' => now()->toDateTimeString(),
-                'verified_raw_time' => now()->timestamp
+                'verified_at' => $current_time,
+                'verified_raw_time' => $verified_raw_time
             ]);
 
-            // Update Request status
+            // 2. Send Notification
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'message' => 'আপনার ভেরিফিকেশন সফল হয়েছে, আপডেট না হলে রিফ্রেশ করুন',
+                'created_at' => $current_time
+            ]);
+
+            // 3. Update Request status
             $verificationRequest->update([
                 'status' => 'Approved',
-                'updated_at' => now()->toDateTimeString()
+                'updated_at' => $current_time,
+                'verified_raw_time' => $verified_raw_time
             ]);
 
-            // Optional: Log Transaction for verification fee? 
-            // In the legacy DB, amount is present in verification_requests.
-            Transaction::create([
-                'user_id' => $user->id,
-                'refer_id' => $user->referCode,
-                'amount' => $verificationRequest->amount,
-                'type' => 'verification_fee',
-                'payment_gateway' => $verificationRequest->payment_gateway,
-                'description' => 'Account Verification Success',
-                'update_at' => now()->toDateTimeString(),
-                'created_at' => now()->toDateTimeString(),
-            ]);
+            // 4. Distribute Referral Bonus
+            $this->distributeReferralBonus($user, $current_time);
+
+            // 5. math_game + 4 for the direct referrer
+            if ($user->referredBy) {
+                SignUp::where('referCode', $user->referredBy)->increment('math_game', 4);
+            }
         });
 
         return back()->with('success', 'User has been verified successfully.');
@@ -76,11 +81,65 @@ class VerificationRequestController extends Controller
             return back()->with('error', 'This request has already been processed.');
         }
 
-        $verificationRequest->update([
-            'status' => 'Rejected',
-            'updated_at' => now()->toDateTimeString()
-        ]);
+        DB::transaction(function () use ($verificationRequest) {
+            $user = SignUp::findOrFail($verificationRequest->user_id);
+            $current_time = date("d-m-Y h:i A");
+
+            // 1. Update User status to rejected (0)
+            $user->update([
+                'is_verified' => 0,
+                'verified_at' => $current_time
+            ]);
+
+            // 2. Send Rejection Notification
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'message' => 'আপনার ভেরিফিকেশন রিজেক্ট করা হয়েছে, অনুগ্রহ করে টাকা সেন্ড মানি করে সঠিক মোবাইল নাম্বার ও ট্রানজেশন আই.ডি দিন',
+                'created_at' => $current_time
+            ]);
+
+            // 3. Update Request status
+            $verificationRequest->update([
+                'status' => 'Rejected',
+                'updated_at' => $current_time
+            ]);
+        });
 
         return back()->with('success', 'Verification request has been rejected.');
+    }
+
+    private function distributeReferralBonus($user, $current_time)
+    {
+        $levels = [76, 35, 15, 10, 6, 5, 4, 3, 2, 2]; // 10 Levels
+        $current_level = 1;
+        $referredByCode = $user->referredBy;
+
+        while ($current_level <= count($levels) && $referredByCode) {
+            $referrer = SignUp::where('referCode', $referredByCode)->first();
+
+            if ($referrer) {
+                $bonus = $levels[$current_level - 1];
+                
+                // Add balance
+                $referrer->increment('wallet_balance', $bonus);
+
+                // Transaction Record
+                \App\Models\Transaction::create([
+                    'user_id' => $referrer->id,
+                    'refer_id' => $user->referCode, // Person who got verified
+                    'amount' => $bonus,
+                    'type' => 'commission',
+                    'description' => "লেভেল $current_level এফিলিয়েট বোনাস যুক্ত হয়েছে",
+                    'update_at' => $current_time,
+                    'created_at' => $current_time,
+                    'payment_gateway' => 'Internal'
+                ]);
+
+                $referredByCode = $referrer->referredBy;
+                $current_level++;
+            } else {
+                break;
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\OnlineServiceOrderController;
 use App\Http\Controllers\Admin\LeadershipController;
+use App\Http\Controllers\Admin\OrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -112,6 +113,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/products/{id}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
+        // Orders
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+        Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+        Route::delete('/orders/{id}', [OrderController::class, 'destroy'])->name('orders.destroy');
+
         // Product Categories
         Route::get('/product-categories', [ProductCategoryController::class, 'index'])->name('product-categories.index');
         Route::post('/product-categories', [ProductCategoryController::class, 'store'])->name('product-categories.store');
@@ -142,6 +149,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         });
 
 
+
+        // Notifications
+        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
+
+        // Popups
+        Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
+        Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
+        Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
 
         // Rewards
         Route::prefix('rewards')->name('rewards.')->group(function () {

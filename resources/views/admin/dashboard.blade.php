@@ -117,40 +117,65 @@
         <!-- Pending Requests Table Style -->
         <div class="col-lg-4">
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Pending Action Required</h6>
-            <div class="card-modern">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3">
+            <div class="card-modern shadow-sm border-0">
+                <ul class="list-group list-group-flush" id="pending-requests-list">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.verifications.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
-                            <div class="bg-info-soft p-2 rounded-pill text-info"><i class="fa-solid fa-id-card"></i></div>
-                            <span>Verification Requests</span>
+                            <div class="bg-info-soft p-2 rounded-pill text-info" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-id-card small"></i></div>
+                            <span class="small">Verification</span>
                         </a>
-                        <span class="badge bg-info-soft text-info rounded-pill" id="badge-verification">{{ $stats['pending_requests']['verification'] }}</span>
+                        <span class="badge bg-info text-white rounded-pill" id="badge-verification">{{ $stats['pending_requests']['verification'] }}</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.money-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
-                            <div class="bg-success-soft p-2 rounded-pill text-success"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
-                            <span>Add Money Requests</span>
+                            <div class="bg-success-soft p-2 rounded-pill text-success" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-circle-dollar-to-slot small"></i></div>
+                            <span class="small">Add Money</span>
                         </a>
-                        <span class="badge bg-success-soft text-success rounded-pill" id="badge-money">{{ $stats['pending_requests']['money'] }}</span>
+                        <span class="badge bg-success text-white rounded-pill" id="badge-money">{{ $stats['pending_requests']['money'] }}</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.withdraw-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
-                            <div class="bg-danger-soft p-2 rounded-pill text-danger"><i class="fa-solid fa-money-bill-transfer"></i></div>
-                            <span>Withdraw Requests</span>
+                            <div class="bg-danger-soft p-2 rounded-pill text-danger" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-money-bill-transfer small"></i></div>
+                            <span class="small">Withdraws</span>
                         </a>
-                        <span class="badge bg-danger-soft text-danger rounded-pill" id="badge-withdraw">{{ $stats['pending_requests']['withdraw'] }}</span>
+                        <span class="badge bg-danger text-white rounded-pill" id="badge-withdraw">{{ $stats['pending_requests']['withdraw'] }}</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3">
-                        <a href="{{ route('admin.microjobs.index', ['status' => 'pending']) }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
-                            <div class="bg-warning-soft p-2 rounded-pill text-warning"><i class="fa-solid fa-briefcase"></i></div>
-                            <span>Microjob Posts</span>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
+                        <a href="{{ route('admin.orders.index', ['status' => 'Pending']) }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                            <div class="bg-primary-soft p-2 rounded-pill text-primary" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-cart-shopping small"></i></div>
+                            <span class="small">Reselling Orders</span>
                         </a>
-                        <span class="badge bg-warning-soft text-warning rounded-pill" id="badge-microjobs">{{ $stats['pending_requests']['microjobs'] }}</span>
+                        <span class="badge bg-primary text-white rounded-pill" id="badge-reselling">{{ $stats['pending_requests']['reselling'] }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
+                        <a href="{{ route('admin.sim-offers.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                            <div class="bg-warning-soft p-2 rounded-pill text-warning" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-sim-card small"></i></div>
+                            <span class="small">SIM Requests</span>
+                        </a>
+                        <span class="badge bg-warning text-white rounded-pill" id="badge-sim">{{ $stats['pending_requests']['sim_offers'] }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
+                        <a href="{{ route('admin.online-service-orders.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                            <div class="bg-secondary-soft p-2 rounded-pill text-secondary" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-globe small"></i></div>
+                            <span class="small">Online Services</span>
+                        </a>
+                        <span class="badge bg-secondary text-white rounded-pill" id="badge-services">{{ $stats['pending_requests']['services'] }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
+                        <a href="{{ route('admin.salary-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                            <div class="bg-dark-soft p-2 rounded-pill text-dark" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-file-invoice-dollar small"></i></div>
+                            <span class="small">Salary Requests</span>
+                        </a>
+                        <span class="badge bg-dark text-white rounded-pill" id="badge-salary">{{ $stats['pending_requests']['salary'] }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2">
+                        <a href="{{ route('admin.leadership.requests') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
+                            <div class="bg-primary-soft p-2 rounded-pill text-primary" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-trophy small"></i></div>
+                            <span class="small">Leadership Rewards</span>
+                        </a>
+                        <span class="badge bg-info text-white rounded-pill" id="badge-leadership">{{ $stats['pending_requests']['leadership'] }}</span>
                     </li>
                 </ul>
-                <div class="mt-3">
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-primary-soft w-100 rounded-pill">View All Users</a>
-                </div>
             </div>
         </div>
     </div>
@@ -196,10 +221,48 @@
         </div>
     </div>
 </div>
+
+<audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    let lastStats = {
+        verification_requests: null,
+        money_requests: null,
+        withdraw_requests: null,
+        reselling_orders: null,
+        sim_requests: null,
+        service_orders: null,
+        salary_requests: null,
+        leadership_requests: null
+    };
+
+    const requestLabels = {
+        verification_requests: 'User Verification',
+        money_requests: 'Add Money',
+        withdraw_requests: 'Withdraw',
+        reselling_orders: 'Reselling Order',
+        sim_requests: 'SIM Offer',
+        service_orders: 'Online Service',
+        salary_requests: 'Salary',
+        leadership_requests: 'Leadership Reward'
+    };
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
     function refreshStats() {
         fetch('/admin/api/stats')
             .then(res => res.json())
@@ -207,14 +270,53 @@
                 document.getElementById('stat-total').innerText = data.total;
                 document.getElementById('stat-verified').innerText = data.verified;
                 document.getElementById('stat-pending').innerText = data.pending;
+                
                 document.getElementById('badge-verification').innerText = data.verification_requests;
                 document.getElementById('badge-money').innerText = data.money_requests;
                 document.getElementById('badge-withdraw').innerText = data.withdraw_requests;
-                document.getElementById('badge-microjobs').innerText = data.microjobs_requests;
+                document.getElementById('badge-reselling').innerText = data.reselling_orders;
+                document.getElementById('badge-sim').innerText = data.sim_requests;
+                document.getElementById('badge-services').innerText = data.service_orders;
+                document.getElementById('badge-salary').innerText = data.salary_requests;
+                document.getElementById('badge-leadership').innerText = data.leadership_requests;
+
+                // Check for new requests
+                for (let key in lastStats) {
+                    if (lastStats[key] !== null && data[key] > lastStats[key]) {
+                        let newCount = data[key] - lastStats[key];
+                        showNotification(requestLabels[key], newCount);
+                    }
+                    lastStats[key] = data[key];
+                }
             });
+    }
+
+    function showNotification(label, count) {
+        // Play Sound
+        document.getElementById('notification-sound').play().catch(e => console.log('Audio play failed:', e));
+        
+        // Show Toast
+        Toast.fire({
+            icon: 'info',
+            title: `New ${label} request received!`,
+            text: count > 1 ? `${count} new requests` : `A new ${label.toLowerCase()} request is waiting.`
+        });
     }
 
     // Refresh every 10 seconds
     setInterval(refreshStats, 10000);
+    
+    // Initial load
+    window.onload = function() {
+        // Initialize lastStats from current badges
+        lastStats.verification_requests = parseInt(document.getElementById('badge-verification').innerText) || 0;
+        lastStats.money_requests = parseInt(document.getElementById('badge-money').innerText) || 0;
+        lastStats.withdraw_requests = parseInt(document.getElementById('badge-withdraw').innerText) || 0;
+        lastStats.reselling_orders = parseInt(document.getElementById('badge-reselling').innerText) || 0;
+        lastStats.sim_requests = parseInt(document.getElementById('badge-sim').innerText) || 0;
+        lastStats.service_orders = parseInt(document.getElementById('badge-services').innerText) || 0;
+        lastStats.salary_requests = parseInt(document.getElementById('badge-salary').innerText) || 0;
+        lastStats.leadership_requests = parseInt(document.getElementById('badge-leadership').innerText) || 0;
+    };
 </script>
 @endsection

@@ -73,23 +73,42 @@ class AuthController extends Controller
             $refer_code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (SignUp::where('referCode', $refer_code)->exists());
 
-        $user = SignUp::create([
-            'name' => $name,
-            'number' => $number,
-            'password' => $hashed_password,
-            'referCode' => $refer_code,
-            'referredBy' => $referred_by,
-            'created_at' => $created_at,
-        ]);
+        try {
+            $user = SignUp::create([
+                'name' => $name,
+                'number' => $number,
+                'password' => $hashed_password,
+                'referCode' => $refer_code,
+                'referredBy' => $referred_by,
+                'created_at' => $created_at,
+                'email' => '',
+                'address' => '',
+                'profile_pic_url' => '',
+                'gender' => 'Male',
+                'verified_at' => '',
+                'verified_raw_time' => date('Y-m-d H:i:s'),
+            ]);
 
-        if ($user) {
-            if ($referred_by) {
-                $this->distributeReferralCommission($user);
+            if ($user) {
+                // Refresh the user model to get the database-generated password_updated_at
+                $user->refresh();
+
+                // Generate secure token for the new user
+                $token = bin2hex(random_bytes(32));
+                $user->api_token = $token;
+                $user->save();
+
+                return response()->json([
+                    'message' => 'রেজিস্ট্রেশন সফল',
+                    'userId' => $user->id,
+                    'password_updated_at' => (string) $user->password_updated_at,
+                    'api_token' => $token,
+                ]);
             }
-
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'রেজিস্ট্রেশন সফল',
-                'password_updated_at' => $user->password_updated_at ?? '',
+                'message' => 'রেজিস্ট্রেশন ব্যর্থ',
+                'error' => $e->getMessage()
             ]);
         }
 
@@ -99,7 +118,13 @@ class AuthController extends Controller
     private function distributeReferralCommission($user)
     {
         $levels = [
-            1 => 60, 2 => 30, 3 => 10, 4 => 5, 5 => 5, 6 => 5, 7 => 5
+            1 => 60, // Level 1
+            2 => 30, // Level 2
+            3 => 10, // Level 3
+            4 => 5,  // Level 4
+            5 => 5,  // Level 5
+            6 => 5,  // Level 6
+            7 => 5   // Level 7
         ];
 
         $current_level = 1;
@@ -109,13 +134,33 @@ class AuthController extends Controller
             $referrer = SignUp::where('referCode', $referrerCode)->first();
 
             if ($referrer) {
+                $amount = $levels[$current_level];
+                
+                // 1. Create Referral Commission Record
                 \App\Models\ReferralCommission::create([
                     'user_id' => $referrer->id,
                     'level' => $current_level,
-                    'amount' => $levels[$current_level],
-                    'description' => "Level $current_level referral commission for user ID $user->id",
+                    'amount' => $amount,
+                    'description' => "Level $current_level referral commission for user: $user->name ($user->number)",
                 ]);
 
+                // 2. Create Transaction Log
+                \App\Models\Transaction::create([
+                    'user_id' => $referrer->id,
+                    'refer_id' => $user->referCode,
+                    'amount' => $amount,
+                    'type' => 'referral_commission',
+                    'payment_gateway' => 'Referral System',
+                    'description' => "Level $current_level Referral Commission from $user->name",
+                    'update_at' => date('d-m-Y h:i A'),
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'date' => date('Y-m-d H:i:s')
+                ]);
+
+                // 3. Update User Balance
+                $referrer->increment('wallet_balance', $amount);
+
+                // Move to next level
                 $referrerCode = $referrer->referredBy;
                 $current_level++;
             } else {
