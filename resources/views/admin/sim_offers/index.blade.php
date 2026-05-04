@@ -62,20 +62,7 @@
                         @forelse($offers as $offer)
                             <tr>
                                 <td class="px-4">
-                                    <div class="d-flex align-items-center">
-                                        @php
-                                            $logo = match($offer->operator_name) {
-                                                'Grameenphone' => 'gp_logo.png',
-                                                'Robi' => 'robi_logo.png',
-                                                'Banglalink' => 'bl_logo.png',
-                                                'Airtel' => 'airtel_logo.png',
-                                                'Teletalk' => 'teletalk_logo.png',
-                                                default => 'default_sim.png'
-                                            };
-                                        @endphp
-                                        <img src="{{ asset('assets/img/operators/' . $logo) }}" class="me-3 rounded-circle border" width="40" height="40" alt="{{ $offer->operator_name }}">
-                                        <div class="fw-bold">{{ $offer->operator_name }}</div>
-                                    </div>
+                                    <div class="fw-bold text-dark">{{ $offer->operator_name }}</div>
                                 </td>
                                 <td>
                                     <div class="fw-bold text-dark mb-0">{{ $offer->title }}</div>
@@ -88,9 +75,9 @@
                                 <td class="text-end px-4">
                                     <div class="btn-group shadow-sm rounded-pill bg-white border p-1">
                                         <button class="btn btn-sm btn-light border-0 rounded-circle text-primary me-1" 
-                                                onclick="copyOffer('{{ addslashes($offer->operator_name) }}', '{{ addslashes($offer->title) }}', '{{ addslashes($offer->offer_details) }}', {{ $offer->regular_price }}, {{ $offer->offer_price }})"
-                                                title="Copy & Add New">
-                                            <i class="fa-solid fa-copy"></i>
+                                                onclick="openEditModal({{ $offer->id }}, '{{ addslashes($offer->operator_name) }}', '{{ addslashes($offer->title) }}', '{{ addslashes($offer->offer_details) }}', {{ $offer->regular_price }}, {{ $offer->offer_price }})"
+                                                title="Edit Offer">
+                                            <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         <form action="{{ route('admin.sim-offers.destroy', $offer->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this offer?')">
                                             @csrf
@@ -314,8 +301,9 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.sim-offers.store') }}" method="POST">
+            <form action="{{ route('admin.sim-offers.store') }}" method="POST" id="offerForm">
                 @csrf
+                <div id="method_field"></div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Operator Name</label>
@@ -426,17 +414,27 @@
         document.getElementById('modal_details').value       = '';
         document.getElementById('modal_regular_price').value = '';
         document.getElementById('modal_offer_price').value   = '';
+        
+        const form = document.getElementById('offerForm');
+        form.action = "{{ route('admin.sim-offers.store') }}";
+        document.getElementById('method_field').innerHTML = '';
+        
         new bootstrap.Modal(document.getElementById('addOfferModal')).show();
     }
 
-    function copyOffer(operator, title, details, regularPrice, offerPrice) {
-        document.getElementById('modalTitle').textContent    = '📋 Copy & Add Offer';
-        document.getElementById('modalSubtitle').textContent = 'Pre-filled from existing offer. Modify and save.';
+    function openEditModal(id, operator, title, details, regularPrice, offerPrice) {
+        document.getElementById('modalTitle').textContent    = '📝 Edit SIM Offer';
+        document.getElementById('modalSubtitle').textContent = 'Update the details of this existing offer.';
         document.getElementById('modal_operator').value      = operator;
         document.getElementById('modal_title').value         = title;
         document.getElementById('modal_details').value       = details;
         document.getElementById('modal_regular_price').value = regularPrice;
         document.getElementById('modal_offer_price').value   = offerPrice;
+        
+        const form = document.getElementById('offerForm');
+        form.action = `/admin/services/sim-offers/${id}`;
+        document.getElementById('method_field').innerHTML = '<input type="hidden" name="_method" value="PATCH">';
+        
         new bootstrap.Modal(document.getElementById('addOfferModal')).show();
     }
 

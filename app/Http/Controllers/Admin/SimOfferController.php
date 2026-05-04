@@ -6,29 +6,64 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SimOffer;
 use App\Models\SimOfferManage;
+use App\Models\SimOfferRequest;
+use App\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 class SimOfferController extends Controller
 {
     public function index()
     {
         $offers = SimOffer::orderBy('id', 'desc')->paginate(25, ['*'], 'offers_page');
-        $requests = \App\Models\SimOfferRequest::with(['offer', 'user'])->orderBy('id', 'desc')->paginate(25, ['*'], 'requests_page');
+        $requests = SimOfferRequest::with(['offer', 'user'])->orderBy('id', 'desc')->paginate(25, ['*'], 'requests_page');
         $settings = SimOfferManage::first();
         return view('admin.sim_offers.index', compact('offers', 'requests', 'settings'));
     }
 
     public function updateRequestStatus(Request $request, $id)
     {
-        $simRequest = \App\Models\SimOfferRequest::findOrFail($id);
-        $status = $request->input('status');
+        $simRequest = SimOfferRequest::with('user')->findOrFail($id);
+        $oldStatus = $simRequest->status;
+        $newStatus = $request->input('status');
         
-        $simRequest->status = $status;
-        if ($status == 'rejected') {
-            $simRequest->reject_reason = $request->input('reject_reason');
+        DB::beginTransaction();
+        try {
+            $simRequest->status = $newStatus;
+            
+            if ($newStatus == 'rejected') {
+                $simRequest->reject_reason = $request->input('reject_reason');
+                
+                // Refund money if it was previously pending or confirmed (and now being rejected)
+                // In our current flow, money is deducted at submission.
+                if ($oldStatus != 'rejected') {
+                    $user = $simRequest->user;
+                    if ($user) {
+                        $user->increment('voucher_balance', $simRequest->price);
+                        
+                        // Create a transaction log for refund
+                        Transaction::create([
+                            'user_id' => $user->id,
+                            'refer_id' => $user->referCode,
+                            'amount' => $simRequest->price,
+                            'type' => 'income',
+                            'payment_gateway' => 'Voucher',
+                            'description' => 'SIM Offer Refunded (ID: '.$simRequest->id.')',
+                            'update_at' => date("d-m-Y h:i A"),
+                            'created_at' => date("d-m-Y h:i A"),
+                            'date' => now()
+                        ]);
+                    }
+                }
+            }
+            
+            $simRequest->save();
+            DB::commit();
+            return back()->with('success', 'Request updated successfully!');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong: ' . $e->getMessage());
         }
-        $simRequest->save();
-
-        return back()->with('success', 'Request updated successfully!');
     }
 
     /**
@@ -92,6 +127,27 @@ class SimOfferController extends Controller
 
         return redirect()->route('admin.sim-offers.index')
             ->with('success', "{$saved} টি অফার সফলভাবে save হয়েছে!");
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'operator_name' => 'required',
+            'title'         => 'required',
+            'regular_price' => 'required|numeric',
+            'offer_price'   => 'required|numeric',
+        ]);
+
+        $offer = SimOffer::findOrFail($id);
+        $offer->update([
+            'operator_name' => $request->operator_name,
+            'title'         => $request->title,
+            'offer_details' => $request->offer_details,
+            'regular_price' => $request->regular_price,
+            'offer_price'   => $request->offer_price,
+        ]);
+
+        return back()->with('success', 'SIM Offer updated successfully!');
     }
 
     public function destroy($id)

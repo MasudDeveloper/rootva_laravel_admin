@@ -104,6 +104,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             Route::post('/bulk-store', [SimOfferController::class, 'bulkStore'])->name('bulk-store');
             Route::post('/update-settings', [SimOfferController::class, 'updateSettings'])->name('update-settings');
             Route::post('/requests/{id}/update', [SimOfferController::class, 'updateRequestStatus'])->name('update-request-status');
+            Route::patch('/{id}', [SimOfferController::class, 'update'])->name('update');
             Route::delete('/{id}', [SimOfferController::class, 'destroy'])->name('destroy');
         });
 
