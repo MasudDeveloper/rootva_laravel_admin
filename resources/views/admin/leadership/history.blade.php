@@ -61,7 +61,7 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-muted small">
-                            {{ date('d M Y', strtotime($winner->created_at)) }}
+                            {{ \Carbon\Carbon::parse($winner->created_at)->format('d-m-Y h:i A') }}
                         </td>
                     </tr>
                     @empty

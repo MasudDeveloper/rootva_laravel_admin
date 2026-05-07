@@ -16,6 +16,9 @@
     <!-- Heroicons / FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ asset('css/admin-custom.css') }}">
     
@@ -29,7 +32,8 @@
     <!-- Sidebar -->
     <aside class="sidebar" :class="sidebarOpen || 'sidebar-closed'" 
            :style="sidebarOpen ? '' : 'transform: translateX(-100%)'">
-        <div class="sidebar-header">
+        <div class="sidebar-header d-flex align-items-center gap-3">
+            <img src="{{ asset('assets/img/logo.png') }}" alt="Logo" style="width: 40px; height: 40px; border-radius: 10px;">
             <span class="sidebar-logo">Rootva Admin</span>
         </div>
         

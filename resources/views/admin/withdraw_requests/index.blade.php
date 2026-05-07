@@ -50,6 +50,7 @@
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold">User / ID</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Gateway</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Type</th>
+                        <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Date/Time</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-end">Net Amount</th>
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold text-end">Actions</th>
                     </tr>
@@ -69,6 +70,11 @@
                             <span class="badge {{ $req->balance_type === 'voucher' ? 'bg-info-soft text-info' : 'bg-primary-soft text-primary' }} rounded-pill text-capitalize">
                                 {{ $req->balance_type }}
                             </span>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-dark small fw-medium">
+                                {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
+                            </div>
                         </td>
                         <td class="py-3 text-end">
                             <div class="fw-bold text-danger">৳{{ number_format($req->amount, 2) }}</div>
@@ -107,7 +113,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-money-bill-transfer fa-3x mb-3 d-block opacity-25"></i>
                             No {{ strtolower($status) }} withdrawal requests found.
                         </td>

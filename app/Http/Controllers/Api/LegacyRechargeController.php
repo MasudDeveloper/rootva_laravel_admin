@@ -40,7 +40,14 @@ class LegacyRechargeController extends Controller
         }
 
         // ✅ Generate Transaction ID
-        $tran_id = 'RCH_' . strtoupper(uniqid());
+        // ✅ Generate Transaction ID (matching the format in demo)
+        $tran_id = 'TXN_' . time() . rand(10, 99);
+
+        // ✅ Check Balance Before API Call
+        $user = DB::table('sign_up')->where('id', $user_id)->first();
+        if (!$user || $user->voucher_balance < $amount) {
+            return response()->json(["status" => false, "message" => "Insufficient voucher balance"]);
+        }
 
         // ✅ Step 1: Insert initial pending transaction
         $initial_response = json_encode(["stage" => "initiated", "tran_id" => $tran_id], JSON_UNESCAPED_UNICODE);
@@ -56,21 +63,28 @@ class LegacyRechargeController extends Controller
             'created_at' => $now
         ]);
 
-        // ✅ Step 2: Send Recharge Request to SohojPay API
-        $api_key = "Kxp1tqS0ZrLzwkYwqUQLrNLifUP0ZUhpuPajwVlhGy6sZuaKWSYRFttFMUUU";
-        $api_url = "https://secure.sohojpaybd.com/recharge/request/create";
+        // ✅ Step 2: Send Recharge Request to Info-Uddokta API
+        $api_key = "b757dc1768aa0e76fbafaee2be7ec307";
+        $api_url = "https://info-uddokta.com/telecom/api/recharge.php";
 
         try {
-            $response = Http::withHeaders([
-                "SOHOJPAY-API-KEY" => $api_key
-            ])->timeout(60)->post($api_url, [
-                "tran_id" => $tran_id,
+            \Log::info("Recharge Request: " . $api_url . "?" . http_build_query([
+                "key" => $api_key,
                 "number" => $number,
-                "operator" => $operator,
                 "amount" => $amount,
-                "type" => '1'
+                "operator" => $operator,
+                "id" => $tran_id
+            ]));
+
+            $response = Http::timeout(60)->get($api_url, [
+                "key" => $api_key,
+                "number" => $number,
+                "amount" => $amount,
+                "operator" => $operator,
+                "id" => $tran_id
             ]);
 
+            \Log::info("Recharge Response: " . $response->body());
             $api_data = $response->json();
 
             if (!$api_data) {
@@ -83,20 +97,28 @@ class LegacyRechargeController extends Controller
 
             // ✅ Step 4: Handle API success/failure
             $status = 'pending';
-            if (isset($api_data['status']) && $api_data['status'] === "success") {
-                $status = 'success';
-                $msg = "আপনার {$number} নম্বরে ৳{$amount} রিচার্জ সফল হয়েছে (Txn: {$tran_id})";
+            $response_msg = "Recharge Request Sent";
 
-                // ✅ Wallet deduct
-                DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
+            if (isset($api_data['status'])) {
+                if ($api_data['status'] === "success") {
+                    $status = 'success';
+                    $response_msg = "Recharge Successful";
+                    $msg = "আপনার {$number} নম্বরে ৳{$amount} রিচার্জ সফল হয়েছে (Txn: {$tran_id})";
 
-                // ✅ Add notification
-                DB::table('notifications')->insert([
-                    'user_id' => $user_id,
-                    'message' => $msg,
-                    'is_read' => 0,
-                    'created_at' => $now
-                ]);
+                    // ✅ Wallet deduct
+                    DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
+
+                    // ✅ Add notification
+                    DB::table('notifications')->insert([
+                        'user_id' => $user_id,
+                        'message' => $msg,
+                        'is_read' => 0,
+                        'created_at' => $now
+                    ]);
+                } elseif ($api_data['status'] === "error") {
+                    $status = 'failed';
+                    $response_msg = $api_data['message'] ?? "Recharge Failed";
+                }
             }
 
             // ✅ Step 5: Update final transaction record
@@ -109,7 +131,7 @@ class LegacyRechargeController extends Controller
             return response()->json([
                 "success" => ($status === 'success'),
                 "status" => ($status === 'success'),
-                "message" => ($status === 'success') ? "Recharge Successful" : "Recharge Request Send",
+                "message" => $response_msg,
                 "tran_id" => $tran_id,
                 "response" => json_encode($api_data, JSON_UNESCAPED_UNICODE)
             ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -221,7 +243,13 @@ class LegacyRechargeController extends Controller
         $history = DB::table('recharge_transactions')
             ->where('user_id', $user_id)
             ->orderBy('id', 'DESC')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $api_data = json_decode($item->api_response, true);
+                $item->api_message = $api_data['api_response']['message'] ?? ($api_data['message'] ?? null);
+                $item->provider_trx_id = $api_data['api_response']['trx_id'] ?? ($api_data['trx_id'] ?? null);
+                return $item;
+            });
 
         return response()->json([
             "success" => true,
@@ -247,7 +275,7 @@ class LegacyRechargeController extends Controller
             return response()->json(["status" => false, "message" => "Insufficient balance"]);
         }
 
-        $tran_id = uniqid("TRX_");
+        $tran_id = 'TXN_' . time() . rand(10, 99);
         DB::transaction(function () use ($user, $amount, $tran_id, $request) {
             $user->decrement('voucher_balance', $amount);
             RechargeTransaction::create([
@@ -262,18 +290,23 @@ class LegacyRechargeController extends Controller
             ]);
         });
 
-        // SohojPay API Call
-        $response = Http::withHeaders(['SOHOJPAY-API-KEY' => 'F3Jj0G6ipwXrlZg985y7wiN0yUxQ8IFiCQSw1kdwmZy6IniniHf5MqoiBozf'])
-            ->post('https://secure.sohojpaybd.com/recharge/request/create', [
-                "number" => $request->input('number'),
-                "type" => 1,
-                "operator" => $request->input('operator'),
-                "package_id" => $request->input('package_id'),
-                "tran_id" => $tran_id,
-                "amount" => $amount
-            ]);
+        // Info-Uddokta API Call
+        $api_key = "b757dc1768aa0e76fbafaee2be7ec307";
+        $api_url = "https://info-uddokta.com/telecom/api/recharge.php";
 
-        $status = $response->successful() && $response->json('status') ? 'success' : 'failed';
+        $response = Http::get($api_url, [
+            "key" => $api_key,
+            "number" => $request->input('number'),
+            "amount" => $amount,
+            "operator" => $request->input('operator'),
+            "id" => $tran_id
+        ]);
+
+        $api_data = $response->json();
+        $status = 'failed';
+        if ($response->successful() && isset($api_data['status']) && $api_data['status'] === 'success') {
+            $status = 'success';
+        }
         if ($status === 'failed') {
             $user->increment('voucher_balance', $amount);
         }

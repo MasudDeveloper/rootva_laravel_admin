@@ -41,6 +41,7 @@
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold">User Information</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Payment Details</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Transaction ID</th>
+                        <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Date/Time</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-end">Amount</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-center">Status</th>
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold text-end">Actions</th>
@@ -67,6 +68,11 @@
                         </td>
                         <td class="py-3">
                             <code class="text-primary bg-primary-soft px-2 py-1 rounded small fw-bold">{{ $req->transaction_id }}</code>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-dark small fw-medium">
+                                {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
+                            </div>
                         </td>
                         <td class="py-3 text-end fw-extrabold text-dark">
                             ৳{{ number_format($req->amount ?? 0, 2) }}
@@ -103,7 +109,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <div class="opacity-50">
                                 <i class="fa-solid fa-shield-halved fa-4x mb-3 d-block"></i>
                                 <h5 class="fw-bold">No {{ strtolower($status) }} requests found</h5>

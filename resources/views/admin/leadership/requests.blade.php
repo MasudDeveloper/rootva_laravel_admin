@@ -53,7 +53,7 @@
                             ৳{{ number_format($req->amount, 2) }}
                         </td>
                         <td class="py-3 text-muted small">
-                            {{ date('d M Y h:i A', strtotime($req->created_at)) }}
+                            {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
                         </td>
                         <td class="px-4 py-3 text-end">
                             <div class="d-flex justify-content-end gap-2">

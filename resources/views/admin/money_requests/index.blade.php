@@ -44,6 +44,7 @@
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold">User / ID</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Gateway</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Trx ID</th>
+                        <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Date/Time</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-end">Amount</th>
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold text-end">Actions</th>
                     </tr>
@@ -61,6 +62,11 @@
                         </td>
                         <td class="py-3">
                             <code class="text-dark bg-light px-2 py-1 rounded">{{ $req->transaction_id }}</code>
+                        </td>
+                        <td class="py-3">
+                            <div class="text-dark small fw-medium">
+                                {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
+                            </div>
                         </td>
                         <td class="py-3 text-end fw-bold text-success">
                             ৳{{ number_format($req->amount, 2) }}
@@ -98,7 +104,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-hand-holding-dollar fa-3x mb-3 d-block opacity-25"></i>
                             No {{ strtolower($status) }} money requests found.
                         </td>
