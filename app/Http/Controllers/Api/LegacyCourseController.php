@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\CourseVideo;
+use App\Models\Course;
 use App\Models\SignUp;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +26,7 @@ class LegacyCourseController extends Controller
         }
 
         // course_videos থেকে সব ভিডিও নেওয়া
-        $videos = CourseVideo::orderBy('created_at', 'ASC')->get();
+        $videos = Course::orderBy('created_at', 'ASC')->get();
 
         if ($videos->count() > 0) {
             $formattedVideos = [];
@@ -81,7 +81,7 @@ class LegacyCourseController extends Controller
         }
 
         // মোট ভিডিও সংখ্যা
-        $totalVideos = CourseVideo::count();
+        $totalVideos = Course::count();
 
         // ইউজারের প্রগ্রেস
         $progressData = DB::table('course_progress_videos')
@@ -126,7 +126,7 @@ class LegacyCourseController extends Controller
         }
 
         // ✅ ভিডিওর duration বের করা
-        $video = CourseVideo::find($video_id);
+        $video = Course::find($video_id);
 
         if (!$video) {
             return response()->json(['error' => true, 'message' => 'Video not found']);
@@ -175,15 +175,62 @@ class LegacyCourseController extends Controller
     public function claimCourseBonus(Request $request)
     {
         $userId = $request->input('user_id');
+        $courseId = $request->input('course_id', 1); // Default to 1 if not provided
+
         $user = SignUp::find($userId);
-        if ($user) {
-            $user->increment('wallet_balance', 50); // Example bonus
-            return response()->json([
-                'success' => true, 
-                'message' => 'বোনাস সফলভাবে আপনার ওয়ালেটে যোগ করা হয়েছে'
-            ]);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
         }
-        return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
+
+        // কোর্স তথ্য চেক করা
+        $courseInfo = DB::table('course_info')
+            ->where('user_id', $userId)
+            ->where('course_id', $courseId)
+            ->first();
+
+        if (!$courseInfo) {
+            return response()->json(['success' => false, 'message' => 'কোর্স প্রগ্রেস পাওয়া যায়নি']);
+        }
+
+        if ($courseInfo->completed == 0) {
+            return response()->json(['success' => false, 'message' => 'আগে কোর্সটি সম্পূর্ণ করুন']);
+        }
+
+        if ($courseInfo->claimed == 1) {
+            return response()->json(['success' => false, 'message' => 'আপনি ইতিমধ্যে বোনাস গ্রহণ করেছেন']);
+        }
+
+        try {
+            return DB::transaction(function () use ($user, $courseId) {
+                // বোনাস যোগ করা (এখানে ৫০ টাকা উদাহরণ হিসেবে দেওয়া হয়েছে)
+                $user->increment('wallet_balance', 50);
+
+                // ট্রানজেকশন লগ তৈরি করা
+                DB::table('transactions')->insert([
+                    'user_id' => $user->id,
+                    'amount' => 50,
+                    'type' => 'course_bonus',
+                    'payment_gateway' => 'Course System',
+                    'description' => 'Course completion bonus',
+                    'update_at' => date('d-m-Y h:i A'),
+                    'created_at' => now(),
+                    'date' => date('Y-m-d H:i:s')
+                ]);
+
+                // Claimed আপডেট করা
+                DB::table('course_info')
+                    ->where('user_id', $user->id)
+                    ->where('course_id', $courseId)
+                    ->update(['claimed' => 1]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'বোনাস সফলভাবে আপনার ওয়ালেটে যোগ করা হয়েছে'
+                ]);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'বোনাস প্রদানে সমস্যা হয়েছে']);
+        }
     }
 
     /**
@@ -232,14 +279,14 @@ class LegacyCourseController extends Controller
                     // ✅ কোর্স সম্পূর্ণ
                     DB::table('course_info')->updateOrInsert(
                         ['user_id' => $user_id, 'course_id' => $course_id],
-                        ['completed' => 1, 'claimed' => $claimedValue, 'updated_at' => now()]
+                        ['completed' => 1, 'claimed' => $claimedValue]
                     );
                     $status = "completed";
                 } else {
                     // ⚠️ অসম্পূর্ণ
                     DB::table('course_info')->updateOrInsert(
                         ['user_id' => $user_id, 'course_id' => $course_id],
-                        ['completed' => 0, 'claimed' => 0, 'updated_at' => now()]
+                        ['completed' => 0, 'claimed' => 0]
                     );
                     $status = "incomplete";
                 }

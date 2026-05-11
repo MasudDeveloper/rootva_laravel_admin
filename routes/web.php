@@ -57,7 +57,16 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
     // Microjobs
     Route::get('/microjobs', [MicrojobController::class, 'index'])->name('microjobs.index');
+    Route::get('/microjobs/create', [MicrojobController::class, 'create'])->name('microjobs.create');
+    Route::post('/microjobs', [MicrojobController::class, 'store'])->name('microjobs.store');
+    Route::get('/microjobs/{id}/edit', [MicrojobController::class, 'edit'])->name('microjobs.edit');
+    Route::patch('/microjobs/{id}/update-job', [MicrojobController::class, 'updateJob'])->name('microjobs.update-job');
     Route::patch('/microjobs/{id}', [MicrojobController::class, 'update'])->name('microjobs.update');
+    Route::delete('/microjobs/{id}', [MicrojobController::class, 'destroy'])->name('microjobs.destroy');
+    
+    Route::get('/microjobs/{job_id}/submissions', [MicrojobController::class, 'viewSubmissions'])->name('microjobs.submissions');
+    Route::post('/microjobs/submissions/{id}/approve', [MicrojobController::class, 'approveSubmission'])->name('microjobs.submissions.approve');
+    Route::post('/microjobs/submissions/{id}/reject', [MicrojobController::class, 'rejectSubmission'])->name('microjobs.submissions.reject');
 
     // Salary Requests
     Route::get('/salary-requests', [\App\Http\Controllers\Admin\SalaryRequestController::class, 'index'])->name('salary-requests.index');

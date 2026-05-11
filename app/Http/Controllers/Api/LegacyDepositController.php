@@ -41,11 +41,11 @@ class LegacyDepositController extends Controller
         $current_time = $request->input('current_time', now()->format('Y-m-d H:i:s'));
 
         // ভ্যালিডেশন
-        if (empty($user_id) || empty($amount) || empty($payment_gateway)) {
+        if (empty($user_id) || empty($amount) || empty($payment_gateway) || empty($transaction_id) || empty($account_number)) {
             return response()->json([
                 'success' => false,
                 'status' => 'error',
-                'message' => "সবগুলো ফিল্ড পূরণ করুন"
+                'message' => "সবগুলো ফিল্ড (Amount, Transaction ID, Account Number) পূরণ করুন"
             ]);
         }
 
@@ -64,7 +64,8 @@ class LegacyDepositController extends Controller
                 'amount' => $amount,
                 'transaction_id' => $transaction_id,
                 'payment_gateway' => $payment_gateway,
-                'created_at' => $current_time
+                'created_at' => $current_time,
+                'updated_at' => $current_time
             ]);
 
             return response()->json([
@@ -76,7 +77,7 @@ class LegacyDepositController extends Controller
             return response()->json([
                 'success' => false,
                 'status' => 'error',
-                'message' => "রিকোয়েস্ট সাবমিট করতে ব্যর্থ"
+                'message' => "রিকোয়েস্ট সাবমিট করতে ব্যর্থ: " . $e->getMessage()
             ]);
         }
     }

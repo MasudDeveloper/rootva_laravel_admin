@@ -14,6 +14,9 @@
             <p class="text-muted small mb-0">Review and approve user-submitted microtasks</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ route('admin.microjobs.create') }}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="fa-solid fa-plus me-2"></i>Add New Microjob
+            </a>
             <a href="{{ route('admin.microjobs.index', ['status' => 'pending']) }}"
                class="btn btn-{{ $status === 'pending' ? 'warning' : 'light' }} rounded-pill px-4 shadow-sm">
                 <i class="fa-solid fa-clock me-2"></i>Pending
@@ -35,6 +38,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger border-0 shadow-sm rounded-pill px-4 mb-4">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>{{ session('error') }}
+        </div>
+    @endif
+
     <!-- Jobs Table -->
     <div class="card-modern p-0 overflow-hidden">
         <div class="table-responsive">
@@ -52,8 +61,8 @@
                     @forelse($jobs as $job)
                     <tr>
                         <td class="px-4 py-3 text-center">
-                            @if($job->image_url)
-                                <img src="https://admin.rootvabd.com/service/microjobs/microjobImage/{{ $job->image_url }}" 
+                            @if($job->full_image_url)
+                                <img src="{{ $job->full_image_url }}" 
                                      class="rounded shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
                             @else
                                 <div class="bg-light text-muted rounded d-flex align-items-center justify-content-center mx-auto" 
@@ -65,8 +74,12 @@
                         <td class="py-3">
                             <div class="fw-bold">{{ $job->title }}</div>
                             <div class="d-flex align-items-center gap-2 mt-1">
-                                <span class="text-muted small">By: {{ $job->name }}</span>
-                                <span class="badge bg-primary-soft text-primary extra-small rounded-pill">#{{ $job->referCode }}</span>
+                                @if($job->user_id == 0)
+                                    <span class="badge bg-dark extra-small rounded-pill">ADMIN POSTED</span>
+                                @else
+                                    <span class="text-muted small">By: {{ $job->name }}</span>
+                                    <span class="badge bg-primary-soft text-primary extra-small rounded-pill">#{{ $job->referCode }}</span>
+                                @endif
                             </div>
                         </td>
                         <td class="py-3">
@@ -83,6 +96,12 @@
                             <div class="d-flex justify-content-end gap-2">
                                 <form action="{{ route('admin.microjobs.update', $job->id) }}" method="POST">
                                     @csrf
+                                    
+                                    @if(session('error'))
+                                        <div class="alert alert-danger border-0 shadow-sm rounded-pill px-4 mb-4 small">
+                                            <i class="fa-solid fa-circle-exclamation me-2"></i>{{ session('error') }}
+                                        </div>
+                                    @endif
                                     @method('PATCH')
                                     <input type="hidden" name="action" value="approved">
                                     <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm" onclick="return confirm('Approve this job?')">
@@ -101,14 +120,22 @@
                                     <input type="hidden" name="reject_reason" id="reject-reason-{{ $job->id }}">
                                 </form>
                             </div>
-                            @elseif($job->status === 'approved')
-                                <span class="badge bg-success-soft text-success rounded-pill px-3 py-2">
-                                    <i class="fa-solid fa-check-circle me-1"></i>Approved
-                                </span>
                             @else
-                                <span class="badge bg-danger-soft text-danger rounded-pill px-3 py-2">
-                                    <i class="fa-solid fa-ban me-1"></i>Rejected
-                                </span>
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ route('admin.microjobs.submissions', $job->id) }}" class="btn btn-warning-soft btn-sm rounded-pill px-3">
+                                    <i class="fa-solid fa-list-check me-1"></i>Submissions
+                                </a>
+                                <a href="{{ route('admin.microjobs.edit', $job->id) }}" class="btn btn-primary-soft btn-sm rounded-pill px-3">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <form action="{{ route('admin.microjobs.destroy', $job->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this job?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger-soft btn-sm rounded-pill px-3">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                             @endif
                         </td>
                     </tr>

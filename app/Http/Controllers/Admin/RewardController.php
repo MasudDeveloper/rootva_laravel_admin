@@ -20,7 +20,7 @@ class RewardController extends Controller
     {
         $winners = Transaction::with('user')
             ->where('payment_gateway', 'Daily Bonus')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate(25);
 
         return view('admin.rewards.daily', compact('winners'));
@@ -74,7 +74,8 @@ class RewardController extends Controller
                 'payment_gateway' => 'Daily Bonus',
                 'description' => "🎉 Daily Winner Bonus for {$topReferrer->total} verifications on " . $yesterday->format('Y-m-d'),
                 'update_at' => now()->format('d-m-Y h:i A'),
-                'created_at' => now()->toDateTimeString(),
+                'created_at' => now()->format('d-m-Y h:i A'),
+                'date' => now()
             ]);
         });
 
@@ -88,7 +89,7 @@ class RewardController extends Controller
     {
         $winners = Transaction::with('user')
             ->where('payment_gateway', 'Weekly Bonus')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate(25);
 
         return view('admin.rewards.weekly', compact('winners'));
@@ -116,10 +117,18 @@ class RewardController extends Controller
             return back()->with('error', 'No user qualified for the weekly bonus (minimum 15 verifications required).');
         }
 
+        // Check if weekly bonus already distributed in the last 7 days
+        $exists = Transaction::where('payment_gateway', 'Weekly Bonus')
+            ->where('date', '>=', Carbon::now()->subDays(7))
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Weekly bonus has already been distributed for this week.');
+        }
+
         DB::transaction(function () use ($topReferrer) {
             $user = SignUp::find($topReferrer->user_id);
-            $amount = 500.00; // Reward for weekly top performer
-
+            $amount = 1000.00; // Reward for weekly top performer
             $user->increment('wallet_balance', $amount);
 
             Transaction::create([
@@ -130,11 +139,12 @@ class RewardController extends Controller
                 'payment_gateway' => 'Weekly Bonus',
                 'description' => "🏆 Weekly Top Referrer Bonus for {$topReferrer->total} verifications in 7 days",
                 'update_at' => now()->format('d-m-Y h:i A'),
-                'created_at' => now()->toDateTimeString(),
+                'created_at' => now()->format('d-m-Y h:i A'),
+                'date' => now()
             ]);
         });
 
-        return back()->with('success', "Weekly bonus of ৳500 successfully awarded to {$topReferrer->name}!");
+        return back()->with('success', "Weekly bonus of ৳1000 successfully awarded to {$topReferrer->name}!");
     }
 
     /**
@@ -144,7 +154,7 @@ class RewardController extends Controller
     {
         $spins = Transaction::with('user')
             ->where('payment_gateway', 'Spin Bonus')
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate(50);
 
         return view('admin.rewards.spin', compact('spins'));
@@ -197,7 +207,8 @@ class RewardController extends Controller
                     'payment_gateway' => 'Referral Bonus',
                     'description' => "Level $currentLevel Affiliate Bonus from account verification",
                     'update_at' => now()->format('d-m-Y h:i A'),
-                    'created_at' => now()->toDateTimeString(),
+                    'created_at' => now()->format('d-m-Y h:i A'),
+                    'date' => now()
                 ]);
 
                 // 3. Extra Perk for Level 1

@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Banner;
 use App\Models\Review;
-use App\Models\Category;
-use App\Models\Tutorial;
+use App\Models\ProductCategory;
+
 use App\Models\SimOffer;
 use App\Models\SignUp;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +46,7 @@ class LegacyContentController extends Controller
      */
     public function getCategories()
     {
-        $categories = Category::all();
+        $categories = ProductCategory::all();
         return response()->json($categories);
     }
 
@@ -55,17 +55,19 @@ class LegacyContentController extends Controller
      */
     public function getPopupData()
     {
-        $popup = DB::table('popups')->latest()->first();
-        return response()->json($popup);
+        $popup = DB::table('popup_banner')->latest('id')->first();
+        if ($popup) {
+            return response()->json([
+                'success' => true,
+                'image_url' => $popup->image_url,
+                'message' => $popup->message,
+                'button_text' => $popup->button_text,
+                'button_url' => $popup->button_url
+            ]);
+        }
+        return response()->json(['success' => false]);
     }
 
-    /**
-     * Legacy Tutorials (get_tutorials.php)
-     */
-    public function getTutorials()
-    {
-        $tutorials = Tutorial::all();
-        return response()->json($tutorials);
-    }
+
 
 }

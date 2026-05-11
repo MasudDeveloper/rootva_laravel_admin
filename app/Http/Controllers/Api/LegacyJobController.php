@@ -94,32 +94,5 @@ class LegacyJobController extends Controller
         ]);
     }
 
-    /**
-     * Legacy Math Answer (solve_math.php)
-     */
-    public function submitMathAnswer(Request $request)
-    {
-        $userId = $request->input('user_id');
-        $amount = 0.50; // Example earning per math solve
-        $currentTime = date("d-m-Y h:i A");
 
-        $user = SignUp::find($userId);
-        if ($user) {
-            $user->increment('wallet_balance', $amount);
-            
-            Transaction::create([
-                'user_id' => $userId,
-                'amount' => $amount,
-                'type' => 'income',
-                'payment_gateway' => 'Typing Job',
-                'description' => 'Math solve income',
-                'update_at' => $currentTime,
-                'created_at' => $currentTime,
-                'date' => now()
-            ]);
-
-            return response()->json(['success' => true, 'message' => 'Earning added']);
-        }
-        return response()->json(['success' => false, 'message' => 'User not found']);
-    }
 }

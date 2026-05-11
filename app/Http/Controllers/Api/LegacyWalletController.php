@@ -260,23 +260,5 @@ class LegacyWalletController extends Controller
         }
     }
 
-    /**
-     * Legacy Math Income (get_math_income.php)
-     */
-    public function getMathIncome(Request $request)
-    {
-        $user_id = $request->input('user_id');
 
-        if (!$user_id) {
-            return response()->json(['error' => 'User ID is required']);
-        }
-
-        $total_amount = Transaction::where('user_id', $user_id)
-            ->where('payment_gateway', 'Typing Job')
-            ->sum('amount');
-
-        return response()->json([
-            'math_income' => (float)$total_amount
-        ]);
-    }
 }
