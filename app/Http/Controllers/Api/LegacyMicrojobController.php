@@ -29,25 +29,38 @@ class LegacyMicrojobController extends Controller
 
         $user = SignUp::find($user_id);
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'User not found']);
+            return response()->json(['status' => 'error', 'message' => 'User not found']);
         }
 
         if ($user->voucher_balance < $total_amount) {
-            return response()->json(['success' => false, 'message' => 'Insufficient balance']);
+            return response()->json(['status' => 'error', 'message' => 'Insufficient balance']);
         }
 
         $image_name = null;
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $image_name = time() . "_" . $file->getClientOriginalName();
-            $file->move(public_path('service/microjobs/microjobImage'), $image_name);
+            $image_name = time() . "_" . basename($file->getClientOriginalName());
+            
+            // Absolute server path provided by user
+            $destPath = '/home/syfoocuv/admin.rootvabd.com/service/microjobs/microjobImage';
+            
+            // Fallback for local development
+            if (!file_exists('/home/syfoocuv')) {
+                $destPath = public_path('service/microjobs/microjobImage');
+            }
+
+            if (!file_exists($destPath)) {
+                mkdir($destPath, 0777, true);
+            }
+            
+            $file->move($destPath, $image_name);
         }
 
         try {
             DB::beginTransaction();
 
-            // Create Microjob
-            $job = Microjob::create([
+            // 1. Create Microjob
+            $job = DB::table('microjobs')->insertGetId([
                 'user_id' => $user_id,
                 'title' => $title,
                 'description' => $description,
@@ -61,8 +74,8 @@ class LegacyMicrojobController extends Controller
                 'created_at' => $current_time
             ]);
 
-            // Insert into transactions
-            $transaction = Transaction::create([
+            // 2. Insert into transactions
+            $transaction_id = DB::table('transactions')->insertGetId([
                 'user_id' => $user_id,
                 'amount' => $total_amount,
                 'payment_gateway' => 'Microjob Post',
@@ -73,11 +86,15 @@ class LegacyMicrojobController extends Controller
                 'date' => $current_time
             ]);
 
-            // Deduct Balance
-            $user->decrement('voucher_balance', $total_amount);
+            // 3. Deduct Balance
+            DB::table('sign_up')
+                ->where('id', $user_id)
+                ->decrement('voucher_balance', $total_amount);
 
-            // Update Microjob with transaction_id
-            $job->update(['transaction_id' => $transaction->id]);
+            // 4. Update Microjob with transaction_id
+            DB::table('microjobs')
+                ->where('id', $job)
+                ->update(['transaction_id' => $transaction_id]);
 
             DB::commit();
 
@@ -90,7 +107,7 @@ class LegacyMicrojobController extends Controller
             DB::rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'Failed: ' . $e->getMessage()
             ]);
         }
     }
@@ -290,62 +307,76 @@ class LegacyMicrojobController extends Controller
     {
         $job_id = $request->input('job_id');
         $worker_user_id = $request->input('user_id');
-        $proof_message = $request->input('message');
-        $date = now()->toDateTimeString();
+        $proof_message = $request->input('proof_message') ?? $request->input('message');
+        $now = now()->toDateTimeString();
 
-        if (!$job_id || !$worker_user_id || !$proof_message) {
-            return response()->json(["success" => false, "message" => "Required parameters missing."]);
+        if (!$job_id || !$worker_user_id) {
+            return response()->json(["status" => "error", "message" => "Required parameters missing."]);
         }
 
-        // check if already submitted
+        // 1. Check duplicate submission
         $check = DB::table('microjob_submissions')
             ->where('job_id', $job_id)
             ->where('worker_user_id', $worker_user_id)
             ->exists();
 
         if ($check) {
-            return response()->json(["success" => false, "message" => "You already submitted proof for this job."]);
+            return response()->json(["status" => "error", "message" => "You already submitted this job."]);
         }
 
-        // check job target
+        // 2. Check job availability
         $job = DB::table('microjobs')->where('id', $job_id)->first();
         if (!$job || $job->remaining_target <= 0) {
-            return response()->json(["success" => false, "message" => "Job target reached!"]);
+            return response()->json(["status" => "error", "message" => "This job is not available"]);
         }
 
-        $proof_image = '';
+        // 3. Handle proof image upload
+        $proof_image_url = null;
         if ($request->hasFile('proof_image')) {
             $file = $request->file('proof_image');
+            $fileName = time() . "_" . $file->getClientOriginalName();
             
-            // Validate file type
-            $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-            if (!in_array($file->getMimeType(), $allowed_types)) {
-                return response()->json(["success" => false, "message" => "Invalid file type. Only JPG, PNG, and GIF are allowed."]);
+            // Matches old API path: uploads/proofs/
+            $destPath = public_path('uploads/proofs');
+            if (!file_exists($destPath)) {
+                mkdir($destPath, 0777, true);
             }
-
-            // Generate unique file name
-            $proof_image = time() . '_' . $file->getClientOriginalName();
-
-            // Move the uploaded file to 'ProofImage' folder in public
-            $file->move(public_path('ProofImage'), $proof_image);
+            
+            $file->move($destPath, $fileName);
+            $proof_image_url = 'uploads/proofs/' . $fileName;
         }
 
-        // insert submission
-        $submitted = DB::table('microjob_submissions')->insert([
-            'job_id' => $job_id,
-            'worker_user_id' => $worker_user_id,
-            'proof_message' => $proof_message,
-            'proof_image' => $proof_image,
-            'status' => 'pending',
-            'created_at' => $date
-        ]);
+        try {
+            DB::beginTransaction();
 
-        if ($submitted) {
-            // decrease job target
-            DB::table('microjobs')->where('id', $job_id)->decrement('remaining_target');
-            return response()->json(["success" => true, "message" => "Proof submitted successfully!"]);
-        } else {
-            return response()->json(["success" => false, "message" => "Failed to submit proof."]);
+            // 4. Save submission
+            DB::table('microjob_submissions')->insert([
+                'worker_user_id' => $worker_user_id,
+                'job_id' => $job_id,
+                'proof_message' => $proof_message,
+                'proof_image_url' => $proof_image_url,
+                'status' => 'pending',
+                'created_at' => $now
+            ]);
+
+            // 5. Update remaining target
+            DB::table('microjobs')
+                ->where('id', $job_id)
+                ->decrement('remaining_target');
+
+            DB::commit();
+
+            return response()->json([
+                "status" => "success", 
+                "message" => "Job completed successfully"
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "status" => "error", 
+                "message" => "Failed to submit job: " . $e->getMessage()
+            ]);
         }
     }
 }

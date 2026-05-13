@@ -22,75 +22,105 @@ class LegacyTeamController extends Controller
         $limit = (int)$request->input('limit', 20);
         $offset = (int)$request->input('offset', 0);
         $targetLevel = $request->input('level'); // Optional level filter
+        $statusFilter = $request->input('status'); // Optional status filter: 'verified', 'unverified'
         
         $startTime = microtime(true);
         
-        // Use a lean array to store [id, level]
+        // Use a lean array to store [id, level, is_verified]
         $treeNodes = [];
         
-        // Level 1: Fetch only necessary columns to save memory
+        // Level 1
         $level1 = DB::table('sign_up')
             ->where('referredBy', $referCode)
-            ->get(['id', 'referCode']);
+            ->get(['id', 'referCode', 'is_verified']);
             
         $currentLevelCodes = [];
         foreach ($level1 as $user) {
-            if (!$targetLevel || $targetLevel == 1) {
-                $treeNodes[] = ['id' => $user->id, 'level' => 1];
+            $passStatus = true;
+            if ($statusFilter === 'verified' && !in_array($user->is_verified, [1, 3])) $passStatus = false;
+            if ($statusFilter === 'unverified' && in_array($user->is_verified, [1, 3])) $passStatus = false;
+
+            if ($passStatus && (!$targetLevel || $targetLevel == 1)) {
+                $treeNodes[] = ['id' => $user->id, 'level' => 1, 'is_verified' => $user->is_verified];
             }
             $currentLevelCodes[] = $user->referCode;
         }
         
-        // Levels 2-10: Iterative Breadth-First Scan
+        // Levels 2-10
         for ($i = 2; $i <= 10; $i++) {
             if (empty($currentLevelCodes)) break;
             
             $nextLevel = DB::table('sign_up')
                 ->whereIn('referredBy', $currentLevelCodes)
-                ->get(['id', 'referCode']);
+                ->get(['id', 'referCode', 'is_verified']);
                 
             if ($nextLevel->isEmpty()) break;
             
             $currentLevelCodes = [];
             foreach ($nextLevel as $user) {
-                if (!$targetLevel || $targetLevel == $i) {
-                    $treeNodes[] = ['id' => $user->id, 'level' => $i];
-                }
+                $treeNodes[] = ['id' => $user->id, 'level' => $i, 'is_verified' => $user->is_verified];
                 $currentLevelCodes[] = $user->referCode;
             }
-            
-            // If we only wanted a specific level and we just finished it, we can stop scanning further
             if ($targetLevel && $i >= $targetLevel) break;
         }
-        
-        // Collect all IDs for processing
+
+        // 1. Calculate TOTAL counts for the whole tree/level BEFORE status filtering
         $allNodes = collect($treeNodes);
+        
+        // Apply level filter to nodes before counting if targetLevel is set
+        if ($targetLevel) {
+            $allNodes = $allNodes->where('level', (int)$targetLevel);
+        }
+        
         $total = $allNodes->count();
+        $verifiedTotal = $allNodes->filter(function($u) {
+            return in_array($u['is_verified'], [1, 3]);
+        })->count();
+        $unverifiedTotal = $total - $verifiedTotal;
+
+        // 2. Now apply status filtering for the paginated result
+        if ($statusFilter) {
+            $pageNodes = $allNodes->filter(function($u) use ($statusFilter) {
+                $isV = in_array($u['is_verified'], [1, 3]);
+                if ($statusFilter === 'verified') return $isV;
+                if ($statusFilter === 'unverified') return !$isV;
+                return true;
+            });
+        } else {
+            $pageNodes = $allNodes;
+        }
         
         if ($isUpdated) {
             // 1. Sort IDs DESC (matches old PHP behavior) and Slice
-            $pageNodes = $allNodes->sortByDesc('id')->values()->slice($offset, $limit);
-            $hasMore = ($offset + $limit) < $total;
+            $hasMore = $pageNodes->count() > ($offset + $limit);
+            $pageNodes = $pageNodes->sortByDesc('id')->values()->slice($offset, $limit);
             
             // 2. Fetch full objects only for the current page
             $pageIds = $pageNodes->pluck('id')->toArray();
             $users = SignUp::whereIn('id', $pageIds)
                 ->orderBy('id', 'desc')
-                ->get();
+                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at', 'verified_at']);
                 
             // 3. Re-attach Level and UserID fields
             $levelMap = $pageNodes->pluck('level', 'id')->toArray();
-            foreach ($users as $user) {
+            $users = $users->map(function($user) use ($levelMap) {
                 $user->level = $levelMap[$user->id] ?? 0;
                 $user->user_id = $user->id;
-            }
+                $user->is_verified = (int)$user->is_verified; // Explicit cast
+                return $user;
+            });
 
             return response()->json([
                 'status' => 'success',
                 'success' => true,
                 'message' => "ডেটা সফলভাবে লোড হয়েছে",
-                'data' => [['users' => $users->values()]], // data[0].users structure
+                'data' => [[
+                    'level' => (int)($targetLevel ?? 0),
+                    'users' => $users->values()
+                ]],
                 'total' => $total,
+                'verified_total' => $verifiedTotal,
+                'unverified_total' => $unverifiedTotal,
                 'hasMore' => $hasMore,
                 'load_time' => round(microtime(true) - $startTime, 4) . " sec"
             ]);
@@ -99,7 +129,8 @@ class LegacyTeamController extends Controller
             $allIds = $allNodes->pluck('id')->toArray();
             $users = SignUp::whereIn('id', $allIds)
                 ->orderBy('id', 'desc')
-                ->get();
+                ->limit(500) // Hard limit for non-paginated to prevent crashes
+                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at']);
                 
             $levelMap = $allNodes->pluck('level', 'id')->toArray();
             foreach ($users as $user) {
@@ -141,15 +172,18 @@ class LegacyTeamController extends Controller
         for ($i = 1; $i <= 10; $i++) {
             if (empty($currentLevelCodes)) break;
             
-            $users = DB::table('sign_up')
+            // Fetch users for this level to count and get codes for next level
+            $levelUsers = DB::table('sign_up')
                 ->whereIn('referredBy', $currentLevelCodes)
-                ->select('id', 'referCode', 'is_verified')
+                ->select('referCode', 'is_verified')
                 ->get();
                 
-            if ($users->isEmpty()) break;
+            if ($levelUsers->isEmpty()) break;
             
-            $totalCount = $users->count();
-            $verifiedCount = $users->where('is_verified', 1)->count() + $users->where('is_verified', 3)->count();
+            $totalCount = $levelUsers->count();
+            $verifiedCount = $levelUsers->filter(function($u) {
+                return in_array($u->is_verified, [1, 3]);
+            })->count();
             $unverifiedCount = $totalCount - $verifiedCount;
             
             $summary[] = [
@@ -159,7 +193,8 @@ class LegacyTeamController extends Controller
                 'unverified' => $unverifiedCount
             ];
             
-            $currentLevelCodes = $users->pluck('referCode')->filter()->toArray();
+            // Collect codes for the next level
+            $currentLevelCodes = $levelUsers->pluck('referCode')->filter()->toArray();
         }
 
         return response()->json([
@@ -176,20 +211,55 @@ class LegacyTeamController extends Controller
     {
         $myReferCode = $request->query('referCode');
         $searchCode = $request->query('searchReferCode');
-        
-        $user = SignUp::where('referCode', $searchCode)->first();
-        
-        if ($user) {
-            $user->user_id = $user->id;
+
+        if (!$myReferCode || !$searchCode) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ ডেটা']);
+        }
+
+        // 1. Check if the searched user exists globally first
+        $targetUser = SignUp::where('referCode', $searchCode)->first();
+        if (!$targetUser) {
+            return response()->json(['status' => 'error', 'message' => 'ইউজার পাওয়া যায়নি']);
+        }
+
+        // 2. Perform a Breadth-First search up to 7 levels to verify ownership
+        $currentLevelCodes = [$myReferCode];
+        $foundInTree = false;
+        $foundLevel = 0;
+
+        for ($level = 1; $level <= 7; $level++) {
+            $usersInLevel = DB::table('sign_up')
+                ->whereIn('referredBy', $currentLevelCodes)
+                ->get(['id', 'referCode']);
+
+            if ($usersInLevel->isEmpty()) break;
+
+            foreach ($usersInLevel as $user) {
+                if ($user->referCode === $searchCode) {
+                    $foundInTree = true;
+                    $foundLevel = $level;
+                    break 2; // Exit both loop and foreach
+                }
+            }
+
+            $currentLevelCodes = $usersInLevel->pluck('referCode')->toArray();
+        }
+
+        if ($foundInTree) {
+            $targetUser->user_id = $targetUser->id;
+            $targetUser->level = $foundLevel;
             return response()->json([
                 'status' => 'success',
                 'success' => true,
                 'message' => "ইউজার পাওয়া গেছে",
-                'referUsers' => [$user]
+                'referUsers' => [$targetUser]
             ]);
         }
-        
-        return response()->json(['status' => 'error', 'message' => 'ইউজার পাওয়া যায়নি']);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => '❌ এই রেফার কোডটি আপনার ট্রিতে খুঁজে পাওয়া যায়নি'
+        ]);
     }
 
     /**

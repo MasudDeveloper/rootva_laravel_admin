@@ -195,11 +195,16 @@ class MicrojobController extends Controller
 
         $job = Microjob::findOrFail($id);
         
+        $old_total = (int) $job->total_target;
+        $new_total = (int) $request->total_target;
+        $diff = $new_total - $old_total;
+
         $data = [
             'title' => $request->title,
             'description' => $request->description,
             'amount_per_worker' => $request->amount_per_worker,
-            'total_target' => $request->total_target,
+            'total_target' => $new_total,
+            'remaining_target' => $job->remaining_target + $diff,
             'job_url' => $request->job_url,
             'is_active' => $request->is_active,
             'updated_at' => now(),
@@ -244,8 +249,13 @@ class MicrojobController extends Controller
         $job = Microjob::findOrFail($id);
         
         // Delete image if exists
-        if ($job->image_url && file_exists(public_path('service/microjobs/microjobImage/' . $job->image_url))) {
-            @unlink(public_path('service/microjobs/microjobImage/' . $job->image_url));
+        $path = '/home/syfoocuv/admin.rootvabd.com/service/microjobs/microjobImage';
+        if (!file_exists('/home/syfoocuv')) {
+            $path = public_path('service/microjobs/microjobImage');
+        }
+
+        if ($job->image_url && file_exists($path . '/' . $job->image_url)) {
+            @unlink($path . '/' . $job->image_url);
         }
 
         $job->delete();

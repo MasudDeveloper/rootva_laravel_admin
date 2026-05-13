@@ -41,4 +41,12 @@ class SignUp extends Authenticatable
         'password',
         'api_token',
     ];
+
+    protected $casts = [
+        'is_verified' => 'integer',
+        'wallet_balance' => 'double',
+        'voucher_balance' => 'double',
+        'math_game' => 'integer',
+        'verification_popup_shown' => 'integer',
+    ];
 }

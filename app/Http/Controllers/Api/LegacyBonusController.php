@@ -16,7 +16,15 @@ class LegacyBonusController extends Controller
      */
     public function getWinnersByDate(Request $request)
     {
-        $dateStr = $request->query('date', Carbon::today()->toDateString());
+        if (!$request->has('date')) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Date is required',
+                'winner' => []
+            ]);
+        }
+
+        $dateStr = $request->query('date');
         $start = $dateStr . ' 00:00:00';
         $end = $dateStr . ' 23:59:59';
         
@@ -24,33 +32,22 @@ class LegacyBonusController extends Controller
             ->join('sign_up as s', 'vr.user_id', '=', 's.id')
             ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
             ->select(
+                's.referredBy as refer_id',
                 'r.id as user_id',
-                'r.referCode as refer_id',
                 'r.name',
                 'r.profile_pic_url',
                 DB::raw('COUNT(*) as total_verifications')
             )
             ->where('vr.status', 'Approved')
             ->whereBetween('vr.verified_raw_time', [$start, $end])
-            ->groupBy('s.referredBy', 'r.id', 'r.referCode', 'r.name', 'r.profile_pic_url')
+            ->groupBy('s.referredBy', 'r.id', 'r.name', 'r.profile_pic_url')
             ->having('total_verifications', '>=', 4)
             ->orderByDesc('total_verifications')
             ->limit(1)
-            ->get()
-            ->map(function($w) {
-                return [
-                    'user_id' => (string)$w->user_id,
-                    'refer_id' => $w->refer_id,
-                    'name' => $w->name,
-                    'profile_pic_url' => $w->profile_pic_url,
-                    'total_verifications' => (string)$w->total_verifications,
-                ];
-            });
+            ->get();
 
         return response()->json([
             'status' => true,
-            'success' => true,
-            'date' => $dateStr,
             'winner' => $winners
         ]);
     }
@@ -76,85 +73,104 @@ class LegacyBonusController extends Controller
      */
     public function getWeeklyWinnersByDate(Request $request)
     {
-        $dateStr = $request->query('week_start_date', $request->query('date', Carbon::today()->toDateString()));
-        $start = Carbon::parse($dateStr)->startOfDay()->toDateTimeString();
-        $end = Carbon::parse($dateStr)->addDays(7)->endOfDay()->toDateTimeString();
+        if (!$request->has('week_start_date')) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Week start date is required',
+                'winner' => []
+            ]);
+        }
+
+        $week_start_date = $request->query('week_start_date');
+        $week_end_date = Carbon::parse($week_start_date)->addDays(6)->toDateString();
+
+        $start = $week_start_date . ' 00:00:00';
+        $end = $week_end_date . ' 23:59:59';
         
         $winners = DB::table('verification_requests as vr')
             ->join('sign_up as s', 'vr.user_id', '=', 's.id')
             ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
             ->select(
+                's.referredBy as refer_id',
                 'r.id as user_id',
-                'r.referCode as refer_id',
                 'r.name',
                 'r.profile_pic_url',
                 DB::raw('COUNT(*) as total_verifications')
             )
             ->where('vr.status', 'Approved')
             ->whereBetween('vr.verified_raw_time', [$start, $end])
-            ->groupBy('s.referredBy', 'r.id', 'r.referCode', 'r.name', 'r.profile_pic_url')
-            ->having('total_verifications', '>=', 15)
+            ->groupBy('s.referredBy', 'r.id', 'r.name', 'r.profile_pic_url')
+            ->having('total_verifications', '>=', 20)
             ->orderByDesc('total_verifications')
             ->limit(1)
-            ->get()
-            ->map(function($w) {
-                return [
-                    'user_id' => (string)$w->user_id,
-                    'refer_id' => $w->refer_id,
-                    'name' => $w->name,
-                    'profile_pic_url' => $w->profile_pic_url,
-                    'total_verifications' => (string)$w->total_verifications,
-                ];
-            });
+            ->get();
 
         return response()->json([
             'status' => true,
-            'success' => true,
-            'date' => $dateStr,
-            'winner' => $winners
+            'winner' => $winners,
+            'week_info' => [
+                'start_date' => $week_start_date,
+                'end_date' => $week_end_date
+            ]
         ]);
     }
 
     private function getRanking($filter)
     {
-        $query = DB::table('sign_up')
-            ->select('referredBy', DB::raw('count(*) as total_verifications'))
-            ->where('is_verified', 1)
-            ->whereNotNull('referredBy')
-            ->where('referredBy', '!=', '');
+        $query = DB::table('verification_requests as vr')
+            ->join('sign_up as s', 'vr.user_id', '=', 's.id')
+            ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
+            ->select(
+                's.referredBy as referrer_id',
+                'r.name',
+                'r.profile_pic_url',
+                DB::raw('COUNT(*) as total_verifications')
+            )
+            ->where('vr.status', 'Approved');
+
+        $metadata = [];
 
         switch ($filter) {
             case 'today':
-                $query->whereRaw("STR_TO_DATE(verified_at, '%d-%m-%Y') = ?", [Carbon::today()->toDateString()]);
+                $date = Carbon::today()->toDateString();
+                $start = $date . ' 00:00:00';
+                $end = $date . ' 23:59:59';
+                $query->whereBetween('vr.verified_raw_time', [$start, $end]);
                 break;
             case 'weekly':
-                // Start week from Saturday to match Android app logic
-                $startOfWeek = Carbon::now()->startOfWeek(Carbon::SATURDAY)->toDateString();
-                $query->whereRaw("STR_TO_DATE(verified_at, '%d-%m-%Y') >= ?", [$startOfWeek]);
+                // Start week from Saturday to match legacy logic
+                $startOfWeek = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+                $endOfWeek = $startOfWeek->copy()->addDays(6)->endOfDay();
+                
+                $query->whereBetween('vr.verified_raw_time', [
+                    $startOfWeek->toDateTimeString(), 
+                    $endOfWeek->toDateTimeString()
+                ]);
+
+                $metadata['start_of_week'] = $startOfWeek->toDateString();
+                $metadata['end_of_week'] = $endOfWeek->toDateString();
                 break;
         }
 
-        $rankings = $query->groupBy('referredBy')
+        $rankings = $query->groupBy('s.referredBy', 'r.name', 'r.profile_pic_url')
             ->orderBy('total_verifications', 'desc')
-            ->limit(20)
             ->get();
 
-        $response = $rankings->map(function ($rank, $index) {
-            $user = SignUp::where('referCode', $rank->referredBy)->first();
+        $response = $rankings->map(function ($rank) {
             return [
-                'rank' => $index + 1,
-                'user_id' => $user ? (string)$user->id : "0",
-                'name' => $user ? $user->name : 'Unknown User',
-                'profile_pic_url' => $user ? $user->profile_pic_url : null,
+                'referrer_id' => $rank->referrer_id,
+                'name' => $rank->name,
+                'profile_pic_url' => $rank->profile_pic_url ?? "",
                 'total_verifications' => (int)$rank->total_verifications,
-                'total_income' => (int)$rank->total_verifications, // For backward compatibility
             ];
         });
 
-        return response()->json([
-            'status' => true,
-            'success' => true,
-            'ranking' => $response
-        ]);
+        $result = ['status' => true];
+        if (!empty($metadata)) {
+            $result = array_merge($result, $metadata);
+        }
+        $result['ranking'] = $response;
+
+        return response()->json($result);
     }
 }

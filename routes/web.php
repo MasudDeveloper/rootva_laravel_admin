@@ -75,6 +75,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
     // Banners
     Route::get('/review-jobs', [ReviewJobManagementController::class, 'index'])->name('review-jobs.index');
+    Route::get('/review-jobs/create', [ReviewJobManagementController::class, 'create'])->name('review-jobs.create');
+    Route::post('/review-jobs', [ReviewJobManagementController::class, 'store'])->name('review-jobs.store');
+    Route::get('/review-jobs/{id}/edit', [ReviewJobManagementController::class, 'edit'])->name('review-jobs.edit');
+    Route::patch('/review-jobs/{id}', [ReviewJobManagementController::class, 'update'])->name('review-jobs.update');
+    Route::delete('/review-jobs/{id}', [ReviewJobManagementController::class, 'destroy'])->name('review-jobs.destroy');
+
     Route::get('/review-jobs/{job_id}/submissions', [ReviewJobManagementController::class, 'submissions'])->name('review-jobs.submissions');
     Route::post('/review-jobs/submissions/{id}/approve', [ReviewJobManagementController::class, 'approve'])->name('review-jobs.approve');
     Route::post('/review-jobs/submissions/{id}/reject', [ReviewJobManagementController::class, 'reject'])->name('review-jobs.reject');
@@ -178,6 +184,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             Route::get('/spin', [RewardController::class, 'spinHistory'])->name('spin');
             Route::get('/refer-bonus', [RewardController::class, 'referBonusIndex'])->name('refer-bonus');
             Route::post('/refer-bonus/distribute', [RewardController::class, 'distributeManualReferBonus'])->name('refer-bonus.distribute');
+            Route::get('/refer-bonus/history', [RewardController::class, 'referBonusHistory'])->name('refer-bonus.history');
+            Route::patch('/refer-bonus/{id}', [RewardController::class, 'editReferBonus'])->name('refer-bonus.update');
+            Route::delete('/refer-bonus/{id}', [RewardController::class, 'deleteReferBonus'])->name('refer-bonus.delete');
         });
     });
 });

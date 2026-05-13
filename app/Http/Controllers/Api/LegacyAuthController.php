@@ -31,7 +31,8 @@ class LegacyAuthController extends Controller
                     'message' => 'লগইন সফল',
                     'userId' => $user->id,
                     'password_updated_at' => $user->password_updated_at ?? '',
-                    'api_token' => $token
+                    'api_token' => $token,
+                    'is_verified' => (int) $user->is_verified
                 ]);
             } else {
                 return response()->json(['message' => 'ভুল পাসওয়ার্ড']);
@@ -248,6 +249,7 @@ class LegacyAuthController extends Controller
                     'userId' => $user->id,
                     'password_updated_at' => (string) $user->password_updated_at,
                     'api_token' => $token,
+                    'is_verified' => 0
                 ]);
             }
         } catch (\Exception $e) {

@@ -28,6 +28,7 @@ class LegacyUserController extends Controller
                 'status' => 'success',
                 'message' => 'ইউজার তথ্য সফলভাবে পাওয়া গেছে',
                 'users' => $user,
+                'is_verified' => (int) $user->is_verified,
                 'show_verification_popup' => (bool)($user->is_verified == 1 && $user->verification_popup_shown == 0)
             ]);
         }
@@ -45,6 +46,7 @@ class LegacyUserController extends Controller
         if ($user) {
             return response()->json([
                 'users' => $user,
+                'is_verified' => (int) $user->is_verified,
                 'message' => "ডেটা সফলভাবে লোড হয়েছে"
             ]);
         }

@@ -17,113 +17,184 @@ class LegacySalaryController extends Controller
     public function getSalaryProgress(Request $request)
     {
         $userId = $request->query('user_id');
-        Log::info("Salary progress request for user: " . $userId);
+        
+        if (!$userId) {
+            return response()->json(['error' => true, 'message' => 'User ID missing']);
+        }
 
         $user = SignUp::find($userId);
-
         if (!$user) {
-            Log::warning("User not found for salary progress: " . $userId);
-            return response()->json(['success' => false, 'message' => 'User not found']);
+            return response()->json(['error' => true, 'message' => 'User not found']);
         }
 
         $referCode = $user->referCode;
 
-        // 🟢 Step 1: Last monthly salary bonus date from bonus_tracker
+        // 🟢 Step 1: Last monthly salary bonus date
+        // 🟢 Step 1: Get last bonus claim time for this user
         $lastBonus = DB::table('bonus_tracker')
             ->where('user_id', $userId)
             ->where('bonus_type', 'monthly_salary')
-            ->latest('created_at')
+            ->orderBy('created_at', 'desc')
             ->first();
         
         $startDate = $lastBonus ? $lastBonus->created_at : '2000-01-01 00:00:00';
+        if (is_object($startDate)) {
+            $startDate = $startDate->toDateTimeString();
+        }
 
-        // 🟢 Step 2: Get Level 1 referrals
+        // 🟢 Step 2: Fetch all Level 1 and Level 2 referrals in batches
         $level1 = DB::table('sign_up')
             ->where('referredBy', $referCode)
             ->get(['id', 'referCode', 'upline_changed_at']);
 
-        $level1VerifiedIds = [];
+        if ($level1->isEmpty()) {
+            return $this->formatSalaryResponse($referCode, 0, 0, 0, 0, false, [
+                'debug_start_date' => $startDate,
+                'debug_current_time' => now('Asia/Dhaka')->toDateTimeString()
+            ]);
+        }
+
+        $level1Codes = $level1->pluck('referCode')->filter()->toArray();
+        $level2 = DB::table('sign_up')
+            ->whereIn('referredBy', $level1Codes)
+            ->get(['id', 'referredBy', 'verified_raw_time']);
+
+        // Group Level 2 by their referrer (Level 1 referCode) for easy access
+        $level2ByParent = $level2->groupBy('referredBy');
+
+        // 🟢 Step 3: Pre-fetch ALL relevant Approved verifications
+        $allReferralIds = $level1->pluck('id')->merge($level2->pluck('id'))->unique()->toArray();
+        $allVerifications = DB::table('verification_requests')
+            ->whereIn('user_id', $allReferralIds)
+            ->where('status', 'Approved')
+            ->get(['user_id', 'verified_raw_time', 'updated_at'])
+            ->groupBy('user_id');
+
+        // 🟢 Step 4: Process statistics in memory
+        $level1VerifiedCount = 0;
         $level1Active = 0;
         $level2VerifiedTotal = 0;
 
+        $tz = 'Asia/Dhaka';
+        $startTs = \Carbon\Carbon::parse($startDate, $tz)->getTimestamp();
+
         foreach ($level1 as $l1) {
-            $l1Id = $l1->id;
-            $l1ReferCode = $l1->referCode;
-            $transferDate = $l1->upline_changed_at;
-            $filterDate = $transferDate ? $transferDate : $startDate;
-
-            // 🔸 Check if Level 1 is verified after filterDate
-            $isL1Verified = DB::table('verification_requests')
-                ->where('user_id', $l1Id)
-                ->where('status', 'Approved')
-                ->where('verified_raw_time', '>', $filterDate)
-                ->exists();
-
-            if ($isL1Verified) {
-                $level1VerifiedIds[] = $l1Id;
+            // Validate upline_changed_at to avoid zero-date issues
+            $l1TransferDate = $l1->upline_changed_at;
+            if ($l1TransferDate === '0000-00-00 00:00:00' || !$l1TransferDate) {
+                $l1TransferDate = null;
             }
 
-            // 🔸 Get Level 2 (referrals of Level 1)
-            if ($l1ReferCode) {
-                $level2Ids = DB::table('sign_up')
-                    ->where('referredBy', $l1ReferCode)
-                    ->pluck('id')
-                    ->toArray();
+            $l1TransferTs = $l1TransferDate ? \Carbon\Carbon::parse($l1TransferDate, $tz)->getTimestamp() : 0;
+            
+            // 🔸 RULE: Verified must be AFTER (Latest of Last Salary OR Transfer Date)
+            $l1FilterTs = max($startTs, $l1TransferTs);
+            
+            // Check L1 verified
+            $l1Vers = $allVerifications->get($l1->id);
+            $isL1Verified = false;
+            if ($l1Vers) {
+                foreach ($l1Vers as $v) {
+                    $vTimeStr = $v->verified_raw_time;
+                    if (($vTimeStr === '0000-00-00 00:00:00' || !$vTimeStr) && isset($v->updated_at)) {
+                        $vTimeStr = $v->updated_at;
+                    }
 
-                if (!empty($level2Ids)) {
-                    // 🔸 Count Level 2 verified after filterDate
-                    $l2VerifiedCount = DB::table('verification_requests')
-                        ->whereIn('user_id', $level2Ids)
-                        ->where('status', 'Approved')
-                        ->where('verified_raw_time', '>', $filterDate)
-                        ->count();
+                    if ($vTimeStr && $vTimeStr !== '0000-00-00 00:00:00') {
+                        try {
+                            $vTs = null;
+                            if (preg_match('/^\d{2}-\d{2}-\d{4}/', $vTimeStr)) {
+                                $vTs = \Carbon\Carbon::createFromFormat('d-m-Y h:i A', $vTimeStr, $tz)->getTimestamp();
+                            } else {
+                                $vTs = \Carbon\Carbon::parse($vTimeStr, $tz)->getTimestamp();
+                            }
 
-                    $level2VerifiedTotal += $l2VerifiedCount;
-
-                    // 🔹 Level-1 Active Condition: Verified + at least 2 verified Level 2
-                    if ($isL1Verified && $l2VerifiedCount >= 2) {
-                        $level1Active++;
+                            if ($vTs > $l1FilterTs) {
+                                $isL1Verified = true;
+                            }
+                        } catch (\Exception $e) {}
                     }
                 }
             }
+            
+            if ($isL1Verified) {
+                $level1VerifiedCount++;
+            }
+
+            // Check L2 verifications
+            $l2OfThisL1 = $level2ByParent->get($l1->referCode, collect());
+            $l2VerifiedOfThisL1ForActive = 0;
+
+            foreach ($l2OfThisL1 as $l2Member) {
+                $l2Vers = $allVerifications->get($l2Member->id);
+                if ($l2Vers) {
+                    foreach ($l2Vers as $v) {
+                        $vTimeStr = $v->verified_raw_time;
+                        if (($vTimeStr === '0000-00-00 00:00:00' || !$vTimeStr) && isset($v->updated_at)) {
+                            $vTimeStr = $v->updated_at;
+                        }
+
+                        if ($vTimeStr && $vTimeStr !== '0000-00-00 00:00:00') {
+                            try {
+                                $vTs = null;
+                                if (preg_match('/^\d{2}-\d{2}-\d{4}/', $vTimeStr)) {
+                                    $vTs = \Carbon\Carbon::createFromFormat('d-m-Y h:i A', $vTimeStr, $tz)->getTimestamp();
+                                } else {
+                                    $vTs = \Carbon\Carbon::parse($vTimeStr, $tz)->getTimestamp();
+                                }
+
+                                // 1. Total Level 2 Verified
+                                $l2TotalFilterTs = max($startTs, $l1TransferTs);
+                                if ($vTs > $l2TotalFilterTs) {
+                                    $level2VerifiedTotal++;
+                                }
+
+                                // 2. Count for Level 1 Active Check
+                                $l2ActiveFilterTs = max($startTs, $l1TransferTs);
+                                
+                                if ($vTs > $l2ActiveFilterTs) {
+                                    $l2VerifiedOfThisL1ForActive++;
+                                }
+                            } catch (\Exception $e) {}
+                        }
+                    }
+                }
+            }
+
+            // Level 1 Active Condition: Verified + >= 2 verified Level 2
+            if ($isL1Verified && $l2VerifiedOfThisL1ForActive >= 2) {
+                $level1Active++;
+            }
         }
 
-        // 🟢 Step 3: Total Orders (only 'Delivered')
+        // 🟢 Step 5: Total Orders
         $totalOrders = DB::table('orders')
             ->where('user_id', $userId)
             ->where('order_status', 'Delivered')
             ->where('created_at', '>', $startDate)
             ->count();
 
-        // 🟢 Step 4: Eligibility Check
-        $level1VerifiedCount = count($level1VerifiedIds);
-        $isEligible = ($level1VerifiedCount >= 30 && $level1Active >= 10 && $level2VerifiedTotal >= 60 && $totalOrders >= 1);
+        $isEligible = (
+            $level1VerifiedCount >= 30 &&
+            $level2VerifiedTotal >= 60 &&
+            $level1Active >= 10 &&
+            $totalOrders >= 1
+        );
 
-        // 🟢 Step 5: Status
-        $lastRequest = SalaryRequest::where('user_id', $userId)
-            ->where('request_type', 'monthly_salary')
-            ->latest('requested_at')
-            ->first();
-        
-        $status = $lastRequest ? $lastRequest->status : 'None';
+        return $this->formatSalaryResponse($referCode, $level1VerifiedCount, $level1Active, $level2VerifiedTotal, $totalOrders, $isEligible);
+    }
 
-        $responseData = [
-            'success' => true,
+    private function formatSalaryResponse($referCode, $l1v, $l1a, $l2v, $orders, $eligible)
+    {
+        return response()->json([
             'referCode' => (string)$referCode,
-            'level1_verified' => (int)$level1VerifiedCount,
-            'level1_active' => (int)$level1Active,
-            'level2_verified' => (int)$level2VerifiedTotal,
-            'total_orders' => (int)$totalOrders,
-            'eligible' => (bool)$isEligible,
-            'status' => (string)$status,
-            'admin_note' => (string)($lastRequest ? ($lastRequest->admin_note ?? '') : ''),
+            'level1_verified' => (int)$l1v,
+            'level1_active' => (int)$l1a,
+            'level2_verified' => (int)$l2v,
+            'eligible' => (bool)$eligible,
             'bonus_claimed' => false,
-            'last_bonus_date' => (string)$startDate
-        ];
-
-        Log::info("Response for user " . $userId . ": " . json_encode($responseData));
-
-        return response()->json($responseData);
+            'total_orders' => (int)$orders
+        ], 200, [], JSON_PRETTY_PRINT);
     }
 
     /**

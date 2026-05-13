@@ -15,13 +15,22 @@ class LegacyNotificationController extends Controller
     public function getNotifications(Request $request)
     {
         $userId = $request->query('user_id');
-        if (!$userId) return response()->json([]);
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'notifications' => []
+            ]);
+        }
 
         $notifications = Notification::where('user_id', $userId)
             ->orderBy('id', 'desc')
             ->get();
             
-        return response()->json($notifications);
+        return response()->json([
+            'success' => true,
+            'notifications' => $notifications
+        ]);
     }
 
     /**

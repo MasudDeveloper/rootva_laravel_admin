@@ -170,9 +170,15 @@ class RewardController extends Controller
 
     public function distributeManualReferBonus(Request $request)
     {
-        $request->validate(['refer_code' => 'required|exists:sign_up,referCode']);
+        $request->validate([
+            'refer_code' => 'required|exists:sign_up,referCode',
+            'selected_levels' => 'nullable|array',
+            'selected_levels.*' => 'integer|min:1|max:10'
+        ]);
         
         $referCode = $request->refer_code;
+        $selectedLevels = $request->selected_levels; // Array of integers like [1, 2, 5]
+        
         $user = SignUp::where('referCode', $referCode)->first();
         $referredBy = $user->referredBy;
         
@@ -181,10 +187,9 @@ class RewardController extends Controller
         }
 
         $levels = [76, 35, 15, 10, 6, 5, 4, 3, 2, 2];
-        $currentLevel = 1;
         $count = 0;
 
-        DB::transaction(function () use ($levels, $referredBy, $referCode, &$count) {
+        DB::transaction(function () use ($levels, $referredBy, $referCode, $selectedLevels, &$count) {
             $uplinerRefer = $referredBy;
             $currentLevel = 1;
 
@@ -193,35 +198,95 @@ class RewardController extends Controller
                 
                 if (!$upliner) break;
 
-                $bonus = $levels[$currentLevel - 1];
-                
-                // 1. Update Balance
-                $upliner->increment('wallet_balance', $bonus);
+                // Check if this level is selected (if any selection was made)
+                if (empty($selectedLevels) || in_array($currentLevel, $selectedLevels)) {
+                    $bonus = $levels[$currentLevel - 1];
+                    
+                    // 1. Update Balance
+                    $upliner->increment('wallet_balance', $bonus);
 
-                // 2. Log Transaction
-                Transaction::create([
-                    'user_id' => $upliner->id,
-                    'refer_id' => $referCode, // Subject user's code
-                    'amount' => $bonus,
-                    'type' => 'commission',
-                    'payment_gateway' => 'Referral Bonus',
-                    'description' => "Level $currentLevel Affiliate Bonus from account verification",
-                    'update_at' => now()->format('d-m-Y h:i A'),
-                    'created_at' => now()->format('d-m-Y h:i A'),
-                    'date' => now()
-                ]);
+                    // 2. Log Transaction
+                    Transaction::create([
+                        'user_id' => $upliner->id,
+                        'refer_id' => $referCode, // Subject user's code
+                        'amount' => $bonus,
+                        'type' => 'commission',
+                        'payment_gateway' => 'Referral Bonus',
+                        'description' => "Level $currentLevel Affiliate Bonus from account verification",
+                        'update_at' => now()->format('d-m-Y h:i A'),
+                        'created_at' => now()->format('d-m-Y h:i A'),
+                        'date' => now()
+                    ]);
 
-                // 3. Extra Perk for Level 1
-                if ($currentLevel === 1) {
-                    $upliner->increment('math_game', 4);
+                    // 3. Extra Perk for Level 1
+                    if ($currentLevel === 1) {
+                        $upliner->increment('math_game', 4);
+                    }
+                    
+                    $count++;
                 }
 
                 $uplinerRefer = $upliner->referredBy;
                 $currentLevel++;
-                $count++;
             }
         });
 
-        return back()->with('success', "Referral bonus successfully distributed through $count levels.");
+        return back()->with('success', "Referral bonus successfully distributed through $count selected levels.");
+    }
+
+    public function referBonusHistory(Request $request)
+    {
+        $query = Transaction::with('user')
+            ->where(function($q) {
+                $q->where('payment_gateway', 'Referral Bonus')
+                  ->orWhere('type', 'commission');
+            });
+
+        if ($request->filled('refer_code')) {
+            $query->where('refer_id', 'like', '%' . $request->refer_code . '%');
+        }
+
+        $bonuses = $query->orderBy('id', 'desc')->paginate(50);
+
+        return view('admin.rewards.refer_bonus_history', compact('bonuses'));
+    }
+
+    public function editReferBonus(Request $request, $id)
+    {
+        $request->validate(['amount' => 'required|numeric|min:0']);
+        
+        $transaction = Transaction::findOrFail($id);
+        $user = SignUp::findOrFail($transaction->user_id);
+        
+        $oldAmount = $transaction->amount;
+        $newAmount = $request->amount;
+        $difference = $newAmount - $oldAmount;
+
+        DB::transaction(function () use ($transaction, $user, $newAmount, $difference) {
+            // Update Transaction
+            $transaction->update(['amount' => $newAmount]);
+            
+            // Adjust User Balance
+            $user->increment('wallet_balance', $difference);
+        });
+
+        return back()->with('success', "Bonus updated successfully. User balance adjusted by ৳$difference.");
+    }
+
+    public function deleteReferBonus($id)
+    {
+        $transaction = Transaction::findOrFail($id);
+        $user = SignUp::findOrFail($transaction->user_id);
+        $amount = $transaction->amount;
+
+        DB::transaction(function () use ($transaction, $user, $amount) {
+            // Subtract from balance
+            $user->decrement('wallet_balance', $amount);
+            
+            // Delete transaction
+            $transaction->delete();
+        });
+
+        return back()->with('success', "Bonus deleted successfully. ৳$amount subtracted from user's balance.");
     }
 }
