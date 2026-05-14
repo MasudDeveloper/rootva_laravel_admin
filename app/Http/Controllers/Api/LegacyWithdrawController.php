@@ -46,7 +46,16 @@ class LegacyWithdrawController extends Controller
             return response()->json(['status' => 'error', 'message' => "অবৈধ ডেটা"]);
         }
 
-        if (!is_numeric($amount) || $amount < 250) {
+        if (!is_numeric($amount)) {
+            return response()->json(['status' => 'error', 'message' => "অবৈধ অ্যামাউন্ট"]);
+        }
+
+        // ব্যাংক ট্রান্সফারের জন্য ৩০০০ টাকার চেক (Backend Enforcement)
+        if ($payment_gateway === 'Bank Transfer' && $amount < 3000) {
+            return response()->json(['status' => 'error', 'message' => "ব্যাংকের জন্য সর্বনিম্ন ৩০০০ টাকা উত্তোলন করতে পারবেন"]);
+        }
+
+        if ($amount < 250) {
             return response()->json(['status' => 'error', 'message' => "নূন্যতম ২৫০ টাকা তুলতে পারবেন"]);
         }
 
@@ -134,6 +143,12 @@ class LegacyWithdrawController extends Controller
 
         if (empty($number) || empty($otp)) {
             return response()->json(["success" => false, "message" => "Number or OTP missing"]);
+        }
+
+        // Security Check: Only send OTP to registered users to prevent API spamming
+        $userExists = SignUp::where('number', $number)->exists();
+        if (!$userExists) {
+            return response()->json(["success" => false, "message" => "এই নম্বরটি আমাদের সিস্টেমে নিবন্ধিত নেই"]);
         }
 
         $api_key = "w4yxyJpY112w3wDVDegDTgFgrLpqKGrsejeMz8jN";

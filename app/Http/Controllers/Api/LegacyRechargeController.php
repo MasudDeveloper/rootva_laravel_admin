@@ -24,208 +24,181 @@ class LegacyRechargeController extends Controller
         $number = trim($request->input('number', ''));
         $operator = trim($request->input('operator', ''));
         $amount = floatval($request->input('amount', 0));
+        
+        $api_url = "https://www.raseltel.com/api/recharge.php";
+        $api_key = "b2b05206f2d526518de81a0f6feb8064";
+        $tran_id = "TXN_" . time() . rand(10, 99);
         $now = now()->toDateTimeString();
+        $currentTime = now()->format("d-m-Y h:i A");
 
         // ✅ Validation checks
         if (!$user_id || empty($number) || empty($operator) || $amount <= 0) {
-            return response()->json(["status" => false, "message" => "Invalid Request"]);
+            return response()->json(["status" => false, "message" => "সবগুলো তথ্য প্রদান করুন"]);
         }
 
         if (strlen($number) != 11) {
-            return response()->json(["status" => false, "message" => "Invalid mobile number"]);
+            return response()->json(["status" => false, "message" => "মোবাইল নম্বরটি ১১ ডিজিটের হতে হবে"]);
         }
 
-        if ($amount < 20) {
-            return response()->json(["success" => false, "status" => false, "message" => "Minimum recharge amount is 20 Taka"]);
+        if ($amount < 10) {
+            return response()->json(["status" => false, "message" => "সর্বনিম্ন রিচার্জ ১০ টাকা"]);
         }
-
-        // ✅ Generate Transaction ID
-        // ✅ Generate Transaction ID (matching the format in demo)
-        $tran_id = 'TXN_' . time() . rand(10, 99);
 
         // ✅ Check Balance Before API Call
         $user = DB::table('sign_up')->where('id', $user_id)->first();
         if (!$user || $user->voucher_balance < $amount) {
-            return response()->json(["status" => false, "message" => "Insufficient voucher balance"]);
+            return response()->json(["status" => false, "message" => "পর্যাপ্ত ভাউচার ব্যালেন্স নেই"]);
         }
 
-        // ✅ Step 1: Insert initial pending transaction
-        $initial_response = json_encode(["stage" => "initiated", "tran_id" => $tran_id], JSON_UNESCAPED_UNICODE);
-        
+        // Map operator to RaselTel short codes (lowercase) as per documentation
+        $operator_code = 'gp';
+        $op_upper = strtoupper($operator);
+        if (str_contains($op_upper, 'GP')) $operator_code = 'gp';
+        elseif (str_contains($op_upper, 'ROBI')) $operator_code = 'robi';
+        elseif (str_contains($op_upper, 'AIRTEL')) $operator_code = 'at';
+        elseif (str_contains($op_upper, 'BANGLALINK')) $operator_code = 'bl';
+        elseif (str_contains($op_upper, 'TELETALK')) $operator_code = 'tt';
+        elseif (str_contains($op_upper, 'SKITTO')) $operator_code = 'sk';
+        else $operator_code = strtolower($operator);
+
+        // ✅ Step 1: Insert Initial Transaction (Pending)
         DB::table('recharge_transactions')->insert([
             'user_id' => $user_id,
             'number' => $number,
-            'operator' => $operator,
             'amount' => $amount,
+            'operator' => $operator,
             'tran_id' => $tran_id,
             'status' => 'pending',
-            'api_response' => $initial_response,
             'created_at' => $now
         ]);
 
-        // ✅ Step 2: Send Recharge Request to Info-Uddokta API
-        $api_key = "b757dc1768aa0e76fbafaee2be7ec307";
-        $api_url = "https://info-uddokta.com/telecom/api/recharge.php";
-
         try {
-            \Log::info("Recharge Request: " . $api_url . "?" . http_build_query([
-                "key" => $api_key,
+            $params = [
+                "api_key" => $api_key,
                 "number" => $number,
                 "amount" => $amount,
-                "operator" => $operator,
-                "id" => $tran_id
-            ]));
+                "operator" => $operator_code
+            ];
 
-            $response = Http::timeout(60)->get($api_url, [
-                "key" => $api_key,
-                "number" => $number,
-                "amount" => $amount,
-                "operator" => $operator,
-                "id" => $tran_id
-            ]);
+            \Log::info("Recharge Request: " . $api_url . "?" . http_build_query($params));
+
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0'
+            ])->timeout(120)->get($api_url, $params);
 
             \Log::info("Recharge Response: " . $response->body());
+            
             $api_data = $response->json();
+            $body = $response->body();
 
-            if (!$api_data) {
-                DB::table('recharge_transactions')->where('tran_id', $tran_id)->update([
-                    'status' => 'failed',
-                    'api_response' => $response->body()
-                ]);
-                return response()->json(["status" => false, "message" => "Invalid API Response", "response" => $response->body()]);
-            }
-
-            // ✅ Step 4: Handle API success/failure
+            // ✅ Handle success/failure
             $status = 'pending';
             $response_msg = "Recharge Request Sent";
 
+            // If JSON parsing fails but body contains success indicators
+            if (!$api_data) {
+                if (stripos($body, 'success') !== false || stripos($body, 'API') !== false) {
+                    $api_data = ['status' => 'success', 'message' => 'Processed (Text Response)'];
+                } else {
+                    return response()->json([
+                        "status" => false, 
+                        "message" => "Invalid API Response", 
+                        "response" => $body
+                    ]);
+                }
+            }
+
             if (isset($api_data['status'])) {
-                if ($api_data['status'] === "success") {
+                $api_status = strtolower($api_data['status']);
+                if ($api_status === "success") {
                     $status = 'success';
                     $response_msg = "Recharge Successful";
                     $msg = "আপনার {$number} নম্বরে ৳{$amount} রিচার্জ সফল হয়েছে (Txn: {$tran_id})";
 
-                    // ✅ Wallet deduct
+                    // Wallet deduct
                     DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
+                    
+                    // Log transaction
+                    DB::table('transactions')->insert([
+                        'user_id' => $user_id,
+                        'amount' => $amount,
+                        'type' => 'voucher_payment',
+                        'payment_gateway' => 'Recharge',
+                        'description' => "Mobile Recharge to {$number} ({$operator})",
+                        'update_at' => $current_time,
+                        'created_at' => $now,
+                        'date' => $now
+                    ]);
 
-                    // ✅ Add notification
+                    $this->giveRechargeCommission($user_id, $amount, $tran_id);
+
+                    // Add notification
                     DB::table('notifications')->insert([
                         'user_id' => $user_id,
                         'message' => $msg,
                         'is_read' => 0,
                         'created_at' => $now
                     ]);
-                } elseif ($api_data['status'] === "error") {
-                    $status = 'failed';
-                    $response_msg = $api_data['message'] ?? "Recharge Failed";
+                } elseif ($api_status === "error" || $api_status === "failed") {
+                    // Check if trx_id is present despite error status
+                    if (isset($api_data['trx_id']) || isset($api_data['id'])) {
+                        $status = 'pending';
+                        $response_msg = "Recharge is processing (Provider returned trx_id)";
+                        
+                        DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
+                        DB::table('notifications')->insert([
+                            'user_id' => $user_id,
+                            'message' => "আপনার {$number} নম্বরে ৳{$amount} রিচার্জ প্রসেসিং আছে। (Txn: {$tran_id})",
+                            'is_read' => 0,
+                            'created_at' => $now
+                        ]);
+                    } else {
+                        $status = 'failed';
+                        $response_msg = $api_data['message'] ?? "Recharge Failed";
+                    }
                 }
+            } else if (isset($api_data['trx_id'])) {
+                $status = 'pending';
+                $response_msg = "Recharge Sent (TRX ID: " . $api_data['trx_id'] . ")";
+                DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
             }
 
-            // ✅ Step 5: Update final transaction record
+            // Update final record
             DB::table('recharge_transactions')->where('tran_id', $tran_id)->update([
                 'status' => $status,
-                'api_response' => json_encode(["api_response" => $api_data], JSON_UNESCAPED_UNICODE)
+                'api_response' => json_encode($api_data, JSON_UNESCAPED_UNICODE)
             ]);
 
-            // ✅ Step 6: Return response to app
             return response()->json([
-                "success" => ($status === 'success'),
-                "status" => ($status === 'success'),
+                "success" => ($status !== 'failed'),
+                "status" => ($status !== 'failed'),
                 "message" => $response_msg,
-                "tran_id" => $tran_id,
-                "response" => json_encode($api_data, JSON_UNESCAPED_UNICODE)
-            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
-        } catch (\Exception $e) {
-            DB::table('recharge_transactions')->where('tran_id', $tran_id)->update([
-                'status' => 'failed',
-                'api_response' => json_encode(["error" => $e->getMessage()], JSON_UNESCAPED_UNICODE)
+                "tran_id" => $tran_id
             ]);
-            return response()->json(["status" => false, "message" => "API Connection Failed", "error" => $e->getMessage()]);
-        }
-    }
 
-    public function rechargeSuccessHandler(Request $request)
-    {
-        $user_id = (int) $request->input('user_id');
-        $amount  = (float) $request->input('amount');
-        $operator = trim($request->input('operator', ''));
-        $tran_id = $request->input('tran_id');
-        $number  = $request->input('number');
-        $now     = now()->toDateTimeString();
-        $current_time = date('d-m-Y, h:i A');
-
-        if (!$user_id || !$amount || !$tran_id || !$number) {
-            return response()->json(["status" => false, "message" => "Invalid payload"]);
-        }
-
-        try {
-            return DB::transaction(function () use ($user_id, $amount, $operator, $tran_id, $number, $now, $current_time) {
-                // ✅ Step 1: Insert success transaction
-                DB::table('recharge_transactions')->insert([
-                    'user_id' => $user_id,
-                    'number' => $number,
-                    'operator' => $operator,
-                    'amount' => $amount,
-                    'tran_id' => $tran_id,
-                    'status' => 'success',
-                    'created_at' => $now
-                ]);
-
-                // 2️⃣ Deduct wallet
-                DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
-
-                // 3️⃣ Transaction log
-                $desc = "Recharge ৳$amount to $number (Txn: $tran_id)";
-                DB::table('transactions')->insert([
-                    'user_id' => $user_id,
-                    'amount' => $amount,
-                    'type' => 'recharge',
-                    'payment_gateway' => 'Voucher',
-                    'description' => $desc,
-                    'update_at' => $current_time,
-                    'created_at' => $current_time,
-                    'date' => $now
-                ]);
-
-                // 4️⃣ Send Commission (1.5%)
-                $commission_total = $amount * 0.015; // 1.5%
-                $self_desc = "Self commission from Mobile Recharge";
-                
-                DB::table('transactions')->insert([
-                    'user_id' => $user_id,
-                    'refer_id' => null,
-                    'amount' => $commission_total,
-                    'type' => 'commission',
-                    'payment_gateway' => 'system',
-                    'description' => $self_desc,
-                    'update_at' => $current_time,
-                    'created_at' => $current_time,
-                    'date' => $now
-                ]);
-
-                // Update user's wallet
-                DB::table('sign_up')->where('id', $user_id)->increment('wallet_balance', $commission_total);
-
-                // 5️⃣ Notification
-                $msg = "আপনার {$number} নম্বরে ৳{$amount} রিচার্জ সফল হয়েছে";
-                DB::table('notifications')->insert([
-                    'user_id' => $user_id,
-                    'message' => $msg,
-                    'is_read' => 0,
-                    'created_at' => $now
-                ]);
-
-                // 6️⃣ Push notification
-                $user = DB::table('sign_up')->where('id', $user_id)->first(['fcm_token']);
-                if ($user && $user->fcm_token) {
-                    $this->sendFCMNotification($user->fcm_token, "Recharge Complete", $msg);
-                }
-
-                return response()->json(["status" => true, "message" => "Recharge completed"]);
-            });
         } catch (\Exception $e) {
-            return response()->json(["status" => false, "error" => $e->getMessage()]);
+            \Log::error("Recharge Connection Error: " . $e->getMessage());
+            $status = 'pending';
+            
+            DB::table('recharge_transactions')->where('tran_id', $tran_id)->update([
+                'status' => $status,
+                'api_response' => json_encode(["connection_error" => $e->getMessage()], JSON_UNESCAPED_UNICODE)
+            ]);
+
+            DB::table('sign_up')->where('id', $user_id)->decrement('voucher_balance', $amount);
+            DB::table('notifications')->insert([
+                'user_id' => $user_id,
+                'message' => "আপনার রিচার্জ রিকোয়েস্টটি প্রসেস করা হচ্ছে। (Txn: {$tran_id})",
+                'is_read' => 0,
+                'created_at' => $now
+            ]);
+
+            return response()->json([
+                "success" => true,
+                "status" => true,
+                "message" => "Recharge is being processed. Please wait.",
+                "tran_id" => $tran_id
+            ]);
         }
     }
 
@@ -259,60 +232,58 @@ class LegacyRechargeController extends Controller
     }
 
     /**
-     * Legacy Recharge Alternative (recharge.php)
+     * Give Recharge Commission
      */
-    public function recharge(Request $request)
+    private function giveRechargeCommission($userId, $amount, $tranId)
     {
-        if ($request->input('secret_key') !== 'Masud@1234567890') {
-            return response()->json(["status" => false, "message" => "Unauthorized"], 401);
-        }
+        $user = DB::table('sign_up')->where('id', $userId)->first();
+        if (!$user) return;
 
-        $user_id = $request->input('user_id');
-        $amount = $request->input('amount');
-        $user = SignUp::find($user_id);
+        $now = now()->toDateTimeString();
+        $currentTime = now()->format("d-m-Y h:i A");
 
-        if (!$user || $user->voucher_balance < $amount) {
-            return response()->json(["status" => false, "message" => "Insufficient balance"]);
-        }
-
-        $tran_id = 'TXN_' . time() . rand(10, 99);
-        DB::transaction(function () use ($user, $amount, $tran_id, $request) {
-            $user->decrement('voucher_balance', $amount);
-            RechargeTransaction::create([
-                'user_id' => $user->id,
-                'number' => $request->input('number'),
-                'operator' => $request->input('operator'),
-                'package_id' => $request->input('package_id'),
-                'package_title' => $request->input('title'),
-                'amount' => $amount,
-                'tran_id' => $tran_id,
-                'status' => 'pending'
+        // 1. Self Commission (1.5%)
+        $selfComm = round($amount * 0.015, 2);
+        if ($selfComm > 0) {
+            DB::table('sign_up')->where('id', $userId)->increment('wallet_balance', $selfComm);
+            DB::table('transactions')->insert([
+                'user_id' => $userId,
+                'refer_id' => $user->referCode,
+                'amount' => $selfComm,
+                'type' => 'commission',
+                'payment_gateway' => 'Recharge Commission',
+                'description' => "Recharge Commission for {$tranId}",
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
             ]);
-        });
-
-        // Info-Uddokta API Call
-        $api_key = "b757dc1768aa0e76fbafaee2be7ec307";
-        $api_url = "https://info-uddokta.com/telecom/api/recharge.php";
-
-        $response = Http::get($api_url, [
-            "key" => $api_key,
-            "number" => $request->input('number'),
-            "amount" => $amount,
-            "operator" => $request->input('operator'),
-            "id" => $tran_id
-        ]);
-
-        $api_data = $response->json();
-        $status = 'failed';
-        if ($response->successful() && isset($api_data['status']) && $api_data['status'] === 'success') {
-            $status = 'success';
-        }
-        if ($status === 'failed') {
-            $user->increment('voucher_balance', $amount);
         }
 
-        RechargeTransaction::where('tran_id', $tran_id)->update(['status' => $status, 'api_response' => $response->body()]);
+        // 2. Upline Commission (2 levels, 0.05% each)
+        $uplineComm = round($amount * 0.0005, 2);
+        if ($uplineComm <= 0) return;
 
-        return response()->json(["status" => ($status === 'success'), "message" => ($status === 'success' ? "Recharge successful" : "Recharge failed"), "tran_id" => $tran_id]);
+        $currentUplineReferCode = $user->referredBy;
+        for ($i = 1; $i <= 2; $i++) {
+            if (empty($currentUplineReferCode) || $currentUplineReferCode == "0") break;
+
+            $upline = DB::table('sign_up')->where('referCode', $currentUplineReferCode)->first();
+            if (!$upline) break;
+
+            DB::table('sign_up')->where('id', $upline->id)->increment('wallet_balance', $uplineComm);
+            DB::table('transactions')->insert([
+                'user_id' => $upline->id,
+                'refer_id' => $user->referCode,
+                'amount' => $uplineComm,
+                'type' => 'commission',
+                'payment_gateway' => 'Recharge Team Commission',
+                'description' => "Recharge Commission from {$user->name} (Level {$i})",
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
+            ]);
+
+            $currentUplineReferCode = $upline->referredBy;
+        }
     }
 }

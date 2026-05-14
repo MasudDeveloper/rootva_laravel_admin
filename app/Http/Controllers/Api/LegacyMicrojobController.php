@@ -83,7 +83,7 @@ class LegacyMicrojobController extends Controller
                 'description' => 'Payment For Job Post',
                 'update_at' => $current_time2,
                 'created_at' => $current_time,
-                'date' => $current_time
+                'date' => now()->toDateTimeString()
             ]);
 
             // 3. Deduct Balance

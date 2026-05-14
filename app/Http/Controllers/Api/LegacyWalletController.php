@@ -54,6 +54,8 @@ class LegacyWalletController extends Controller
     public function getTransactionHistory(Request $request)
     {
         $user_id = $request->query('user_id') ?? $request->input('user_id');
+        $limit = (int) ($request->query('limit') ?? 50);
+        $offset = (int) ($request->query('offset') ?? 0);
 
         if ($user_id) {
             $transactions = Transaction::where('user_id', $user_id)
@@ -65,18 +67,13 @@ class LegacyWalletController extends Controller
                         });
                 })
                 ->orderBy('id', 'desc')
-                ->limit(100)
+                ->offset($offset)
+                ->limit($limit)
                 ->get();
 
-            if ($transactions->isNotEmpty()) {
-                return response()->json([
-                    'transactions' => $transactions
-                ]);
-            } else {
-                return response()->json([
-                    'message' => 'কোনো ট্রানজেকশন পাওয়া যায়নি'
-                ]);
-            }
+            return response()->json([
+                'transactions' => $transactions
+            ]);
         } else {
             return response()->json([
                 'message' => 'অবৈধ ডেটা'
@@ -98,39 +95,39 @@ class LegacyWalletController extends Controller
             ]);
         }
 
-        $calculate = function($startDate = null, $endDate = null) use ($userId) {
-            $query = Transaction::where('user_id', $userId)
-                ->whereIn('type', ['income', 'commission']);
-
-            if ($startDate && $endDate) {
-                $query->whereBetween(DB::raw('DATE(date)'), [$startDate, $endDate]);
-            } elseif ($startDate) {
-                $query->whereDate('date', $startDate);
+        $calculate = function($condition = "") use ($userId) {
+            $sql = "SELECT amount FROM transactions 
+                    WHERE user_id = ? AND LOWER(type) IN ('income', 'commission') $condition";
+            
+            $results = DB::select($sql, [$userId]);
+            $total_amount = 0;
+            foreach ($results as $row) {
+                $total_amount += (float)$row->amount;
             }
 
-            $total = $query->sum('amount');
             return [
-                'total' => (double)$total,
+                'total' => number_format((float)$total_amount, 2, '.', ''),
                 'details' => []
             ];
         };
 
-        $today = now()->toDateString();
-        $yesterday = now()->subDay()->toDateString();
-        $last7Days = now()->subDays(6)->toDateString();
-        $last30Days = now()->subDays(29)->toDateString();
-        $last365Days = now()->subDays(364)->toDateString();
+        $now = now();
+        $today = $now->toDateString();
+        $yesterday = $now->copy()->subDay()->toDateString();
+        $last_7_days = $now->copy()->subDays(6)->toDateString();
+        $last_30_days = $now->copy()->subDays(29)->toDateString();
+        $last_365_days = $now->copy()->subDays(364)->toDateString();
 
         return response()->json([
             'status' => 'success',
             'message' => 'Income report fetched successfully',
             'data' => [
-                'today' => $calculate($today),
-                'yesterday' => $calculate($yesterday),
-                'week' => $calculate($last7Days, $today),
-                'month' => $calculate($last30Days, $today),
-                'year' => $calculate($last365Days, $today),
-                'total' => $calculate()
+                'today' => $calculate("AND DATE(date) = '$today'"),
+                'yesterday' => $calculate("AND DATE(date) = '$yesterday'"),
+                'week' => $calculate("AND DATE(date) BETWEEN '$last_7_days' AND '$today'"),
+                'month' => $calculate("AND DATE(date) BETWEEN '$last_30_days' AND '$today'"),
+                'year' => $calculate("AND DATE(date) BETWEEN '$last_365_days' AND '$today'"),
+                'total' => $calculate("")
             ]
         ], 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
@@ -141,16 +138,19 @@ class LegacyWalletController extends Controller
     public function getIncomeHistory(Request $request)
     {
         $user_id = $request->query('user_id') ?? $request->input('user_id');
+        $limit = (int) ($request->query('limit') ?? 50);
+        $offset = (int) ($request->query('offset') ?? 0);
 
         if ($user_id) {
             $transactions = Transaction::where('user_id', $user_id)
-                ->whereIn('type', ['income', 'commission'])
                 ->orderBy('id', 'desc')
+                ->offset($offset)
+                ->limit($limit)
                 ->get();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Income report fetched successfully',
+                'message' => 'Transaction history fetched successfully',
                 'income_history' => $transactions
             ]);
         } else {
@@ -215,15 +215,15 @@ class LegacyWalletController extends Controller
                 'voucher_balance' => $newVoucher
             ]);
 
-            $currentTime = date("d-m-Y h:i A");
-            $now = date("Y-m-d H:i:s");
+            $currentTime = now()->format("d-m-Y h:i A");
+            $now = now()->toDateTimeString();
 
             // 1. Transaction for Wallet deduction
             Transaction::create([
                 'user_id' => $user->id,
                 'refer_id' => $user->referCode,
                 'amount' => $amount,
-                'type' => 'payment',
+                'type' => 'voucher_payment',
                 'payment_gateway' => 'Wallet',
                 'description' => 'Voucher Balance Convert',
                 'update_at' => $currentTime,

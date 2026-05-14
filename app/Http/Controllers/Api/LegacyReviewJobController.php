@@ -18,13 +18,8 @@ class LegacyReviewJobController extends Controller
     {
         $userId = $request->input('user_id');
         
-        // Fetch jobs that are not locked by others, or locked by this user, and have remaining target
+        // Fetch jobs that have remaining target
         $jobs = ReviewJob::where('remaining_target', '>', 0)
-            ->where(function($query) use ($userId) {
-                $query->whereNull('locked_by')
-                      ->orWhere('locked_by', 0)
-                      ->orWhere('locked_by', $userId);
-            })
             ->get();
             
         return response()->json($jobs);
@@ -64,9 +59,6 @@ class LegacyReviewJobController extends Controller
         
         $job = ReviewJob::find($jobId);
         if ($job) {
-            if ($job->locked_by && $job->locked_by != $userId) {
-                return response()->json(['success' => false, 'message' => 'Job already locked by another user']);
-            }
             
             $job->update([
                 'locked_by' => $userId,

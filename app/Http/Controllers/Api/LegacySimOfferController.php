@@ -112,7 +112,7 @@ class LegacySimOfferController extends Controller
                 'user_id' => $userId,
                 'refer_id' => $user->referCode,
                 'amount' => $price,
-                'type' => 'payment',
+                'type' => 'voucher_payment',
                 'payment_gateway' => 'Voucher',
                 'description' => 'SIM Offer Request (Offer ID: '.$offerId.')',
                 'update_at' => date("d-m-Y h:i A"),

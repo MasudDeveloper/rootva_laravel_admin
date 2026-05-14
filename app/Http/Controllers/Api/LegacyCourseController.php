@@ -214,7 +214,7 @@ class LegacyCourseController extends Controller
                     'description' => 'Course completion bonus',
                     'update_at' => date('d-m-Y h:i A'),
                     'created_at' => now(),
-                    'date' => date('Y-m-d H:i:s')
+                    'date' => now()->toDateTimeString()
                 ]);
 
                 // Claimed আপডেট করা

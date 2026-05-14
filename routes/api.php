@@ -126,8 +126,6 @@ Route::post('send_email_otp.php', [LegacyAuthController::class, 'sendEmailOtp'])
 Route::post('reset_password.php', [LegacyAuthController::class, 'resetPassword']);
 Route::post('send_withdraw_otp.php', [LegacyWithdrawController::class, 'sendWithdrawOtp']);
 
-Route::post('recharge.php', [LegacyRechargeController::class, 'recharge']);
-Route::post('recharge_success_handler.php', [LegacyRechargeController::class, 'rechargeSuccessHandler']);
 Route::post('confirm_sim_offer.php', [LegacySimOfferController::class, 'confirmSimOffer']);
 Route::get('get_sim_offer_history.php', [LegacySimOfferController::class, 'getUserOfferHistory']);
 Route::post('submit_sim_offer_request.php', [LegacySimOfferController::class, 'submitSimOfferRequest']);
