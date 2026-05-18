@@ -99,7 +99,8 @@ class LegacyWithdrawController extends Controller
                 'account_number' => $account_number,
                 'balance_type' => $balance_type,
                 'status' => 'Pending',
-                'created_at' => $current_time
+                'created_at' => $current_time,
+                'updated_at' => $current_time
             ]);
 
             // Transaction Log Entry
@@ -108,6 +109,7 @@ class LegacyWithdrawController extends Controller
 
             Transaction::create([
                 'user_id' => $user_id,
+                'refer_id' => $user->referCode,
                 'amount' => $amount,
                 'payment_gateway' => $payment_gateway,
                 'type' => $transaction_type,
@@ -129,7 +131,8 @@ class LegacyWithdrawController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'status' => 'error', 'message' => "রিকোয়েস্ট সাবমিট করতে ব্যর্থ"]);
+            \Log::error("Withdraw Request Failed: " . $e->getMessage());
+            return response()->json(['success' => false, 'status' => 'error', 'message' => "রিকোয়েস্ট সাবমিট করতে ব্যর্থ: " . $e->getMessage()]);
         }
     }
 

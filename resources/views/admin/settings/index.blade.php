@@ -135,6 +135,25 @@
                     </div>
                 </div>
 
+                <h5 class="fw-bold mt-5 mb-4 text-danger border-bottom pb-2">System Maintenance Mode</h5>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Maintenance Status</label>
+                        <select name="is_maintenance" class="form-select rounded-3">
+                            <option value="0" {{ $maintenance['is_maintenance'] == 0 ? 'selected' : '' }}>Disabled (App is Online)</option>
+                            <option value="1" {{ $maintenance['is_maintenance'] == 1 ? 'selected' : '' }}>Enabled (App is Offline)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Countdown End Time (Select from Calendar / Time Picker)</label>
+                        <input type="datetime-local" name="maintenance_countdown" class="form-control rounded-3" value="{{ !empty($maintenance['maintenance_countdown']) ? date('Y-m-d\TH:i', strtotime($maintenance['maintenance_countdown'])) : '' }}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold">Maintenance Message</label>
+                        <textarea name="maintenance_message" class="form-control rounded-3" rows="2" placeholder="Explain the maintenance details to the users...">{{ $maintenance['maintenance_message'] }}</textarea>
+                    </div>
+                </div>
+
                 <h6 class="fw-bold mb-3 text-muted text-uppercase">Update History</h6>
                 <div class="table-responsive bg-light rounded-3 p-2 border">
                     <table class="table table-sm table-hover mb-0 extra-small">

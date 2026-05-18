@@ -11,6 +11,7 @@ use App\Models\ProductCategory;
 use App\Models\SimOffer;
 use App\Models\SignUp;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class LegacyContentController extends Controller
 {
@@ -19,7 +20,9 @@ class LegacyContentController extends Controller
      */
     public function getBanners()
     {
-        $banners = Banner::all();
+        $banners = Cache::remember('api_banners', 1800, function () {
+            return Banner::all();
+        });
         return response()->json($banners);
     }
 
@@ -28,7 +31,9 @@ class LegacyContentController extends Controller
      */
     public function getReviews()
     {
-        $reviews = Review::all();
+        $reviews = Cache::remember('api_reviews', 1800, function () {
+            return Review::all();
+        });
         return response()->json($reviews);
     }
 
@@ -37,7 +42,9 @@ class LegacyContentController extends Controller
      */
     public function getSocialLinks()
     {
-        $links = DB::table('social_links')->first();
+        $links = Cache::remember('api_social_links', 1800, function () {
+            return DB::table('social_links')->first();
+        });
         return response()->json(['social_links' => $links]);
     }
 
@@ -46,7 +53,9 @@ class LegacyContentController extends Controller
      */
     public function getCategories()
     {
-        $categories = ProductCategory::all();
+        $categories = Cache::remember('api_categories', 1800, function () {
+            return ProductCategory::all();
+        });
         return response()->json($categories);
     }
 
@@ -55,7 +64,9 @@ class LegacyContentController extends Controller
      */
     public function getPopupData()
     {
-        $popup = DB::table('popup_banner')->latest('id')->first();
+        $popup = Cache::remember('api_popup_banner', 900, function () {
+            return DB::table('popup_banner')->latest('id')->first();
+        });
         if ($popup) {
             return response()->json([
                 'success' => true,

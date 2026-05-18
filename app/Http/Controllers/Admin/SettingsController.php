@@ -8,6 +8,7 @@ use App\Models\SocialLink;
 use App\Models\PaymentNumber;
 use App\Models\AppUpdate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class SettingsController extends Controller
 {
@@ -20,7 +21,13 @@ class SettingsController extends Controller
         $payments = PaymentNumber::first() ?? new PaymentNumber();
         $updates = AppUpdate::orderBy('id', 'desc')->get();
         
-        return view('admin.settings.index', compact('social', 'payments', 'updates'));
+        $maintenance = ['is_maintenance' => 0, 'maintenance_message' => '', 'maintenance_countdown' => ''];
+        $path = storage_path('app/maintenance.json');
+        if (file_exists($path)) {
+            $maintenance = json_decode(file_get_contents($path), true);
+        }
+        
+        return view('admin.settings.index', compact('social', 'payments', 'updates', 'maintenance'));
     }
 
     /**
@@ -69,6 +76,27 @@ class SettingsController extends Controller
                     'created_at' => now(),
                 ]);
             }
+
+            // 4. Update Maintenance Settings
+            if ($request->has('is_maintenance')) {
+                $countdown = $request->maintenance_countdown ?? '';
+                if (!empty($countdown)) {
+                    $countdown = date('Y-m-d H:i:s', strtotime($countdown));
+                }
+                $maintenanceData = [
+                    'is_maintenance' => (int)$request->is_maintenance,
+                    'maintenance_message' => $request->maintenance_message ?? '',
+                    'maintenance_countdown' => $countdown
+                ];
+                file_put_contents(storage_path('app/maintenance.json'), json_encode($maintenanceData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            }
+
+            // Clear all API caches so users get the fresh settings instantly
+            Cache::forget('api_social_links');
+            Cache::forget('api_app_update');
+            Cache::forget('api_popup_banner');
+            Cache::forget('api_banners');
+            Cache::forget('api_reviews');
         });
 
         return back()->with('success', 'Global app settings updated successfully!');

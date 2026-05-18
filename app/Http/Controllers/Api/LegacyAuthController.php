@@ -117,25 +117,17 @@ class LegacyAuthController extends Controller
         );
 
         try {
-            // Temporarily configure mail settings
-            Config::set('mail.mailers.smtp.host', 'rootvabd.com');
-            Config::set('mail.mailers.smtp.port', 465);
-            Config::set('mail.mailers.smtp.encryption', 'ssl');
-            Config::set('mail.mailers.smtp.username', 'otp@rootvabd.com');
-            Config::set('mail.mailers.smtp.password', 'Masud1999@@');
-            Config::set('mail.from.address', 'otp@rootvabd.com');
-            Config::set('mail.from.name', 'Rootva');
-
-            Mail::html("
-                <p>Dear user,</p>
-                <p>Your OTP code for password reset is: 
-                <strong style='font-size:18px;'>$otp</strong></p>
-                <p>This OTP is valid for only 5 minutes.</p>
-                <br>
-                <p>Regards,<br>Rootva Team</p>
-            ", function ($message) use ($email) {
+            Mail::send([], [], function ($message) use ($email, $otp) {
                 $message->to($email)
-                    ->subject('Your OTP Code for Password Reset');
+                    ->subject('Your OTP Code for Password Reset')
+                    ->html("
+                        <p>Dear user,</p>
+                        <p>Your OTP code for password reset is: 
+                        <strong style='font-size:18px;'>$otp</strong></p>
+                        <p>This OTP is valid for only 5 minutes.</p>
+                        <br>
+                        <p>Regards,<br>Rootva Team</p>
+                    ");
             });
 
             return response()->json(['success' => true, 'message' => 'OTP পাঠানো হয়েছে']);

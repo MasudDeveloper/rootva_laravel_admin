@@ -8,6 +8,7 @@ use App\Models\SignUp;
 use App\Models\AppUpdate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Cache;
 
 class LegacyUserController extends Controller
 {
@@ -77,18 +78,38 @@ class LegacyUserController extends Controller
         if ($user_id) {
             $user = SignUp::find($user_id);
             if ($user) {
-                $updated = $user->update([
-                    'name'            => $name,
-                    'gender'          => $gender,
-                    'address'         => $address,
-                    'email'           => $email,
-                    'profile_pic_url' => $profile_pic_url,
-                ]);
+                // ইনপুট ক্লিন করা এবং নিরাপদ ডেটা তৈরি করা
+                $updateData = [];
+                if ($name !== null) {
+                    $updateData['name'] = $name;
+                }
+                if (in_array($gender, ['Male', 'Female'])) {
+                    $updateData['gender'] = $gender;
+                }
+                if ($address !== null) {
+                    $updateData['address'] = $address;
+                }
+                if ($email !== null) {
+                    $updateData['email'] = $email;
+                }
+                if (!empty($profile_pic_url)) {
+                    $updateData['profile_pic_url'] = $profile_pic_url;
+                }
 
-                if ($updated) {
+                try {
+                    // যদি কোনো ডেটা আপডেট করার মতো থাকে
+                    if (!empty($updateData)) {
+                        $user->update($updateData);
+                    }
+                    
                     return response()->json(['message' => 'প্রোফাইল আপডেট সফল']);
-                } else {
-                    return response()->json(['message' => 'প্রোফাইল আপডেট ব্যর্থ']);
+                } catch (\Throwable $e) {
+                    Log::error('Profile Update Failed: ' . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString(),
+                        'user_id' => $user_id,
+                        'data' => $updateData
+                    ]);
+                    return response()->json(['message' => 'প্রোফাইল আপডেট ব্যর্থ: ' . $e->getMessage()]);
                 }
             }
         }
@@ -113,18 +134,22 @@ class LegacyUserController extends Controller
         $file = $request->file('file');
 
         if ($user_id && $file) {
-            $targetDir = "Images/";
-            $publicPath = public_path($targetDir);
-            if (!is_dir($publicPath)) {
-                mkdir($publicPath, 0777, true);
+            $destPath = '/home/syfoocuv/api.rootvabd.com/Images';
+            
+            // Fallback for local development
+            if (!file_exists('/home/syfoocuv')) {
+                $destPath = public_path('Images');
             }
 
-            // পুরনো ছবি ডিলিট করার লজিক (আপনার পিএইচপি কোড অনুযায়ী)
+            if (!is_dir($destPath)) {
+                mkdir($destPath, 0777, true);
+            }
+
+            // পুরনো ছবি ডিলিট করার লজিক
             $user = SignUp::find($user_id);
             if ($user && !empty($user->profile_pic_url)) {
-                $oldFilePath = parse_url($user->profile_pic_url, PHP_URL_PATH);
-                $oldFilePath = ltrim($oldFilePath, '/');
-                $fullOldPath = public_path($oldFilePath);
+                $fileNameOnly = basename($user->profile_pic_url);
+                $fullOldPath = $destPath . '/' . $fileNameOnly;
                 if (file_exists($fullOldPath)) {
                     unlink($fullOldPath);
                 }
@@ -138,8 +163,8 @@ class LegacyUserController extends Controller
                 $fileName = uniqid('profile_', true) . "." . $fileExtension;
                 
                 try {
-                    $file->move($publicPath, $fileName);
-                    $profilePicUrl = "https://api.rootvabd.com/" . $targetDir . $fileName;
+                    $file->move($destPath, $fileName);
+                    $profilePicUrl = "https://api.rootvabd.com/Images/" . $fileName;
                     
                     if ($user) {
                         $user->update(['profile_pic_url' => $profilePicUrl]);
@@ -213,11 +238,31 @@ class LegacyUserController extends Controller
      */
     public function getUpdate()
     {
-        $update = AppUpdate::latest()->first();
-        return response()->json([
-            'version_code'   => (int)($update->version_code ?? 1),
-            'update_link'    => $update->url ?? '',
-            'update_message' => $update->message ?? 'New update available'
-        ]);
+        $data = Cache::remember('api_app_update', 300, function () {
+            $update = AppUpdate::latest()->first();
+            
+            $isMaintenance = 0;
+            $maintenanceMessage = '';
+            $maintenanceCountdown = '';
+            
+            $path = storage_path('app/maintenance.json');
+            if (file_exists($path)) {
+                $maintenance = json_decode(file_get_contents($path), true);
+                $isMaintenance = (int)($maintenance['is_maintenance'] ?? 0);
+                $maintenanceMessage = $maintenance['maintenance_message'] ?? '';
+                $maintenanceCountdown = $maintenance['maintenance_countdown'] ?? '';
+            }
+
+            return [
+                'version_code'   => (int)($update->version_code ?? 1),
+                'update_link'    => $update->url ?? '',
+                'update_message' => $update->message ?? 'New update available',
+                'is_maintenance' => $isMaintenance,
+                'maintenance_message' => $maintenanceMessage,
+                'maintenance_countdown' => $maintenanceCountdown
+            ];
+        });
+
+        return response()->json($data);
     }
 }
