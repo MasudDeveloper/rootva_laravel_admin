@@ -23,14 +23,20 @@ class LegacyWalletController extends Controller
         }
 
         // Calculate total balance from transactions
-        // Credit types: add, commission, income
+        // Credit types: add, commission, income, course_bonus
         $credits = Transaction::where('user_id', $userId)
-            ->whereIn('type', ['add', 'commission', 'income'])
+            ->whereIn('type', ['add', 'commission', 'income', 'course_bonus'])
             ->sum('amount');
 
-        // Debit types: withdraw, payment
+        // Debit types: withdraw, payment, voucher_payment (from wallet to voucher)
         $debits = Transaction::where('user_id', $userId)
-            ->whereIn('type', ['withdraw', 'payment'])
+            ->where(function ($query) {
+                $query->whereIn('type', ['withdraw', 'payment'])
+                    ->orWhere(function ($q) {
+                        $q->where('type', 'voucher_payment')
+                          ->where('payment_gateway', 'Wallet');
+                    });
+            })
             ->sum('amount');
 
         $totalBalance = $credits - $debits;
@@ -261,4 +267,32 @@ class LegacyWalletController extends Controller
     }
 
 
+    public function getVoucherHistory(Request $request)
+    {
+        $userId = $request->query('user_id') ?? $request->input('user_id');
+        $limit = (int) ($request->query('limit') ?? 50);
+        $offset = (int) ($request->query('offset') ?? 0);
+
+        if ($userId) {
+            $transactions = Transaction::where('user_id', $userId)
+                ->where(function ($query) {
+                    $query->where('type', 'voucher_convert')
+                        ->orWhere(function ($q) {
+                            $q->where('type', 'voucher_payment')
+                                ->where('payment_gateway', '!=', 'Wallet');
+                        });
+                })
+                ->orderBy('id', 'desc')
+                ->offset($offset)
+                ->limit($limit)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'transactions' => $transactions
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'ইউজার পাওয়া যায়নি']);
+    }
 }

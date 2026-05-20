@@ -127,6 +127,21 @@
                 <span>API Endpoints</span>
             </a>
 
+            <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">PCash Automated API</div>
+            
+            <a href="{{ route('admin.pcash.settings.index') }}" class="nav-link {{ request()->is('admin/pcash/settings*') ? 'active' : '' }}">
+                <i class="fa-solid fa-plug-circle-bolt"></i>
+                <span>API Settings & Balance</span>
+            </a>
+            <a href="{{ route('admin.pcash.sim_offers.index') }}" class="nav-link {{ request()->is('admin/pcash/sim_offers*') ? 'active' : '' }}">
+                <i class="fa-solid fa-sim-card"></i>
+                <span>Automated SIM Offers</span>
+            </a>
+            <a href="{{ route('admin.pcash.logs.index') }}" class="nav-link {{ request()->is('admin/pcash/logs*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-invoice"></i>
+                <span>Recharge Logs</span>
+            </a>
+
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Financials</div>
             
             <a href="{{ route('admin.money-requests.index') }}" class="nav-link {{ request()->is('admin/money-requests*') ? 'active' : '' }}">

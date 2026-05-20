@@ -143,12 +143,12 @@
                             @forelse($transactions as $txn)
                             <tr>
                                 <td class="px-4 py-3">
-                                    <span class="badge {{ in_array($txn->type, ['income', 'add', 'commission']) ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger' }} rounded-pill text-capitalize">
-                                        {{ $txn->type }}
+                                    <span class="badge {{ in_array($txn->type, ['income', 'add', 'commission', 'course_bonus', 'voucher_convert']) ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger' }} rounded-pill text-capitalize">
+                                        {{ str_replace('_', ' ', $txn->type) }}
                                     </span>
                                 </td>
-                                <td class="py-3 fw-bold {{ in_array($txn->type, ['income', 'add', 'commission']) ? 'text-success' : 'text-danger' }}">
-                                    {{ in_array($txn->type, ['income', 'add', 'commission']) ? '+' : '-' }} ৳{{ number_format($txn->amount, 2) }}
+                                <td class="py-3 fw-bold {{ in_array($txn->type, ['income', 'add', 'commission', 'course_bonus', 'voucher_convert']) ? 'text-success' : 'text-danger' }}">
+                                    {{ in_array($txn->type, ['income', 'add', 'commission', 'course_bonus', 'voucher_convert']) ? '+' : '-' }} ৳{{ number_format($txn->amount, 2) }}
                                 </td>
                                 <td class="py-3 text-muted small">{{ $txn->payment_gateway }}</td>
                                 <td class="py-3">

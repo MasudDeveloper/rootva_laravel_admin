@@ -42,16 +42,16 @@ class MoneyRequestController extends Controller
             if ($action === 'Approved') {
                 // Update User Balance
                 $user = SignUp::findOrFail($moneyRequest->user_id);
-                $user->increment('wallet_balance', $moneyRequest->amount);
+                $user->increment('voucher_balance', $moneyRequest->amount);
 
                 // Log Transaction
                 Transaction::create([
                     'user_id' => $user->id,
                     'refer_id' => $user->referCode,
                     'amount' => $moneyRequest->amount,
-                    'type' => 'add',
+                    'type' => 'voucher_convert',
                     'payment_gateway' => $moneyRequest->payment_gateway,
-                    'description' => 'Add Money Approved',
+                    'description' => 'Add Money Approved (Voucher)',
                     'update_at' => now()->toDateTimeString(),
                     'created_at' => now()->toDateTimeString(),
                 ]);

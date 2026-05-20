@@ -51,7 +51,7 @@
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Gateway</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Type</th>
                         <th class="py-3 border-0 text-muted small text-uppercase fw-bold">Date/Time</th>
-                        <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-end">Net Amount</th>
+                        <th class="py-3 border-0 text-muted small text-uppercase fw-bold text-end">Payout Amount</th>
                         <th class="px-4 py-3 border-0 text-muted small text-uppercase fw-bold text-end">Actions</th>
                     </tr>
                 </thead>
@@ -59,17 +59,32 @@
                     @forelse($requests as $req)
                     <tr>
                         <td class="px-4 py-3">
-                            <div class="fw-bold">{{ $req->name }}</div>
+                            <div>
+                                <a href="{{ route('admin.users.show', $req->user_id) }}" class="text-decoration-none text-primary fw-bold" target="_blank">
+                                    {{ $req->name }} <i class="fa-solid fa-arrow-up-right-from-square small ms-1" style="font-size: 9px; opacity: 0.7;"></i>
+                                </a>
+                            </div>
                             <div class="badge bg-primary-soft text-primary rounded-pill small">#{{ $req->referCode }}</div>
                         </td>
                         <td class="py-3">
                             <div class="fw-medium text-capitalize">{{ $req->payment_gateway }}</div>
-                            <div class="text-muted small">{{ $req->account_number }}</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">{{ $req->account_number }}</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="copyNumber('{{ $req->account_number }}', this)" title="Copy Number">
+                                    <i class="fa-regular fa-copy text-secondary" style="font-size: 12px;"></i>
+                                </button>
+                            </div>
                         </td>
                         <td class="py-3">
-                            <span class="badge {{ $req->balance_type === 'voucher' ? 'bg-info-soft text-info' : 'bg-primary-soft text-primary' }} rounded-pill text-capitalize">
-                                {{ $req->balance_type }}
-                            </span>
+                            @if($req->balance_type === 'voucher')
+                                <span class="badge bg-info-soft text-info rounded-pill px-3 py-2 fw-semibold">
+                                    <i class="fa-solid fa-ticket me-1"></i>Voucher Balance
+                                </span>
+                            @else
+                                <span class="badge bg-primary-soft text-primary rounded-pill px-3 py-2 fw-semibold">
+                                    <i class="fa-solid fa-wallet me-1"></i>Main Balance
+                                </span>
+                            @endif
                         </td>
                         <td class="py-3">
                             <div class="text-dark small fw-medium">
@@ -77,8 +92,10 @@
                             </div>
                         </td>
                         <td class="py-3 text-end">
-                            <div class="fw-bold text-danger">৳{{ number_format($req->amount, 2) }}</div>
-                            <div class="text-muted extra-small" style="font-size: 10px">Fee: ৳{{ $req->fee }}</div>
+                            <div class="fw-bold text-success">৳{{ number_format($req->amount - $req->fee, 2) }}</div>
+                            <div class="text-muted extra-small" style="font-size: 11px">
+                                Gross: ৳{{ number_format($req->amount, 2) }} | Fee: ৳{{ number_format($req->fee, 2) }}
+                            </div>
                         </td>
                         <td class="px-4 py-3 text-end">
                             @if($req->status === 'Pending')
@@ -131,4 +148,20 @@
         @endif
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+function copyNumber(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+        const icon = btn.querySelector('i');
+        icon.className = 'fa-solid fa-check text-success';
+        setTimeout(function() {
+            icon.className = 'fa-regular fa-copy text-secondary';
+        }, 1500);
+    }).catch(function(err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+</script>
 @endsection

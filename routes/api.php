@@ -5,16 +5,6 @@ use App\Http\Controllers\Api\ModuleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [LegacyAuthController::class, 'login']);
-Route::post('/register', [LegacyAuthController::class, 'register']);
-
-Route::get('/home', [ModuleController::class, 'getHomeData']);
-Route::get('/sim-offers', [ModuleController::class, 'getSimOffers']);
-Route::get('/products', [ModuleController::class, 'getProducts']);
-Route::get('/courses', [ModuleController::class, 'getCourses']);
-Route::get('/services', [ModuleController::class, 'getServices']);
-Route::get('/profile', [ModuleController::class, 'getProfile']);
-
 // Legacy API Routes (for Android App compatibility)
 use App\Http\Controllers\Api\LegacyAuthController;
 use App\Http\Controllers\Api\LegacySimOfferController;
@@ -39,6 +29,17 @@ use App\Http\Controllers\Api\LegacyNotificationController;
 use App\Http\Controllers\Api\LegacyVerifyController;
 use App\Http\Controllers\Api\LegacyMathController;
 use App\Http\Controllers\Api\LeaderboardController;
+use App\Http\Controllers\Api\PcashApiController;
+
+Route::post('/login', [LegacyAuthController::class, 'login']);
+Route::post('/register', [LegacyAuthController::class, 'register']);
+
+Route::get('/home', [ModuleController::class, 'getHomeData']);
+Route::get('/sim-offers', [ModuleController::class, 'getSimOffers']);
+Route::get('/products', [ModuleController::class, 'getProducts']);
+Route::get('/courses', [ModuleController::class, 'getCourses']);
+Route::get('/services', [ModuleController::class, 'getServices']);
+Route::get('/profile', [ModuleController::class, 'getProfile']);
 
 Route::get('get_leaderboard.php', [LeaderboardController::class, 'getRanking']);
 Route::post('login.php', [LegacyAuthController::class, 'login']);
@@ -131,6 +132,7 @@ Route::get('get_sim_offer_history.php', [LegacySimOfferController::class, 'getUs
 Route::post('submit_sim_offer_request.php', [LegacySimOfferController::class, 'submitSimOfferRequest']);
 Route::post('convert_to_voucher.php', [LegacyWalletController::class, 'convertToVoucher']);
 Route::post('get_voucher_balance.php', [LegacyWalletController::class, 'getVoucherBalance']);
+Route::get('get_voucher_history.php', [LegacyWalletController::class, 'getVoucherHistory']);
 Route::get('sim_offer_manage_api.php', [LegacySimOfferController::class, 'getSimOfferManage']);
 
 Route::get('check_leadership_level.php', [LegacyLeadershipController::class, 'checkLeadershipLevel']);
@@ -147,6 +149,11 @@ Route::post('update_microjob_status.php', [LegacyMicrojobController::class, 'upd
 Route::get('get_users_microjobs_posts.php', [LegacyMicrojobController::class, 'getUserMicrojobsPosts']);
 Route::get('get_daily_winners_by_date.php', [LegacyBonusController::class, 'getWinnersByDate']);
 Route::get('get_daily_live_ranking.php', [LegacyBonusController::class, 'getTodayLiveRanking']);
+
+// PCash Automated System
+Route::get('get_pcash_sim_offers.php', [PcashApiController::class, 'getSimOffers']);
+Route::post('pcash_recharge.php', [PcashApiController::class, 'recharge']);
+Route::post('buy_pcash_sim_offer.php', [PcashApiController::class, 'buySimOffer']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();

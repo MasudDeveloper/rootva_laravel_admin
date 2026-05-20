@@ -20,6 +20,9 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\OnlineServiceOrderController;
 use App\Http\Controllers\Admin\LeadershipController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\PcashSettingsController;
+use App\Http\Controllers\Admin\PcashSimOfferController;
+use App\Http\Controllers\Admin\PcashLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -187,6 +190,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             Route::get('/refer-bonus/history', [RewardController::class, 'referBonusHistory'])->name('refer-bonus.history');
             Route::patch('/refer-bonus/{id}', [RewardController::class, 'editReferBonus'])->name('refer-bonus.update');
             Route::delete('/refer-bonus/{id}', [RewardController::class, 'deleteReferBonus'])->name('refer-bonus.delete');
+        });
+
+        // PCashMoney API Integration
+        Route::prefix('pcash')->name('pcash.')->group(function () {
+            Route::get('/settings', [PcashSettingsController::class, 'index'])->name('settings.index');
+            Route::post('/settings', [PcashSettingsController::class, 'update'])->name('settings.update');
+            Route::resource('sim_offers', PcashSimOfferController::class);
+            Route::get('/logs', [PcashLogController::class, 'index'])->name('logs.index');
         });
     });
 });
