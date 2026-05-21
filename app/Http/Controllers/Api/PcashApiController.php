@@ -242,6 +242,23 @@ class PcashApiController extends Controller
                 'api_status' => 'failed',
                 'api_message' => $e->getMessage()
             ]);
+
+            // Refund user balance
+            $user->voucher_balance += $amount;
+            $user->save();
+
+            Transaction::create([
+                'user_id' => $user->id,
+                'refer_id' => $user->referCode,
+                'amount' => $amount,
+                'type' => 'income',
+                'payment_gateway' => 'Recharge Refund',
+                'description' => 'Failed Recharge Refund for ' . $number,
+                'update_at' => date("d-m-Y h:i A"),
+                'created_at' => date("d-m-Y h:i A"),
+                'date' => now()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Network error connecting to API'
@@ -468,6 +485,23 @@ class PcashApiController extends Controller
                 'api_status' => 'failed',
                 'api_message' => $e->getMessage()
             ]);
+
+            // Refund user balance
+            $user->voucher_balance += $offer->price;
+            $user->save();
+
+            Transaction::create([
+                'user_id' => $user->id,
+                'refer_id' => $user->referCode,
+                'amount' => $offer->price,
+                'type' => 'income',
+                'payment_gateway' => 'Sim Offer Refund',
+                'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
+                'update_at' => date("d-m-Y h:i A"),
+                'created_at' => date("d-m-Y h:i A"),
+                'date' => now()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Network error connecting to API'
@@ -514,16 +548,16 @@ class PcashApiController extends Controller
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");  
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); 
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_REFERER, 'rootvaadmin.rootvabd.com');
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-        
+
         $response = curl_exec($ch);
         $error = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
