@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sign_ups', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('sim_offers', function (Blueprint $table) {
+            $table->string('offer_type', 50)->default('drive')->after('offer_price');
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sign_ups');
+        Schema::table('sim_offers', function (Blueprint $table) {
+            $table->dropColumn('offer_type');
+        });
     }
 };

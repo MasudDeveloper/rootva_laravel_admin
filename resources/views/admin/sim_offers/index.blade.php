@@ -54,6 +54,7 @@
                         <tr>
                             <th class="px-4 py-3 text-muted small text-uppercase fw-bold border-0">Operator</th>
                             <th class="py-3 text-muted small text-uppercase fw-bold border-0">Package Details</th>
+                            <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-center">Type</th>
                             <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-center">Price</th>
                             <th class="py-3 text-muted small text-uppercase fw-bold border-0 text-end px-4">Actions</th>
                         </tr>
@@ -69,13 +70,23 @@
                                     <div class="text-muted small">{{ $offer->offer_details }}</div>
                                 </td>
                                 <td class="text-center">
+                                    <span class="badge bg-{{ $offer->offer_type === 'regular' ? 'success' : 'primary' }}-soft text-{{ $offer->offer_type === 'regular' ? 'success' : 'primary' }} rounded-pill px-3">{{ ucfirst($offer->offer_type ?? 'drive') }}</span>
+                                </td>
+                                <td class="text-center">
                                     <div class="fw-bold text-primary">৳{{ $offer->offer_price }}</div>
                                     <div class="text-muted extra-small text-decoration-line-through">৳{{ $offer->regular_price }}</div>
                                 </td>
                                 <td class="text-end px-4">
                                     <div class="btn-group shadow-sm rounded-pill bg-white border p-1">
                                         <button class="btn btn-sm btn-light border-0 rounded-circle text-primary me-1" 
-                                                onclick="openEditModal({{ $offer->id }}, '{{ addslashes($offer->operator_name) }}', '{{ addslashes($offer->title) }}', '{{ addslashes($offer->offer_details) }}', {{ $offer->regular_price }}, {{ $offer->offer_price }})"
+                                                onclick="openEditModal(this)"
+                                                data-id="{{ $offer->id }}"
+                                                data-operator="{{ $offer->operator_name }}"
+                                                data-title="{{ $offer->title }}"
+                                                data-details="{{ $offer->offer_details }}"
+                                                data-regular-price="{{ $offer->regular_price }}"
+                                                data-offer-price="{{ $offer->offer_price }}"
+                                                data-offer-type="{{ $offer->offer_type }}"
                                                 title="Edit Offer">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
@@ -156,7 +167,8 @@
                                                 <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 me-1">Approve</button>
                                             </form>
                                             <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" 
-                                                    onclick="showRejectModal({{ $req->id }})">Reject</button>
+                                                    onclick="showRejectModal(this)"
+                                                    data-id="{{ $req->id }}">Reject</button>
                                         </div>
                                     @elseif($req->status == 'rejected')
                                         <span class="text-muted extra-small" title="{{ $req->reject_reason }}">Reason: {{ Str::limit($req->reject_reason, 15) }}</span>
@@ -180,7 +192,7 @@
             <p class="text-muted small mb-4">অফার লিস্ট paste করো। প্রতিটি লাইনে একটি অফার। Format: <code class="text-primary">1987👉1976TK 180GB 1200M 180D</code></p>
 
             <div class="row g-3 mb-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label class="form-label small fw-bold">Operator</label>
                     <select id="paste_operator" class="form-select rounded-3 shadow-sm" onchange="parseOffers()">
                         <option value="">Select Operator first...</option>
@@ -191,7 +203,14 @@
                         <option value="Teletalk">Teletalk</option>
                     </select>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Default Offer Type</label>
+                    <select id="paste_offer_type" name="offer_type" class="form-select rounded-3 shadow-sm" onchange="parseOffers()">
+                        <option value="drive" selected>Drive (Manual)</option>
+                        <option value="regular">Regular (Auto/PCash)</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
                     <label class="form-label small fw-bold">Offer Text (প্রতি লাইনে একটি অফার)</label>
                     <textarea id="paste_textarea" class="form-control rounded-3 shadow-sm font-monospace"
                         rows="6"
@@ -211,6 +230,7 @@
                 <form action="{{ route('admin.sim-offers.bulk-store') }}" method="POST" id="bulkSaveForm">
                     @csrf
                     <input type="hidden" name="operator_name" id="bulk_operator_hidden">
+                    <input type="hidden" name="offer_type" id="bulk_offer_type_hidden">
 
                     <div class="table-responsive rounded-3 border shadow-sm mb-3">
                         <table class="table table-sm table-hover align-middle mb-0 bg-white">
@@ -320,6 +340,13 @@
                         <input type="text" name="title" id="modal_title" class="form-control rounded-3 shadow-sm" placeholder="e.g. 50GB + 1000 Min" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label small fw-bold">Offer Type</label>
+                        <select name="offer_type" id="modal_offer_type" class="form-select rounded-3 shadow-sm" required>
+                            <option value="drive">Drive (Manual)</option>
+                            <option value="regular">Regular (Auto/PCash)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-bold">Offer Details</label>
                         <textarea name="offer_details" id="modal_details" class="form-control rounded-3 shadow-sm" rows="3"></textarea>
                     </div>
@@ -411,6 +438,7 @@
         document.getElementById('modalSubtitle').textContent = '';
         document.getElementById('modal_operator').value      = 'Grameenphone';
         document.getElementById('modal_title').value         = '';
+        document.getElementById('modal_offer_type').value    = 'drive';
         document.getElementById('modal_details').value       = '';
         document.getElementById('modal_regular_price').value = '';
         document.getElementById('modal_offer_price').value   = '';
@@ -422,11 +450,20 @@
         new bootstrap.Modal(document.getElementById('addOfferModal')).show();
     }
 
-    function openEditModal(id, operator, title, details, regularPrice, offerPrice) {
+    function openEditModal(btn) {
+        const id = btn.getAttribute('data-id');
+        const operator = btn.getAttribute('data-operator');
+        const title = btn.getAttribute('data-title');
+        const details = btn.getAttribute('data-details');
+        const regularPrice = btn.getAttribute('data-regular-price');
+        const offerPrice = btn.getAttribute('data-offer-price');
+        const offerType = btn.getAttribute('data-offer-type');
+
         document.getElementById('modalTitle').textContent    = '📝 Edit SIM Offer';
         document.getElementById('modalSubtitle').textContent = 'Update the details of this existing offer.';
         document.getElementById('modal_operator').value      = operator;
         document.getElementById('modal_title').value         = title;
+        document.getElementById('modal_offer_type').value    = offerType || 'drive';
         document.getElementById('modal_details').value       = details;
         document.getElementById('modal_regular_price').value = regularPrice;
         document.getElementById('modal_offer_price').value   = offerPrice;
@@ -438,7 +475,8 @@
         new bootstrap.Modal(document.getElementById('addOfferModal')).show();
     }
 
-    function showRejectModal(requestId) {
+    function showRejectModal(btn) {
+        const requestId = btn.getAttribute('data-id');
         const form = document.getElementById('rejectForm');
         form.action = `/admin/services/sim-offers/requests/${requestId}/update`;
         new bootstrap.Modal(document.getElementById('rejectRequestModal')).show();
@@ -499,6 +537,7 @@
         preview.style.display = '';
         document.getElementById('parse_count_badge').textContent = results.length + ' টি অফার';
         document.getElementById('bulk_operator_hidden').value    = operator;
+        document.getElementById('bulk_offer_type_hidden').value  = document.getElementById('paste_offer_type').value;
 
         tbody.innerHTML = results.map((r, i) => `
             <tr>

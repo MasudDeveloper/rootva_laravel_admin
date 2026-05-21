@@ -16,7 +16,7 @@ class LegacySimOfferController extends Controller
      */
     public function getSimOffers()
     {
-        $offers = SimOffer::select('id', 'title', 'offer_details', 'operator_name', 'regular_price', 'offer_price', 'created_at')
+        $offers = SimOffer::select('id', 'title', 'offer_details', 'operator_name', 'regular_price', 'offer_price', 'offer_type', 'created_at')
             ->get()
             ->map(function($offer) {
                 return [
@@ -26,6 +26,7 @@ class LegacySimOfferController extends Controller
                     'operator_name' => $offer->operator_name,
                     'regular_price' => (double)$offer->regular_price,
                     'offer_price'   => (double)$offer->offer_price,
+                    'offer_type'    => $offer->offer_type ?? 'drive',
                     'created_at'    => $offer->created_at,
                 ];
             });

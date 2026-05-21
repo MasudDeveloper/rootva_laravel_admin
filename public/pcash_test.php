@@ -27,27 +27,15 @@ if ($test_type === 'balance') {
 } else {
     echo "<h2>Testing Recharge Request</h2>";
     $url = 'https://pcashmoney.click/sendapi/request';
-    
-    $raw_operator = 'Airtel'; // Airtel, GP, Robi, Banglalink, Teletalk, Skitto etc.
-    $op_map = [
-        'GP' => 'GP', 'Grameenphone' => 'GP',
-        'Robi' => 'RB', 'RB' => 'RB',
-        'Airtel' => 'AT', 'AT' => 'AT',
-        'Banglalink' => 'BL', 'BL' => 'BL',
-        'Teletalk' => 'TT', 'TT' => 'TT',
-        'Skitto' => 'SK', 'SK' => 'SK'
-    ];
-    $operator_code = isset($op_map[$raw_operator]) ? $op_map[$raw_operator] : 'AT';
-
     $postData = [
         'user' => $api_user,
         'key' => $api_key,
         'amount' => '20',
-        'number' => '01644416378', 
+        'number' => '01644416378', // Change to a valid number
         'service' => '64',
         'type' => '1',
         'id' => uniqid(),
-        'operator' => $operator_code
+        'operator' => 'Airtel'
     ];
 }
 
@@ -64,11 +52,11 @@ echo "<strong>POST Fields:</strong><pre>" . htmlspecialchars(print_r($postData, 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $url);
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");  
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); 
-curl_setopt($ch, CURLOPT_REFERER, 'rootvaadmin.rootvabd.com');
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+curl_setopt($ch, CURLOPT_REFERER, 'https://rootvaadmin.rootvabd.com');
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -92,7 +80,7 @@ if ($error) {
 } else {
     echo "<h3>HTTP Status Code:</h3>";
     echo "<pre>" . htmlspecialchars($httpCode) . "</pre>";
-    
+
     echo "<h3>Raw Response:</h3>";
     echo "<pre>" . htmlspecialchars($response) . "</pre>";
 }

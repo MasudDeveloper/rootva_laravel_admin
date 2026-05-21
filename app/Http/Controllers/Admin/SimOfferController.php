@@ -84,6 +84,7 @@ class SimOfferController extends Controller
             'offer_details' => $request->offer_details,
             'regular_price' => $request->regular_price,
             'offer_price'   => $request->offer_price,
+            'offer_type'    => $request->offer_type ?? 'drive',
             'created_at'    => now()->toDateTimeString(),
         ]);
 
@@ -101,6 +102,7 @@ class SimOfferController extends Controller
             'offer_details'  => 'required|array',
             'regular_price'  => 'required|array',
             'offer_price'    => 'required|array',
+            'offer_type'     => 'nullable',
         ]);
 
         $operator  = $request->operator_name;
@@ -120,6 +122,7 @@ class SimOfferController extends Controller
                 'offer_details' => $details[$i] ?? '',
                 'regular_price' => (float) $regulars[$i],
                 'offer_price'   => (float) $prices[$i],
+                'offer_type'    => $request->offer_type ?? 'drive',
                 'created_at'    => now()->toDateTimeString(),
             ]);
             $saved++;
@@ -145,6 +148,7 @@ class SimOfferController extends Controller
             'offer_details' => $request->offer_details,
             'regular_price' => $request->regular_price,
             'offer_price'   => $request->offer_price,
+            'offer_type'    => $request->offer_type ?? 'drive',
         ]);
 
         return back()->with('success', 'SIM Offer updated successfully!');

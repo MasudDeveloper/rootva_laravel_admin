@@ -39,12 +39,21 @@ class PcashApiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found']);
         }
 
-        if ($user->wallet_balance < $amount) {
-            return response()->json(['success' => false, 'message' => 'Insufficient wallet balance']);
+        if ($user->voucher_balance < $amount) {
+            return response()->json(['success' => false, 'message' => 'Insufficient voucher balance']);
+        }
+
+        $settings = PcashSetting::first();
+        if (!$settings || !$settings->api_user || !$settings->api_key) {
+            return response()->json(['success' => false, 'message' => 'API is not configured']);
+        }
+
+        if (!$this->checkApiBalance($settings)) {
+            return response()->json(['success' => false, 'message' => 'দুঃখিত, রিচার্জ সার্ভিস সাময়িকভাবে বন্ধ আছে।']);
         }
 
         // Deduct Balance
-        $user->wallet_balance -= $amount;
+        $user->voucher_balance -= $amount;
         $user->save();
 
         // Create Local Transaction Record
@@ -61,10 +70,6 @@ class PcashApiController extends Controller
         ]);
 
         // Proceed to API Call
-        $settings = PcashSetting::first();
-        if (!$settings || !$settings->api_user || !$settings->api_key) {
-            return response()->json(['success' => false, 'message' => 'API is not configured']);
-        }
 
         $uniqid = uniqid();
 
@@ -100,14 +105,102 @@ class PcashApiController extends Controller
             $data = json_decode($body, true);
 
             if (isset($data['success']) && $data['success'] == true) {
-                $log->update([
-                    'api_status' => 'success',
-                    'api_message' => $data['message'] ?? 'Success'
-                ]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Recharge requested successfully!'
-                ]);
+                // Initial request was accepted. Now poll status API.
+                $status = 'pending';
+                $statusMessage = 'Recharge request is processing';
+                $gatewayTrxId = null;
+
+                for ($i = 0; $i < 6; $i++) {
+                    sleep(3);
+                    try {
+                        $statusHeaders = [
+                            'band-key: flexisoftwarebd',
+                            'refer: rootvaadmin.rootvabd.com'
+                        ];
+                        $statusPostData = [
+                            'user' => $settings->api_user,
+                            'key' => $settings->api_key,
+                            'id' => $uniqid
+                        ];
+
+                        $statusRes = $this->makeCurlRequest('https://pcashmoney.click/sendapi/status', $statusHeaders, $statusPostData);
+                        $statusBody = $statusRes['body'];
+                        $statusData = json_decode($statusBody, true);
+
+                        if (is_array($statusData)) {
+                            // Clean spaces from keys
+                            $cleanData = [];
+                            foreach ($statusData as $k => $v) {
+                                $cleanData[trim($k)] = $v;
+                            }
+
+                            \Illuminate\Support\Facades\Log::info("PCash Cleaned Status Response (Attempt " . ($i + 1) . "):", $cleanData);
+
+                            $resStatus = isset($cleanData['status']) ? (string)$cleanData['status'] : '';
+
+                            if ($resStatus === '1') {
+                                $status = 'success';
+                                $statusMessage = 'Recharge successful';
+                                $gatewayTrxId = $cleanData['trxid'] ?? null;
+                                break;
+                            } elseif ($resStatus === '2') {
+                                $status = 'failed';
+                                $statusMessage = $cleanData['message'] ?? 'Recharge failed from gateway';
+                                break;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("PCash Status Polling Exception: " . $e->getMessage());
+                    }
+                }
+
+                if ($status === 'success') {
+                    $log->update([
+                        'api_status' => 'success',
+                        'api_message' => 'Recharge successful. TrxID: ' . $gatewayTrxId
+                    ]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Recharge requested successfully!'
+                    ]);
+                } elseif ($status === 'failed') {
+                    // Refund user balance
+                    $user->voucher_balance += $amount;
+                    $user->save();
+
+                    // Create transaction log for refund
+                    Transaction::create([
+                        'user_id' => $user->id,
+                        'refer_id' => $user->referCode,
+                        'amount' => $amount,
+                        'type' => 'income',
+                        'payment_gateway' => 'PCash Refund',
+                        'description' => 'Failed Recharge Refund for ' . $number,
+                        'update_at' => date("d-m-Y h:i A"),
+                        'created_at' => date("d-m-Y h:i A"),
+                        'date' => now()
+                    ]);
+
+                    $log->update([
+                        'api_status' => 'failed',
+                        'api_message' => $statusMessage
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $statusMessage
+                    ]);
+                } else {
+                    // Still pending/processing
+                    $log->update([
+                        'api_status' => 'processing',
+                        'api_message' => 'Recharge remains pending after check'
+                    ]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Recharge request is processing. Please check history later.'
+                    ]);
+                }
             } else {
                 $errorMessage = $data['message'] ?? $body;
                 if (empty($errorMessage)) {
@@ -120,6 +213,23 @@ class PcashApiController extends Controller
                     'api_status' => 'failed',
                     'api_message' => $errorMessage
                 ]);
+
+                // Refund since initial request failed immediately
+                $user->voucher_balance += $amount;
+                $user->save();
+
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'refer_id' => $user->referCode,
+                    'amount' => $amount,
+                    'type' => 'income',
+                    'payment_gateway' => 'PCash Refund',
+                    'description' => 'Failed Recharge Refund for ' . $number,
+                    'update_at' => date("d-m-Y h:i A"),
+                    'created_at' => date("d-m-Y h:i A"),
+                    'date' => now()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage
@@ -156,12 +266,21 @@ class PcashApiController extends Controller
             return response()->json(['success' => false, 'message' => 'User or Offer not found']);
         }
 
-        if ($user->wallet_balance < $offer->price) {
-            return response()->json(['success' => false, 'message' => 'Insufficient wallet balance']);
+        if ($user->voucher_balance < $offer->price) {
+            return response()->json(['success' => false, 'message' => 'Insufficient voucher balance']);
+        }
+
+        $settings = PcashSetting::first();
+        if (!$settings || !$settings->api_user || !$settings->api_key) {
+            return response()->json(['success' => false, 'message' => 'API is not configured']);
+        }
+
+        if (!$this->checkApiBalance($settings)) {
+            return response()->json(['success' => false, 'message' => 'দুঃখিত, রিচার্জ সার্ভিস সাময়িকভাবে বন্ধ আছে।']);
         }
 
         // Deduct Balance
-        $user->wallet_balance -= $offer->price;
+        $user->voucher_balance -= $offer->price;
         $user->save();
 
         // Create Local Transaction Record
@@ -178,10 +297,6 @@ class PcashApiController extends Controller
         ]);
 
         // API Call
-        $settings = PcashSetting::first();
-        if (!$settings || !$settings->api_user || !$settings->api_key) {
-            return response()->json(['success' => false, 'message' => 'API is not configured']);
-        }
 
         $uniqid = uniqid();
 
@@ -216,14 +331,102 @@ class PcashApiController extends Controller
             $data = json_decode($body, true);
 
             if (isset($data['success']) && $data['success'] == true) {
-                $log->update([
-                    'api_status' => 'success',
-                    'api_message' => $data['message'] ?? 'Success'
-                ]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Offer purchased successfully!'
-                ]);
+                // Initial request was accepted. Now poll status API.
+                $status = 'pending';
+                $statusMessage = 'SIM Offer request is processing';
+                $gatewayTrxId = null;
+
+                for ($i = 0; $i < 6; $i++) {
+                    sleep(3);
+                    try {
+                        $statusHeaders = [
+                            'band-key: flexisoftwarebd',
+                            'refer: rootvaadmin.rootvabd.com'
+                        ];
+                        $statusPostData = [
+                            'user' => $settings->api_user,
+                            'key' => $settings->api_key,
+                            'id' => $uniqid
+                        ];
+
+                        $statusRes = $this->makeCurlRequest('https://pcashmoney.click/sendapi/status', $statusHeaders, $statusPostData);
+                        $statusBody = $statusRes['body'];
+                        $statusData = json_decode($statusBody, true);
+
+                        if (is_array($statusData)) {
+                            // Clean spaces from keys
+                            $cleanData = [];
+                            foreach ($statusData as $k => $v) {
+                                $cleanData[trim($k)] = $v;
+                            }
+
+                            \Illuminate\Support\Facades\Log::info("PCash SIM Offer Cleaned Status Response (Attempt " . ($i + 1) . "):", $cleanData);
+
+                            $resStatus = isset($cleanData['status']) ? (string)$cleanData['status'] : '';
+
+                            if ($resStatus === '1') {
+                                $status = 'success';
+                                $statusMessage = 'Offer purchased successfully';
+                                $gatewayTrxId = $cleanData['trxid'] ?? null;
+                                break;
+                            } elseif ($resStatus === '2') {
+                                $status = 'failed';
+                                $statusMessage = $cleanData['message'] ?? 'SIM Offer purchase failed from gateway';
+                                break;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("PCash SIM Offer Status Polling Exception: " . $e->getMessage());
+                    }
+                }
+
+                if ($status === 'success') {
+                    $log->update([
+                        'api_status' => 'success',
+                        'api_message' => 'SIM Offer purchase successful. TrxID: ' . $gatewayTrxId
+                    ]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Offer purchased successfully!'
+                    ]);
+                } elseif ($status === 'failed') {
+                    // Refund user balance
+                    $user->voucher_balance += $offer->price;
+                    $user->save();
+
+                    // Create transaction log for refund
+                    Transaction::create([
+                        'user_id' => $user->id,
+                        'refer_id' => $user->referCode,
+                        'amount' => $offer->price,
+                        'type' => 'income',
+                        'payment_gateway' => 'PCash Refund',
+                        'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
+                        'update_at' => date("d-m-Y h:i A"),
+                        'created_at' => date("d-m-Y h:i A"),
+                        'date' => now()
+                    ]);
+
+                    $log->update([
+                        'api_status' => 'failed',
+                        'api_message' => $statusMessage
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $statusMessage
+                    ]);
+                } else {
+                    // Still pending/processing
+                    $log->update([
+                        'api_status' => 'processing',
+                        'api_message' => 'SIM Offer purchase remains pending after check'
+                    ]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Offer purchase request is processing. Please check history later.'
+                    ]);
+                }
             } else {
                 $errorMessage = $data['message'] ?? $body;
                 if (empty($errorMessage)) {
@@ -236,6 +439,23 @@ class PcashApiController extends Controller
                     'api_status' => 'failed',
                     'api_message' => $errorMessage
                 ]);
+
+                // Refund since initial request failed immediately
+                $user->voucher_balance += $offer->price;
+                $user->save();
+
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'refer_id' => $user->referCode,
+                    'amount' => $offer->price,
+                    'type' => 'income',
+                    'payment_gateway' => 'PCash Refund',
+                    'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
+                    'update_at' => date("d-m-Y h:i A"),
+                    'created_at' => date("d-m-Y h:i A"),
+                    'date' => now()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage
@@ -252,6 +472,40 @@ class PcashApiController extends Controller
                 'success' => false,
                 'message' => 'Network error connecting to API'
             ]);
+        }
+    }
+
+    private function checkApiBalance($settings)
+    {
+        if (!$settings || !$settings->api_user || !$settings->api_key) {
+            return false;
+        }
+
+        try {
+            $headers = [
+                'band-key: flexisoftwarebd',
+                'refer: rootvaadmin.rootvabd.com'
+            ];
+            $postData = [
+                'user' => $settings->api_user,
+                'key' => $settings->api_key,
+            ];
+
+            $res = $this->makeCurlRequest('https://pcashmoney.click/sendapi/balance', $headers, $postData);
+            $body = $res['body'];
+            $data = json_decode($body, true);
+
+            if ($data && isset($data['success']) && $data['success'] == true) {
+                $balance = isset($data['balance']) ? (float)$data['balance'] : 0.0;
+                \Illuminate\Support\Facades\Log::info("PCash API Balance Check Result: " . $balance);
+                return $balance >= 50.0;
+            } else {
+                \Illuminate\Support\Facades\Log::warning('PCash API Balance Check returned error response: ' . $body);
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('PCash API Balance Check Exception: ' . $e->getMessage());
+            return false;
         }
     }
 
