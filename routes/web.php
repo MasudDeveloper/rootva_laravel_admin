@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PcashSettingsController;
 use App\Http\Controllers\Admin\PcashSimOfferController;
 use App\Http\Controllers\Admin\PcashLogController;
+use App\Http\Controllers\Admin\SupportAdminReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -57,6 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     
     Route::get('/withdraw-requests', [WithdrawRequestController::class, 'index'])->name('withdraw-requests.index');
     Route::patch('/withdraw-requests/{id}', [WithdrawRequestController::class, 'update'])->name('withdraw-requests.update');
+    Route::get('/support-admin-report', [SupportAdminReportController::class, 'index'])->name('support-admin-report.index');
 
     // Microjobs
     Route::get('/microjobs', [MicrojobController::class, 'index'])->name('microjobs.index');

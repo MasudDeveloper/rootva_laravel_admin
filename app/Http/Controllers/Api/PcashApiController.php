@@ -31,25 +31,44 @@ class PcashApiController extends Controller
         $type = $request->input('type', 1); // 1=prepaid, 2=postpaid
 
         if (!$userId || !$number || !$amount || !$operator) {
-            return response()->json(['success' => false, 'message' => 'Missing parameters']);
+            return response()->json(['success' => false, 'status' => false, 'message' => 'Missing parameters']);
+        }
+
+        // Map operator to PCash short codes (GP, RB, AT, BL, TT, SK)
+        $mapped_operator = 'GP';
+        $op_upper = strtoupper(trim($operator));
+        if (str_contains($op_upper, 'GP')) {
+            $mapped_operator = 'GP';
+        } elseif (str_contains($op_upper, 'ROBI') || $op_upper === 'RB') {
+            $mapped_operator = 'RB';
+        } elseif (str_contains($op_upper, 'AIRTEL') || $op_upper === 'AT') {
+            $mapped_operator = 'AT';
+        } elseif (str_contains($op_upper, 'BANGLALINK') || str_contains($op_upper, 'BL')) {
+            $mapped_operator = 'BL';
+        } elseif (str_contains($op_upper, 'TELETALK') || $op_upper === 'TT') {
+            $mapped_operator = 'TT';
+        } elseif (str_contains($op_upper, 'SKITTO') || $op_upper === 'SK') {
+            $mapped_operator = 'SK';
+        } else {
+            $mapped_operator = $operator; // fallback
         }
 
         $user = SignUp::find($userId);
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'User not found']);
+            return response()->json(['success' => false, 'status' => false, 'message' => 'User not found']);
         }
 
         if ($user->voucher_balance < $amount) {
-            return response()->json(['success' => false, 'message' => 'Insufficient voucher balance']);
+            return response()->json(['success' => false, 'status' => false, 'message' => 'Insufficient voucher balance']);
         }
 
         $settings = PcashSetting::first();
         if (!$settings || !$settings->api_user || !$settings->api_key) {
-            return response()->json(['success' => false, 'message' => 'API is not configured']);
+            return response()->json(['success' => false, 'status' => false, 'message' => 'API is not configured']);
         }
 
         if (!$this->checkApiBalance($settings)) {
-            return response()->json(['success' => false, 'message' => 'দুঃখিত, রিচার্জ সার্ভিস সাময়িকভাবে বন্ধ আছে।']);
+            return response()->json(['success' => false, 'status' => false, 'message' => 'দুঃখিত, রিচার্জ সার্ভিস সাময়িকভাবে বন্ধ আছে।']);
         }
 
         // Deduct Balance
@@ -61,7 +80,7 @@ class PcashApiController extends Controller
             'user_id' => $userId,
             'refer_id' => $user->referCode,
             'amount' => $amount,
-            'type' => 'payment',
+            'type' => 'voucher_payment',
             'payment_gateway' => 'Auto ' . $operator . ' Recharge',
             'description' => 'Mobile Recharge for ' . $number,
             'update_at' => date("d-m-Y h:i A"),
@@ -78,7 +97,7 @@ class PcashApiController extends Controller
             'user_id' => $userId,
             'api_id' => $uniqid,
             'number' => $number,
-            'operator' => $operator,
+            'operator' => $mapped_operator,
             'amount' => $amount,
             'type' => $type,
             'api_status' => 'pending'
@@ -97,7 +116,7 @@ class PcashApiController extends Controller
                 'service' => $settings->default_service_code,
                 'type' => $type,
                 'id' => $uniqid,
-                'operator' => $operator
+                'operator' => $mapped_operator
             ];
 
             $res = $this->makeCurlRequest('https://pcashmoney.click/sendapi/request', $headers, $postData);
@@ -161,6 +180,7 @@ class PcashApiController extends Controller
                     ]);
                     return response()->json([
                         'success' => true,
+                        'status' => true,
                         'message' => 'Recharge requested successfully!'
                     ]);
                 } elseif ($status === 'failed') {
@@ -173,8 +193,8 @@ class PcashApiController extends Controller
                         'user_id' => $user->id,
                         'refer_id' => $user->referCode,
                         'amount' => $amount,
-                        'type' => 'income',
-                        'payment_gateway' => 'PCash Refund',
+                        'type' => 'voucher_convert',
+                        'payment_gateway' => 'Recharge Refund',
                         'description' => 'Failed Recharge Refund for ' . $number,
                         'update_at' => date("d-m-Y h:i A"),
                         'created_at' => date("d-m-Y h:i A"),
@@ -188,6 +208,7 @@ class PcashApiController extends Controller
 
                     return response()->json([
                         'success' => false,
+                        'status' => false,
                         'message' => $statusMessage
                     ]);
                 } else {
@@ -198,6 +219,7 @@ class PcashApiController extends Controller
                     ]);
                     return response()->json([
                         'success' => true,
+                        'status' => true,
                         'message' => 'Recharge request is processing. Please check history later.'
                     ]);
                 }
@@ -222,8 +244,8 @@ class PcashApiController extends Controller
                     'user_id' => $user->id,
                     'refer_id' => $user->referCode,
                     'amount' => $amount,
-                    'type' => 'income',
-                    'payment_gateway' => 'PCash Refund',
+                    'type' => 'voucher_convert',
+                    'payment_gateway' => 'Recharge Refund',
                     'description' => 'Failed Recharge Refund for ' . $number,
                     'update_at' => date("d-m-Y h:i A"),
                     'created_at' => date("d-m-Y h:i A"),
@@ -232,6 +254,7 @@ class PcashApiController extends Controller
 
                 return response()->json([
                     'success' => false,
+                    'status' => false,
                     'message' => $errorMessage
                 ]);
             }
@@ -251,7 +274,7 @@ class PcashApiController extends Controller
                 'user_id' => $user->id,
                 'refer_id' => $user->referCode,
                 'amount' => $amount,
-                'type' => 'income',
+                'type' => 'voucher_convert',
                 'payment_gateway' => 'Recharge Refund',
                 'description' => 'Failed Recharge Refund for ' . $number,
                 'update_at' => date("d-m-Y h:i A"),
@@ -261,6 +284,7 @@ class PcashApiController extends Controller
 
             return response()->json([
                 'success' => false,
+                'status' => false,
                 'message' => 'Network error connecting to API'
             ]);
         }
@@ -305,8 +329,8 @@ class PcashApiController extends Controller
             'user_id' => $userId,
             'refer_id' => $user->referCode,
             'amount' => $offer->price,
-            'type' => 'payment',
-            'payment_gateway' => 'PCash SIM Offer',
+            'type' => 'voucher_payment',
+            'payment_gateway' => 'SIM Offer',
             'description' => 'Purchased SIM Offer: ' . $offer->title . ' for ' . $number,
             'update_at' => date("d-m-Y h:i A"),
             'created_at' => now(),
@@ -416,8 +440,8 @@ class PcashApiController extends Controller
                         'user_id' => $user->id,
                         'refer_id' => $user->referCode,
                         'amount' => $offer->price,
-                        'type' => 'income',
-                        'payment_gateway' => 'PCash Refund',
+                        'type' => 'voucher_convert',
+                        'payment_gateway' => 'SIM Offer Refund',
                         'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
                         'update_at' => date("d-m-Y h:i A"),
                         'created_at' => date("d-m-Y h:i A"),
@@ -465,8 +489,8 @@ class PcashApiController extends Controller
                     'user_id' => $user->id,
                     'refer_id' => $user->referCode,
                     'amount' => $offer->price,
-                    'type' => 'income',
-                    'payment_gateway' => 'PCash Refund',
+                    'type' => 'voucher_convert',
+                    'payment_gateway' => 'SIM Offer Refund',
                     'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
                     'update_at' => date("d-m-Y h:i A"),
                     'created_at' => date("d-m-Y h:i A"),
@@ -494,8 +518,8 @@ class PcashApiController extends Controller
                 'user_id' => $user->id,
                 'refer_id' => $user->referCode,
                 'amount' => $offer->price,
-                'type' => 'income',
-                'payment_gateway' => 'Sim Offer Refund',
+                'type' => 'voucher_convert',
+                'payment_gateway' => 'SIM Offer Refund',
                 'description' => 'Failed SIM Offer Refund: ' . $offer->title . ' for ' . $number,
                 'update_at' => date("d-m-Y h:i A"),
                 'created_at' => date("d-m-Y h:i A"),

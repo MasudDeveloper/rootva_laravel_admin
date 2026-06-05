@@ -36,11 +36,7 @@ class LegacyTeamController extends Controller
             
         $currentLevelCodes = [];
         foreach ($level1 as $user) {
-            $passStatus = true;
-            if ($statusFilter === 'verified' && !in_array($user->is_verified, [1, 3])) $passStatus = false;
-            if ($statusFilter === 'unverified' && in_array($user->is_verified, [1, 3])) $passStatus = false;
-
-            if ($passStatus && (!$targetLevel || $targetLevel == 1)) {
+            if (!$targetLevel || $targetLevel == 1) {
                 $treeNodes[] = ['id' => $user->id, 'level' => 1, 'is_verified' => $user->is_verified];
             }
             $currentLevelCodes[] = $user->referCode;
@@ -58,7 +54,9 @@ class LegacyTeamController extends Controller
             
             $currentLevelCodes = [];
             foreach ($nextLevel as $user) {
-                $treeNodes[] = ['id' => $user->id, 'level' => $i, 'is_verified' => $user->is_verified];
+                if (!$targetLevel || $i == $targetLevel) {
+                    $treeNodes[] = ['id' => $user->id, 'level' => $i, 'is_verified' => $user->is_verified];
+                }
                 $currentLevelCodes[] = $user->referCode;
             }
             if ($targetLevel && $i >= $targetLevel) break;

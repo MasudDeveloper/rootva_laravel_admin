@@ -14,4 +14,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(SignUp::class, 'user_id');
     }
+
+    public function supportAdmin()
+    {
+        return $this->belongsTo(SupportAdmin::class, 'support_admin_id');
+    }
 }

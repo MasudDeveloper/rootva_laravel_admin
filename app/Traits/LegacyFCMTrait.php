@@ -43,7 +43,7 @@ trait LegacyFCMTrait
         return $data['access_token'] ?? null;
     }
 
-    private function sendFCMNotification($fcmToken, $title, $body)
+    private function sendFCMNotification($fcmToken, $title, $body, $image = null)
     {
         $jsonPath = 'c:\Users\Admin\Desktop\Rootva\Api\fcm-service-account.json';
         $accessToken = $this->getFCMAccessToken($jsonPath);
@@ -52,14 +52,21 @@ trait LegacyFCMTrait
         $projectId = 'rootva-f7b1f';
         $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
 
-        $payload = json_encode([
-            'message' => [
-                'token' => $fcmToken,
-                'notification' => [
-                    'title' => $title,
-                    'body' => $body
-                ]
+        $message = [
+            'token' => $fcmToken,
+            'notification' => [
+                'title' => $title,
+                'body' => $body
             ]
+        ];
+
+        if ($image) {
+            $message['notification']['image'] = $image;
+            $message['data']['image'] = $image;
+        }
+
+        $payload = json_encode([
+            'message' => $message
         ]);
 
         $ch = curl_init();

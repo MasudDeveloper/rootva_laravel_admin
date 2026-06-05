@@ -159,6 +159,11 @@
                 <span>Salary Requests</span>
             </a>
 
+            <a href="{{ route('admin.support-admin-report.index') }}" class="nav-link {{ request()->is('admin/support-admin-report*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-tie"></i>
+                <span>Support Admin Report</span>
+            </a>
+
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Rewards & Bonuses</div>
             
             <a href="{{ route('admin.rewards.daily') }}" class="nav-link {{ request()->is('admin/rewards/daily*') ? 'active' : '' }}">

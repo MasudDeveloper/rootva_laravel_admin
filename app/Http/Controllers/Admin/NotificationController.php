@@ -18,25 +18,44 @@ class NotificationController extends Controller
 
     public function send(Request $request)
     {
+        // Prevent execution timeout and memory limit issues for large user lists
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
+
         $request->validate([
             'title' => 'required|string',
             'body' => 'required|string',
-            'target' => 'required|in:all,specific',
-            'referCode' => 'required_if:target,specific'
+            'target' => 'required|in:all,specific,verified,unverified',
+            'referCode' => 'required_if:target,specific',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image_url_input' => 'nullable|url'
         ]);
 
         $title = $request->title;
         $body = $request->body;
         $target = $request->target;
         $referCode = $request->referCode;
+        
+        $image = null;
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/notifications'), $filename);
+            $image = secure_asset('uploads/notifications/' . $filename);
+        } elseif ($request->filled('image_url_input')) {
+            $image = $request->image_url_input;
+        }
 
-        $tokens = [];
         $users = [];
 
         if ($target === 'all') {
             $users = SignUp::whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } else {
+        } elseif ($target === 'specific') {
             $users = SignUp::where('referCode', $referCode)->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        } elseif ($target === 'verified') {
+            $users = SignUp::whereIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        } elseif ($target === 'unverified') {
+            $users = SignUp::whereNotIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
         }
 
         if ($users->isEmpty()) {
@@ -53,12 +72,14 @@ class NotificationController extends Controller
             ]);
 
             // 2. Send Push Notification via FCM Service
-            // Note: Replicating legacy behavior of calling external api.rootvabd.com/send_notification.php
             try {
-                $response = Http::asForm()->post('https://api.rootvabd.com/send_notification.php', [
+                $response = Http::asForm()->post('https://rootvaadmin.rootvabd.com/send_notification.php', [
                     'token' => $user->fcm_token,
                     'title' => $title,
-                    'body'  => $body
+                    'body'  => $body,
+                    'image' => $image,
+                    'image_url' => $image,
+                    'url' => $image
                 ]);
 
                 if ($response->successful()) {

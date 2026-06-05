@@ -203,7 +203,7 @@ class LegacyRechargeController extends Controller
     }
 
     /**
-     * Legacy Recharge History (get_recharge_history.php)
+     * Legacy & Auto Recharge History (get_recharge_history.php)
      */
     public function getRechargeHistory(Request $request)
     {
@@ -213,21 +213,68 @@ class LegacyRechargeController extends Controller
             return response()->json(["status" => false, "message" => "User ID required"]);
         }
 
-        $history = DB::table('recharge_transactions')
+        // Fetch manual recharges
+        $legacyHistory = DB::table('recharge_transactions')
             ->where('user_id', $user_id)
-            ->orderBy('id', 'DESC')
             ->get()
             ->map(function ($item) {
-                $api_data = json_decode($item->api_response, true);
-                $item->api_message = $api_data['api_response']['message'] ?? ($api_data['message'] ?? null);
-                $item->provider_trx_id = $api_data['api_response']['trx_id'] ?? ($api_data['trx_id'] ?? null);
-                return $item;
-            });
+                $api_data = is_string($item->api_response) ? json_decode($item->api_response, true) : null;
+                return [
+                    'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'number' => $item->number,
+                    'operator' => $item->operator,
+                    'amount' => (string)$item->amount,
+                    'tran_id' => $item->tran_id,
+                    'status' => $item->status,
+                    'api_message' => is_array($api_data) ? ($api_data['api_response']['message'] ?? ($api_data['message'] ?? null)) : null,
+                    'provider_trx_id' => is_array($api_data) ? ($api_data['api_response']['trx_id'] ?? ($api_data['trx_id'] ?? null)) : null,
+                    'created_at' => $item->created_at,
+                    'recharge_type' => 'manual'
+                ];
+            })->toArray();
+
+        // Fetch automated PCash recharges
+        $pcashHistory = DB::table('pcash_recharge_logs')
+            ->where('user_id', $user_id)
+            ->get()
+            ->map(function ($item) {
+                $op = strtoupper($item->operator);
+                $operatorName = $item->operator;
+                if ($op === 'GP') $operatorName = 'GP';
+                elseif ($op === 'RB') $operatorName = 'Robi';
+                elseif ($op === 'AT') $operatorName = 'Airtel';
+                elseif ($op === 'BL') $operatorName = 'Banglalink';
+                elseif ($op === 'TT') $operatorName = 'Teletalk';
+                elseif ($op === 'SK') $operatorName = 'Skitto';
+
+                return [
+                    'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'number' => $item->number,
+                    'operator' => $operatorName,
+                    'amount' => (string)$item->amount,
+                    'tran_id' => $item->api_id,
+                    'status' => $item->api_status,
+                    'api_message' => $item->api_message,
+                    'provider_trx_id' => null,
+                    'created_at' => $item->created_at,
+                    'recharge_type' => 'auto'
+                ];
+            })->toArray();
+
+        // Merge both histories
+        $allHistory = array_merge($legacyHistory, $pcashHistory);
+
+        // Sort by created_at desc
+        usort($allHistory, function ($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
 
         return response()->json([
             "success" => true,
             "status" => true,
-            "rechargeHistory" => $history
+            "rechargeHistory" => $allHistory
         ]);
     }
 

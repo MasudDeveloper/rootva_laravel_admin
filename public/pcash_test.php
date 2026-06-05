@@ -35,7 +35,7 @@ if ($test_type === 'balance') {
         'service' => '64',
         'type' => '1',
         'id' => uniqid(),
-        'operator' => 'Airtel'
+        'operator' => 'AT'
     ];
 }
 
