@@ -148,11 +148,14 @@ class LegacySimOfferController extends Controller
     {
         $id = $request->input('request_id');
         
-        $updated = DB::table('sim_offer_requests')
-            ->where('id', $id)
-            ->update(['status' => 'confirmed', 'updated_at' => now()]);
-        
-        if ($updated) {
+        $simRequest = \App\Models\SimOfferRequest::with('user')->find($id);
+        if ($simRequest && $simRequest->status !== 'confirmed') {
+            $simRequest->status = 'confirmed';
+            $simRequest->save();
+
+            // Give Commission
+            $this->giveSimOfferCommission($simRequest->user, $simRequest->price, $simRequest->id);
+
             return response()->json([
                 "error" => false,
                 "success" => true,
@@ -165,5 +168,57 @@ class LegacySimOfferController extends Controller
             "success" => false,
             "message" => "Failed to update or already confirmed"
         ]);
+    }
+
+    private function giveSimOfferCommission($user, $amount, $tranId)
+    {
+        if (!$user) return;
+
+        $now = now()->toDateTimeString();
+        $currentTime = now()->format("d-m-Y h:i A");
+
+        // 1. Self Commission (1.5%)
+        $selfComm = round($amount * 0.015, 2);
+        if ($selfComm > 0) {
+            DB::table('sign_up')->where('id', $user->id)->increment('wallet_balance', $selfComm);
+            DB::table('transactions')->insert([
+                'user_id' => $user->id,
+                'refer_id' => $user->referCode,
+                'amount' => $selfComm,
+                'type' => 'commission',
+                'payment_gateway' => 'SIM Offer Commission',
+                'description' => "SIM Offer Commission for Request ID: {$tranId}",
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
+            ]);
+        }
+
+        // 2. Upline Commission (2 levels, 0.05% each)
+        $uplineComm = round($amount * 0.0005, 2);
+        if ($uplineComm <= 0) return;
+
+        $currentUplineReferCode = $user->referredBy;
+        for ($i = 1; $i <= 2; $i++) {
+            if (empty($currentUplineReferCode) || $currentUplineReferCode == "0") break;
+
+            $upline = DB::table('sign_up')->where('referCode', $currentUplineReferCode)->first();
+            if (!$upline) break;
+
+            DB::table('sign_up')->where('id', $upline->id)->increment('wallet_balance', $uplineComm);
+            DB::table('transactions')->insert([
+                'user_id' => $upline->id,
+                'refer_id' => $user->referCode,
+                'amount' => $uplineComm,
+                'type' => 'commission',
+                'payment_gateway' => 'SIM Offer Team Commission',
+                'description' => "SIM Offer Commission from {$user->name} (Level {$i})",
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
+            ]);
+
+            $currentUplineReferCode = $upline->referredBy;
+        }
     }
 }
