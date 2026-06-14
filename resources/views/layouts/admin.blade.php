@@ -218,6 +218,12 @@
             </div>
             
             <div class="d-flex align-items-center gap-3">
+                <!-- Cache Clear Button -->
+                <a href="{{ route('admin.clear-cache') }}" class="btn btn-outline-warning rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" onclick="return confirm('Are you sure you want to clear system cache?');">
+                    <i class="fa-solid fa-broom text-warning"></i>
+                    <span class="d-none d-lg-inline fw-semibold small text-dark">Clear Cache</span>
+                </a>
+
                 <div class="position-relative">
                     <button class="btn btn-light rounded-circle shadow-sm">
                         <i class="fa-solid fa-bell"></i>
@@ -252,6 +258,18 @@
 
         <!-- Main Content Inner -->
         <main class="p-4">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;">
+                    <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
             @yield('content')
         </main>
         

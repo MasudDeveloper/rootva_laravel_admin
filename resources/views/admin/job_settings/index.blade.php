@@ -5,11 +5,6 @@
 
 @section('content')
 <div class="fade-in">
-    @if(session('success'))
-        <div class="alert alert-success border-0 shadow-sm rounded-pill px-4 mb-4">
-            <i class="fa-solid fa-circle-check me-2"></i>{{ session('success') }}
-        </div>
-    @endif
 
     <div class="card-modern border-0 shadow-sm overflow-hidden">
         <div class="bg-white border-bottom p-2">

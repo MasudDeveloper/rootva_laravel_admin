@@ -10,6 +10,7 @@ class PcashLogController extends Controller
 {
     public function index()
     {
+        PcashRechargeLog::checkAndUpdatePendingLogs();
         $logs = PcashRechargeLog::latest()->paginate(20);
         return view('admin.pcash.logs.index', compact('logs'));
     }

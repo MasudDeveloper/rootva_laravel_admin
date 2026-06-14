@@ -41,6 +41,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/api/stats', [DashboardController::class, 'getStatsJson'])->name('api.stats');
+    Route::get('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
 
     // API Documentation
     Route::get('/api-endpoints', [\App\Http\Controllers\Admin\ApiDocumentController::class, 'index'])->name('api-endpoints.index');

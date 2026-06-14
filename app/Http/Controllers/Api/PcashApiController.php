@@ -587,13 +587,20 @@ class PcashApiController extends Controller
         $selfComm = round($amount * 0.015, 2);
         if ($selfComm > 0) {
             $user->increment('wallet_balance', $selfComm);
+
+            $log = PcashRechargeLog::where('api_id', $tranId)->first();
+            $numberStr = $log ? " ({$log->number})" : "";
+            $desc = $paymentGateway === 'SIM Offer Commission'
+                ? "Commission from SIM offer" . $numberStr
+                : "Commission from mobile recharge" . $numberStr;
+
             Transaction::create([
                 'user_id' => $userId,
                 'refer_id' => $user->referCode,
                 'amount' => $selfComm,
                 'type' => 'commission',
                 'payment_gateway' => $paymentGateway,
-                'description' => "Commission for {$tranId}",
+                'description' => $desc,
                 'update_at' => $currentTime,
                 'created_at' => $now,
                 'date' => $now
