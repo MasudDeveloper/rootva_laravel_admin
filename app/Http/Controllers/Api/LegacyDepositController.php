@@ -56,6 +56,31 @@ class LegacyDepositController extends Controller
             ]);
         }
 
+        $amountFloat = (float)$amount;
+        if ($amountFloat < 100) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => "১০০ টাকার কম যোগ করা যাবে না"
+            ]);
+        }
+
+        if ($amountFloat == 250) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => "২৫০ টাকা যোগ করা যাবে না, কম বা বেশি পরিমাণ দিন।"
+            ]);
+        }
+
+        if ($amountFloat > 10000) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => "১০,০০০ টাকার বেশী যোগ করা যাবে না"
+            ]);
+        }
+
         try {
             MoneyRequest::create([
                 'user_id' => $user_id,

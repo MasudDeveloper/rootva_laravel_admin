@@ -155,6 +155,8 @@ Route::get('get_pcash_sim_offers.php', [PcashApiController::class, 'getSimOffers
 Route::post('pcash_recharge.php', [PcashApiController::class, 'recharge']);
 Route::post('buy_pcash_sim_offer.php', [PcashApiController::class, 'buySimOffer']);
 
+
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SignUp;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class LegacyTeamController extends Controller
 {
@@ -26,40 +27,33 @@ class LegacyTeamController extends Controller
         
         $startTime = microtime(true);
         
-        // Use a lean array to store [id, level, is_verified]
-        $treeNodes = [];
-        
-        // Level 1
-        $level1 = DB::table('sign_up')
-            ->where('referredBy', $referCode)
-            ->get(['id', 'referCode', 'is_verified']);
-            
-        $currentLevelCodes = [];
-        foreach ($level1 as $user) {
-            if (!$targetLevel || $targetLevel == 1) {
-                $treeNodes[] = ['id' => $user->id, 'level' => 1, 'is_verified' => $user->is_verified];
-            }
-            $currentLevelCodes[] = $user->referCode;
-        }
-        
-        // Levels 2-10
-        for ($i = 2; $i <= 10; $i++) {
-            if (empty($currentLevelCodes)) break;
-            
-            $nextLevel = DB::table('sign_up')
-                ->whereIn('referredBy', $currentLevelCodes)
-                ->get(['id', 'referCode', 'is_verified']);
+        $query = "
+            WITH RECURSIVE referral_tree AS (
+                SELECT id, referCode, referredBy, is_verified, 1 as level
+                FROM sign_up
+                WHERE referredBy = ?
                 
-            if ($nextLevel->isEmpty()) break;
-            
-            $currentLevelCodes = [];
-            foreach ($nextLevel as $user) {
-                if (!$targetLevel || $i == $targetLevel) {
-                    $treeNodes[] = ['id' => $user->id, 'level' => $i, 'is_verified' => $user->is_verified];
-                }
-                $currentLevelCodes[] = $user->referCode;
+                UNION ALL
+                
+                SELECT s.id, s.referCode, s.referredBy, s.is_verified, rt.level + 1
+                FROM sign_up s
+                INNER JOIN referral_tree rt ON s.referredBy = rt.referCode
+                WHERE rt.level < 10
+            )
+            SELECT id, level, is_verified FROM referral_tree
+        ";
+        
+        $results = DB::select($query, [$referCode]);
+        
+        $treeNodes = [];
+        foreach ($results as $row) {
+            if (!$targetLevel || $row->level == $targetLevel) {
+                $treeNodes[] = [
+                    'id' => (int)$row->id,
+                    'level' => (int)$row->level,
+                    'is_verified' => (int)$row->is_verified
+                ];
             }
-            if ($targetLevel && $i >= $targetLevel) break;
         }
 
         // 1. Calculate TOTAL counts for the whole tree/level BEFORE status filtering
@@ -164,35 +158,39 @@ class LegacyTeamController extends Controller
         $referCode = $request->input('referCode');
         $startTime = microtime(true);
         
-        $summary = [];
-        $currentLevelCodes = [$referCode];
-        
-        for ($i = 1; $i <= 10; $i++) {
-            if (empty($currentLevelCodes)) break;
-            
-            // Fetch users for this level to count and get codes for next level
-            $levelUsers = DB::table('sign_up')
-                ->whereIn('referredBy', $currentLevelCodes)
-                ->select('referCode', 'is_verified')
-                ->get();
+        $query = "
+            WITH RECURSIVE referral_tree AS (
+                SELECT id, referCode, referredBy, is_verified, 1 as level
+                FROM sign_up
+                WHERE referredBy = ?
                 
-            if ($levelUsers->isEmpty()) break;
-            
-            $totalCount = $levelUsers->count();
-            $verifiedCount = $levelUsers->filter(function($u) {
-                return in_array($u->is_verified, [1, 3]);
-            })->count();
-            $unverifiedCount = $totalCount - $verifiedCount;
-            
+                UNION ALL
+                
+                SELECT s.id, s.referCode, s.referredBy, s.is_verified, rt.level + 1
+                FROM sign_up s
+                INNER JOIN referral_tree rt ON s.referredBy = rt.referCode
+                WHERE rt.level < 10
+            )
+            SELECT 
+                level,
+                COUNT(id) as total,
+                SUM(CASE WHEN is_verified IN (1, 3) THEN 1 ELSE 0 END) as verified,
+                SUM(CASE WHEN is_verified NOT IN (1, 3) THEN 1 ELSE 0 END) as unverified
+            FROM referral_tree
+            GROUP BY level
+            ORDER BY level ASC
+        ";
+
+        $results = DB::select($query, [$referCode]);
+        
+        $summary = [];
+        foreach ($results as $row) {
             $summary[] = [
-                'level' => $i,
-                'total' => $totalCount,
-                'verified' => $verifiedCount,
-                'unverified' => $unverifiedCount
+                'level' => (int)$row->level,
+                'total' => (int)$row->total,
+                'verified' => (int)$row->verified,
+                'unverified' => (int)$row->unverified
             ];
-            
-            // Collect codes for the next level
-            $currentLevelCodes = $levelUsers->pluck('referCode')->filter()->toArray();
         }
 
         return response()->json([
