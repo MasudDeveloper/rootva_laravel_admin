@@ -100,7 +100,7 @@
         <div class="col-md-6 col-lg-6">
             <div class="card-stat d-flex align-items-center justify-content-between">
                 <div>
-                    <h6 class="text-muted small mb-1 text-uppercase fw-bold">Total Added by Support Admins</h6>
+                    <h6 class="text-muted small mb-1 text-uppercase fw-bold">Total Added by Support Admin</h6>
                     <h2 class="fw-extrabold mb-0 text-success">৳{{ number_format($stats['total_added'], 2) }}</h2>
                     <span class="small text-muted">All-time wallet additions</span>
                 </div>
@@ -112,7 +112,7 @@
         <div class="col-md-6 col-lg-6">
             <div class="card-stat d-flex align-items-center justify-content-between">
                 <div>
-                    <h6 class="text-muted small mb-1 text-uppercase fw-bold">Total Withdrawn by Support Admins</h6>
+                    <h6 class="text-muted small mb-1 text-uppercase fw-bold">Total Withdrawn by Support Admin</h6>
                     <h2 class="fw-extrabold mb-0 text-danger">৳{{ number_format($stats['total_withdrawn'], 2) }}</h2>
                     <span class="small text-muted">All-time wallet withdrawals</span>
                 </div>
@@ -132,11 +132,6 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="lifetime-tab" data-bs-toggle="tab" data-bs-target="#lifetime" type="button" role="tab" aria-controls="lifetime" aria-selected="false">
-                    <i class="fa-solid fa-chart-pie me-2"></i>Lifetime Summary
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
                     <i class="fa-solid fa-clock-rotate-left me-2"></i>Detailed History
                 </button>
@@ -151,7 +146,6 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Support Admin</th>
                                 <th>Total Added</th>
                                 <th>Total Withdrawn</th>
                                 <th>Net Change</th>
@@ -164,14 +158,6 @@
                                 @endphp
                                 <tr>
                                     <td class="fw-semibold text-dark">{{ \Carbon\Carbon::parse($row->transaction_date)->format('d M, Y') }}</td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 600; font-size: 13px;">
-                                                {{ strtoupper(substr($row->supportAdmin->username ?? 'S', 0, 1)) }}
-                                            </div>
-                                            <span class="fw-semibold text-secondary">{{ $row->supportAdmin->username ?? 'Deleted Admin' }}</span>
-                                        </div>
-                                    </td>
                                     <td class="text-success fw-bold">+৳{{ number_format($row->total_added, 2) }}</td>
                                     <td class="text-danger fw-bold">-৳{{ number_format($row->total_withdrawn, 2) }}</td>
                                     <td class="fw-bold {{ $net >= 0 ? 'text-success' : 'text-danger' }}">
@@ -180,51 +166,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">No daily transaction activity found.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 📊 Lifetime summary tab -->
-            <div class="tab-pane fade" id="lifetime" role="tabpanel" aria-labelledby="lifetime-tab">
-                <div class="table-responsive">
-                    <table class="table table-hover table-modern align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Support Admin ID</th>
-                                <th>Username</th>
-                                <th>Total Added (Lifetime)</th>
-                                <th>Total Withdrawn (Lifetime)</th>
-                                <th>Net Wallet Impact</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($lifetimeReport as $row)
-                                @php
-                                    $net = $row->total_added - $row->total_withdrawn;
-                                @endphp
-                                <tr>
-                                    <td class="text-muted fw-bold">#{{ $row->support_admin_id }}</td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 600; font-size: 13px;">
-                                                {{ strtoupper(substr($row->supportAdmin->username ?? 'S', 0, 1)) }}
-                                            </div>
-                                            <span class="fw-bold text-dark">{{ $row->supportAdmin->username ?? 'Deleted Admin' }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="text-success fw-bold">+৳{{ number_format($row->total_added, 2) }}</td>
-                                    <td class="text-danger fw-bold">-৳{{ number_format($row->total_withdrawn, 2) }}</td>
-                                    <td class="fw-bold {{ $net >= 0 ? 'text-success' : 'text-danger' }}">
-                                        {{ $net >= 0 ? '+' : '' }}৳{{ number_format($net, 2) }}
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">No lifetime stats available.</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">No daily transaction activity found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -237,18 +179,7 @@
                 <!-- Filters -->
                 <div class="filter-card mb-4">
                     <form method="GET" action="{{ route('admin.support-admin-report.index') }}#history" class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Support Admin</label>
-                            <select name="support_admin_id" class="form-select">
-                                <option value="">All Support Admins</option>
-                                @foreach($supportAdmins as $admin)
-                                    <option value="{{ $admin->id }}" {{ request('support_admin_id') == $admin->id ? 'selected' : '' }}>
-                                        {{ $admin->username }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold text-muted text-uppercase">Transaction Type</label>
                             <select name="type" class="form-select">
                                 <option value="">All Types</option>
@@ -256,11 +187,11 @@
                                 <option value="withdraw" {{ request('type') == 'withdraw' ? 'selected' : '' }}>Withdraw (-)</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold text-muted text-uppercase">Date</label>
                             <input type="date" name="date" class="form-control" value="{{ request('date') }}">
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
+                        <div class="col-md-4 d-flex align-items-end gap-2">
                             <button type="submit" class="btn btn-primary w-100 fw-bold">
                                 <i class="fa-solid fa-filter me-2"></i>Filter
                             </button>
@@ -278,7 +209,6 @@
                                 <th>Amount</th>
                                 <th>Type</th>
                                 <th>Gateway</th>
-                                <th>Support Admin</th>
                                 <th>Reason/Description</th>
                                 <th>Date & Time</th>
                             </tr>
@@ -305,9 +235,8 @@
                                             {{ $txn->type == 'income' ? 'Add' : 'Withdraw' }}
                                         </span>
                                     </td>
-                                    <td class="text-muted">{{ $txn->payment_gateway }}</td>
-                                    <td>
-                                        <span class="fw-semibold text-primary"><i class="fa-solid fa-user-shield me-1 text-primary bg-primary bg-opacity-10 p-1 rounded"></i>{{ $txn->supportAdmin->username ?? 'Deleted Admin' }}</span>
+                                    <td class="text-muted font-monospace fw-bold">
+                                        {{ str_replace('Support Admin - ', '', $txn->payment_gateway) }}
                                     </td>
                                     <td><span class="text-muted small">{{ $txn->description ?: 'No description' }}</span></td>
                                     <td class="text-muted small">
@@ -316,7 +245,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-4 text-muted">No transactions found.</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">No transactions found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
