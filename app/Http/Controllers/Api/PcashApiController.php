@@ -178,6 +178,10 @@ class PcashApiController extends Controller
                         'api_status' => 'success',
                         'api_message' => 'Recharge successful. TrxID: ' . $gatewayTrxId
                     ]);
+
+                    // Distribute Commission
+                    $this->giveRechargeCommission($userId, $amount, $uniqid, 'Recharge Commission', 'Recharge Team Commission');
+
                     return response()->json([
                         'success' => true,
                         'status' => true,
@@ -426,6 +430,10 @@ class PcashApiController extends Controller
                         'api_status' => 'success',
                         'api_message' => 'SIM Offer purchase successful. TrxID: ' . $gatewayTrxId
                     ]);
+
+                    // Distribute Commission
+                    $this->giveRechargeCommission($userId, $offer->price, $uniqid, 'SIM Offer Commission', 'SIM Offer Team Commission');
+
                     return response()->json([
                         'success' => true,
                         'message' => 'Offer purchased successfully!'
@@ -564,6 +572,66 @@ class PcashApiController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('PCash API Balance Check Exception: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    private function giveRechargeCommission($userId, $amount, $tranId, $paymentGateway = 'Recharge Commission', $teamGateway = 'Recharge Team Commission')
+    {
+        $user = SignUp::find($userId);
+        if (!$user) return;
+
+        $now = now()->toDateTimeString();
+        $currentTime = now()->format("d-m-Y h:i A");
+
+        // 1. Self Commission (1.5%)
+        $selfComm = round($amount * 0.015, 2);
+        if ($selfComm > 0) {
+            $user->increment('wallet_balance', $selfComm);
+
+            $log = PcashRechargeLog::where('api_id', $tranId)->first();
+            $numberStr = $log ? " ({$log->number})" : "";
+            $desc = $paymentGateway === 'SIM Offer Commission'
+                ? "Commission from SIM offer" . $numberStr
+                : "Commission from mobile recharge" . $numberStr;
+
+            Transaction::create([
+                'user_id' => $userId,
+                'refer_id' => $user->referCode,
+                'amount' => $selfComm,
+                'type' => 'commission',
+                'payment_gateway' => $paymentGateway,
+                'description' => $desc,
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
+            ]);
+        }
+
+        // 2. Upline Commission (2 levels, 0.05% each)
+        $uplineComm = round($amount * 0.0005, 2);
+        if ($uplineComm <= 0) return;
+
+        $currentUplineReferCode = $user->referredBy;
+        for ($i = 1; $i <= 2; $i++) {
+            if (empty($currentUplineReferCode) || $currentUplineReferCode == "0") break;
+
+            $upline = SignUp::where('referCode', $currentUplineReferCode)->first();
+            if (!$upline) break;
+
+            $upline->increment('wallet_balance', $uplineComm);
+            Transaction::create([
+                'user_id' => $upline->id,
+                'refer_id' => $user->referCode,
+                'amount' => $uplineComm,
+                'type' => 'commission',
+                'payment_gateway' => $teamGateway,
+                'description' => "Commission from {$user->name} (Level {$i})",
+                'update_at' => $currentTime,
+                'created_at' => $now,
+                'date' => $now
+            ]);
+
+            $currentUplineReferCode = $upline->referredBy;
         }
     }
 

@@ -10,6 +10,7 @@ use App\Models\SignUp;
 use App\Traits\LegacyFCMTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class LegacyRechargeController extends Controller
 {
@@ -80,13 +81,13 @@ class LegacyRechargeController extends Controller
                 "operator" => $operator_code
             ];
 
-            \Log::info("Recharge Request: " . $api_url . "?" . http_build_query($params));
+            Log::info("Recharge Request: " . $api_url . "?" . http_build_query($params));
 
             $response = Http::withHeaders([
                 'User-Agent' => 'Mozilla/5.0'
             ])->timeout(120)->get($api_url, $params);
 
-            \Log::info("Recharge Response: " . $response->body());
+            Log::info("Recharge Response: " . $response->body());
             
             $api_data = $response->json();
             $body = $response->body();
@@ -125,7 +126,7 @@ class LegacyRechargeController extends Controller
                         'type' => 'voucher_payment',
                         'payment_gateway' => 'Recharge',
                         'description' => "Mobile Recharge to {$number} ({$operator})",
-                        'update_at' => $current_time,
+                        'update_at' => $currentTime,
                         'created_at' => $now,
                         'date' => $now
                     ]);
@@ -177,7 +178,7 @@ class LegacyRechargeController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error("Recharge Connection Error: " . $e->getMessage());
+            Log::error("Recharge Connection Error: " . $e->getMessage());
             $status = 'pending';
             
             DB::table('recharge_transactions')->where('tran_id', $tran_id)->update([
@@ -212,6 +213,9 @@ class LegacyRechargeController extends Controller
         if (!$user_id) {
             return response()->json(["status" => false, "message" => "User ID required"]);
         }
+
+        // Reconcile pending PCash recharge statuses for this user
+        \App\Models\PcashRechargeLog::checkAndUpdatePendingLogs($user_id);
 
         // Fetch manual recharges
         $legacyHistory = DB::table('recharge_transactions')

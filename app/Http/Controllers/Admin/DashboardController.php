@@ -14,6 +14,7 @@ use App\Models\OnlineServiceOrder;
 use App\Models\SalaryRequest;
 use App\Models\LeadershipRewardRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 class DashboardController extends Controller
 {
@@ -69,5 +70,19 @@ class DashboardController extends Controller
         ];
 
         return response()->json($stats);
+    }
+
+    public function clearCache()
+    {
+        try {
+            Artisan::call('cache:clear');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
+
+            return redirect()->back()->with('success', 'System cache cleared successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to clear cache: ' . $e->getMessage());
+        }
     }
 }

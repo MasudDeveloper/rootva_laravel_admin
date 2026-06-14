@@ -28,6 +28,10 @@
                             <label class="form-label fw-bold small">Message Body</label>
                             <textarea name="body" class="form-control" rows="4" placeholder="আপনার বার্তাটি লিখুন..." required></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Action Link / Meeting Link (Optional)</label>
+                            <input type="text" name="link" class="form-control" placeholder="https://zoom.us/j/... or https://meet.google.com/...">
+                        </div>
                         
                         <div class="mb-3">
                             <label class="form-label d-block fw-bold small">Target Audience</label>

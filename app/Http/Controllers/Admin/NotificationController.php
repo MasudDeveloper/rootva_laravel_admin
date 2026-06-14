@@ -28,13 +28,15 @@ class NotificationController extends Controller
             'target' => 'required|in:all,specific,verified,unverified',
             'referCode' => 'required_if:target,specific',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'image_url_input' => 'nullable|url'
+            'image_url_input' => 'nullable|url',
+            'link' => 'nullable|string'
         ]);
 
         $title = $request->title;
         $body = $request->body;
         $target = $request->target;
         $referCode = $request->referCode;
+        $link = $request->link;
         
         $image = null;
         if ($request->hasFile('image')) {
@@ -67,7 +69,10 @@ class NotificationController extends Controller
             // 1. Save to database notification table for app history
             Notification::create([
                 'user_id' => $user->id,
-                'message' => "[$title] $body",
+                'title' => $title,
+                'message' => $body,
+                'image' => $image,
+                'link' => $link,
                 'created_at' => date("d-m-Y h:i A")
             ]);
 
@@ -79,7 +84,9 @@ class NotificationController extends Controller
                     'body'  => $body,
                     'image' => $image,
                     'image_url' => $image,
-                    'url' => $image
+                    'url' => $image,
+                    'link' => $link,
+                    'click_action' => $link
                 ]);
 
                 if ($response->successful()) {
