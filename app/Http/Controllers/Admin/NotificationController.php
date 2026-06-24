@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SignUp;
 use App\Models\Notification;
+use App\Models\SavedPushNotification;
 use Illuminate\Support\Facades\Http;
 
 class NotificationController extends Controller
@@ -98,5 +99,112 @@ class NotificationController extends Controller
         }
 
         return back()->with('success', "Notification sent to $successCount users successfully!");
+    }
+
+    public function savedIndex()
+    {
+        $savedNotifications = SavedPushNotification::orderBy('id', 'desc')->paginate(20);
+        return view('admin.notifications.saved', compact('savedNotifications'));
+    }
+
+    public function saveDraft(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string',
+            'body' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image_url_input' => 'nullable|url',
+            'link' => 'nullable|string'
+        ]);
+
+        $image = null;
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/notifications'), $filename);
+            $image = secure_asset('uploads/notifications/' . $filename);
+        } elseif ($request->filled('image_url_input')) {
+            $image = $request->image_url_input;
+        }
+
+        SavedPushNotification::create([
+            'title' => $request->title,
+            'body' => $request->body,
+            'image' => $image,
+            'link' => $request->link,
+        ]);
+
+        return back()->with('success', 'Notification template saved successfully!');
+    }
+
+    public function deleteDraft($id)
+    {
+        $draft = SavedPushNotification::findOrFail($id);
+        $draft->delete();
+        return back()->with('success', 'Saved notification deleted successfully!');
+    }
+
+    public function sendDraft(Request $request, $id)
+    {
+        $draft = SavedPushNotification::findOrFail($id);
+
+        $request->validate([
+            'target' => 'required|in:all,specific,verified,unverified',
+            'referCode' => 'required_if:target,specific',
+        ]);
+
+        $target = $request->target;
+        $referCode = $request->referCode;
+
+        $users = [];
+
+        if ($target === 'all') {
+            $users = SignUp::whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        } elseif ($target === 'specific') {
+            $users = SignUp::where('referCode', $referCode)->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        } elseif ($target === 'verified') {
+            $users = SignUp::whereIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        } elseif ($target === 'unverified') {
+            $users = SignUp::whereNotIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
+        }
+
+        if (empty($users) || $users->isEmpty()) {
+            return back()->with('error', 'No eligible users found with valid FCM tokens.');
+        }
+
+        $successCount = 0;
+        foreach ($users as $user) {
+            // 1. Save to database notification table for app history
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => $draft->title,
+                'message' => $draft->body,
+                'image' => $draft->image,
+                'link' => $draft->link,
+                'created_at' => date("d-m-Y h:i A")
+            ]);
+
+            // 2. Send Push Notification via FCM Service
+            try {
+                $response = Http::asForm()->post('https://rootvaadmin.rootvabd.com/send_notification.php', [
+                    'token' => $user->fcm_token,
+                    'title' => $draft->title,
+                    'body'  => $draft->body,
+                    'image' => $draft->image,
+                    'image_url' => $draft->image,
+                    'url' => $draft->image,
+                    'link' => $draft->link,
+                    'click_action' => $draft->link
+                ]);
+
+                if ($response->successful()) {
+                    $successCount++;
+                }
+            } catch (\Exception $e) {
+                // Log or ignore
+            }
+        }
+
+        return back()->with('success', "Saved notification sent to $successCount users successfully!");
     }
 }

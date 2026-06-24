@@ -101,9 +101,13 @@
             </a>
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
-            <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications*') ? 'active' : '' }}">
+            <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications') || request()->is('admin/notifications/send') ? 'active' : '' }}">
                 <i class="fa-solid fa-bullhorn"></i>
                 <span>Push Notifications</span>
+            </a>
+            <a href="{{ route('admin.notifications.saved.index') }}" class="nav-link {{ request()->is('admin/notifications/saved*') ? 'active' : '' }}">
+                <i class="fa-solid fa-bookmark"></i>
+                <span>Saved Notifications</span>
             </a>
             <a href="{{ route('admin.popups.index') }}" class="nav-link {{ request()->is('admin/popups*') ? 'active' : '' }}">
                 <i class="fa-solid fa-window-maximize"></i>
