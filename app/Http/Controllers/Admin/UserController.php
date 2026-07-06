@@ -83,6 +83,18 @@ class UserController extends Controller
         $description = $request->input('description', 'Add Money by Admin');
         $giveCommission = $request->has('give_commission');
 
+        // Prevent duplicate addition (same user, same amount, same gateway within the last 1 minute)
+        $recentTxn = Transaction::where('user_id', $user->id)
+            ->where('amount', $amount)
+            ->where('payment_gateway', $gateway)
+            ->where('type', 'income')
+            ->where('created_at', '>=', now()->subMinutes(1))
+            ->first();
+
+        if ($recentTxn) {
+            return back()->with('error', 'Duplicate request detected! This amount has already been added recently.');
+        }
+
         DB::transaction(function () use ($user, $amount, $gateway, $description, $giveCommission) {
             $userAmount = $giveCommission ? ($amount * 0.90) : $amount;
             

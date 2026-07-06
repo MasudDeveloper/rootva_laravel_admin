@@ -253,7 +253,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
-                    {{ $transactions->links() }}
+                    {{ $transactions->withQueryString()->fragment('history')->links() }}
                 </div>
             </div>
         </div>

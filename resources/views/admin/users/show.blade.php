@@ -179,7 +179,7 @@
 <!-- Add Money Modal -->
 <div class="modal fade" id="addMoneyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content border-0 shadow rounded-4" action="{{ route('admin.users.add-money', $user->id) }}" method="POST">
+        <form class="modal-content border-0 shadow rounded-4" action="{{ route('admin.users.add-money', $user->id) }}" method="POST" onsubmit="const btn = this.querySelector('button[type=submit]'); btn.disabled = true; btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin me-2\'></i>Processing...';">
             @csrf
             <div class="modal-header border-0 pb-0">
                 <h5 class="fw-bold">Add Balance</h5>

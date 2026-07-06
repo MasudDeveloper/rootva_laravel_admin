@@ -95,13 +95,15 @@ function sendFCMNotification($fcmToken, $title, $body, $image = null, $link = nu
     return $result;
 }
 
-$fcmToken = $_POST['token'] ?? '';
-$title = $_POST['title'] ?? '';
-$body = $_POST['body'] ?? '';
-$image = $_POST['image'] ?? $_POST['image_url'] ?? $_POST['url'] ?? null;
-// এডমিন প্যানেল থেকে পাঠানো 'link' অথবা 'click_action' রিসিভ করুন
-$link = $_POST['link'] ?? $_POST['click_action'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['token'])) {
+    $fcmToken = $_POST['token'] ?? '';
+    $title = $_POST['title'] ?? '';
+    $body = $_POST['body'] ?? '';
+    $image = $_POST['image'] ?? $_POST['image_url'] ?? $_POST['url'] ?? null;
+    // এডমিন প্যানেল থেকে পাঠানো 'link' অথবা 'click_action' রিসিভ করুন
+    $link = $_POST['link'] ?? $_POST['click_action'] ?? null;
 
-$response = sendFCMNotification($fcmToken, $title, $body, $image, $link);
-echo $response;
+    $response = sendFCMNotification($fcmToken, $title, $body, $image, $link);
+    echo $response;
+}
 ?>
