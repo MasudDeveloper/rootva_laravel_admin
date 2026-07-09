@@ -114,6 +114,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/job-settings/tutorials', [JobSettingsController::class, 'updateTutorials'])->name('job-settings.updateTutorials');
 
         // Verifications
+        Route::get('/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
         Route::get('/verifications', [VerificationRequestController::class, 'index'])->name('verifications.index');
         Route::post('/verifications/{id}/approve', [VerificationRequestController::class, 'approve'])->name('verifications.approve');
         Route::post('/verifications/{id}/reject', [VerificationRequestController::class, 'reject'])->name('verifications.reject');

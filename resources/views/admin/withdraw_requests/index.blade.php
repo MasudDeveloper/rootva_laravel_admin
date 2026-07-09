@@ -88,7 +88,14 @@
                         </td>
                         <td class="py-3">
                             <div class="text-dark small fw-medium">
-                                {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
+                                @php
+                                    try {
+                                        $date = \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A');
+                                    } catch (\Exception $e) {
+                                        $date = $req->created_at;
+                                    }
+                                @endphp
+                                {{ $date }}
                             </div>
                         </td>
                         <td class="py-3 text-end">

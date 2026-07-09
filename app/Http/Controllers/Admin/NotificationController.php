@@ -68,6 +68,7 @@ class NotificationController extends Controller
         $successCount = 0;
         foreach ($users as $user) {
             // 1. Save to database notification table for app history
+            /* 
             Notification::create([
                 'user_id' => $user->id,
                 'title' => $title,
@@ -76,6 +77,7 @@ class NotificationController extends Controller
                 'link' => $link,
                 'created_at' => date("d-m-Y h:i A")
             ]);
+            */
 
             // 2. Send Push Notification via FCM Service
             try {
@@ -175,6 +177,7 @@ class NotificationController extends Controller
         $successCount = 0;
         foreach ($users as $user) {
             // 1. Save to database notification table for app history
+            /*
             Notification::create([
                 'user_id' => $user->id,
                 'title' => $draft->title,
@@ -183,6 +186,7 @@ class NotificationController extends Controller
                 'link' => $draft->link,
                 'created_at' => date("d-m-Y h:i A")
             ]);
+            */
 
             // 2. Send Push Notification via FCM Service
             try {

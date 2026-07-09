@@ -25,9 +25,8 @@ class LegacyVerifyController extends Controller
         $amount = $request->input('amount');
         $payment_gateway = trim($request->input('payment_gateway', ''));
         
-        // আপনার টেবিল অনুযায়ী টাইম ফরম্যাট
-        $current_time = $request->input('current_time') ?? now()->format('Y-m-d H:i:s');
-    
+        // ইউজারের ফোনের লোকাল টাইমের বদলে সার্ভারের টাইম ব্যবহার করা হচ্ছে (যাতে বাংলা না আসে)
+        $current_time = date('d-m-Y h:i A');    
         // ২. ভ্যালিডেশন
         if (!$user_id || !$account_number || !$transaction_id || !$amount) {
             return response()->json(['message' => "অবৈধ ডেটা"]);
@@ -78,7 +77,7 @@ class LegacyVerifyController extends Controller
             } catch (\Exception $e) {
                 DB::rollBack();
                 // কলামে ডুপ্লিকেট রিকোয়েস্ট (is_verified=2 থাকা অবস্থায় আবার ট্রাই করলে)
-                if (isset($e->errorInfo) && $e->errorInfo[1] == 1062) {
+                if ($e instanceof \Illuminate\Database\QueryException && $e->errorInfo[1] == 1062) {
                     return response()->json(['message' => "আপনার একটি রিকোয়েস্ট ইতিমধ্যে পেন্ডিং আছে!"]);
                 }
                 return response()->json(['message' => "সার্ভার এরর: " . $e->getMessage()]);

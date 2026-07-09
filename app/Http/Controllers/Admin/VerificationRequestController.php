@@ -14,23 +14,31 @@ class VerificationRequestController extends Controller
     public function index(Request $request)
     {
         $status = $request->input('status', 'Pending');
-        
+        $search = $request->input('search');
+
         $requests = VerificationRequest::select('verification_requests.*', 'sign_up.name', 'sign_up.number', 'sign_up.referCode')
             ->join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
-            ->when($status, function($q) use ($status) {
+            ->when($status, function ($q) use ($status) {
                 return $q->where('verification_requests.status', $status);
+            })
+            ->when($search, function ($q) use ($search) {
+                return $q->where(function ($query) use ($search) {
+                    $query->where('verification_requests.transaction_id', 'like', "%{$search}%")
+                        ->orWhere('sign_up.referCode', 'like', "%{$search}%")
+                        ->orWhere('sign_up.id', $search);
+                });
             })
             ->orderBy('verification_requests.id', 'desc')
             ->paginate(25)
             ->withQueryString();
 
-        return view('admin.verification_requests.index', compact('requests', 'status'));
+        return view('admin.verification_requests.index', compact('requests', 'status', 'search'));
     }
 
     public function approve(Request $request, $id)
     {
         $verificationRequest = VerificationRequest::findOrFail($id);
-        
+
         if ($verificationRequest->status !== 'Pending') {
             return back()->with('error', 'This request has already been processed.');
         }
@@ -119,7 +127,7 @@ class VerificationRequestController extends Controller
 
             if ($referrer) {
                 $bonus = $levels[$current_level - 1];
-                
+
                 // Add balance
                 $referrer->increment('wallet_balance', $bonus);
 
@@ -141,5 +149,42 @@ class VerificationRequestController extends Controller
                 break;
             }
         }
+    }
+
+    public function bulkCardsData(Request $request)
+    {
+        $date = $request->input('date'); // Y-m-d
+        if (!$date) {
+            return response()->json(['error' => 'Date is required'], 400);
+        }
+
+        // Parse date for comparison depending on how verified_raw_time or updated_at is stored.
+        // verified_raw_time is a standard Y-m-d H:i:s
+        $users = VerificationRequest::select('sign_up.name', 'sign_up.referCode', 'sign_up.profile_pic_url', 'verification_requests.verified_raw_time')
+            ->join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
+            ->where('verification_requests.status', 'Approved')
+            ->whereDate('verification_requests.verified_raw_time', $date)
+            ->get();
+
+        $data = $users->map(function ($user) {
+            $imageUrl = $user->profile_pic_url ?: 'https://thumb.ac-illust.com/b1/b170870007dfa419295d949814474ab2_t.jpeg';
+            $base64Image = $imageUrl;
+            try {
+                $response = \Illuminate\Support\Facades\Http::timeout(5)->get($imageUrl);
+                if ($response->successful()) {
+                    $contentType = $response->header('Content-Type') ?? 'image/jpeg';
+                    $base64Image = 'data:' . $contentType . ';base64,' . base64_encode($response->body());
+                }
+            } catch (\Exception $e) {
+            }
+
+            return [
+                'name' => $user->name,
+                'referCode' => $user->referCode,
+                'image' => $base64Image
+            ];
+        });
+
+        return response()->json($data);
     }
 }
