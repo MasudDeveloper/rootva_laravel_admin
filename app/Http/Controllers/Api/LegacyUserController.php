@@ -74,7 +74,7 @@ class LegacyUserController extends Controller
         $address = $request->input('address');
         $email = $request->input('email');
         $profile_pic_url = $request->input('profile_pic_url');
-
+        
         if ($user_id) {
             $user = SignUp::find($user_id);
             if ($user) {
@@ -134,6 +134,11 @@ class LegacyUserController extends Controller
         $file = $request->file('file');
 
         if ($user_id && $file) {
+            $user = SignUp::find($user_id);
+            if (!$user) {
+                return response()->json(['message' => 'ইউজার পাওয়া যায়নি']);
+            }
+
             $destPath = '/home/syfoocuv/api.rootvabd.com/Images';
             
             // Fallback for local development
@@ -146,8 +151,7 @@ class LegacyUserController extends Controller
             }
 
             // পুরনো ছবি ডিলিট করার লজিক
-            $user = SignUp::find($user_id);
-            if ($user && !empty($user->profile_pic_url)) {
+            if (!empty($user->profile_pic_url)) {
                 $fileNameOnly = basename($user->profile_pic_url);
                 $fullOldPath = $destPath . '/' . $fileNameOnly;
                 if (file_exists($fullOldPath)) {
@@ -195,7 +199,12 @@ class LegacyUserController extends Controller
             return response()->json(['status' => false, 'message' => 'Invalid request']);
         }
 
-        SignUp::where('id', $userId)->update(['fcm_token' => $token]);
+        $user = SignUp::find($userId);
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'User not found']);
+        }
+
+        $user->update(['fcm_token' => $token]);
         
         return response()->json([
             'status' => true,

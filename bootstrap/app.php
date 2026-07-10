@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'legacy.auth' => \App\Http\Middleware\VerifyLegacyApiAuth::class,
+        ]);
         $middleware->redirectTo(
             guests: '/admin/login'
         );

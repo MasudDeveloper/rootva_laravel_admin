@@ -267,41 +267,76 @@ $base64Image = 'data:' . $contentType . ';base64,' . base64_encode($response->bo
 }
 @endphp
 <div style="position: absolute; left: -9999px; top: -9999px;">
-    <div id="verified-card" style="width: 400px; background: #f8fafc; border-radius: 24px; padding: 0; text-align: center; font-family: 'Hind Siliguri', sans-serif; overflow: hidden; position: relative; border: 1px solid #e2e8f0;">
+    <div id="verified-card" style="width: 420px; background: #ffffff; border-radius: 20px; padding: 30px 20px; text-align: center; font-family: 'Hind Siliguri', sans-serif; position: relative; border: 2px solid #e2e8f0; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,50,200,0.05);">
+        
+        <!-- Background accents -->
+        <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: linear-gradient(135deg, #0d47a1, #1976d2); transform: rotate(45deg); border-radius: 30px; opacity: 0.1;"></div>
+        <div style="position: absolute; bottom: -50px; left: -50px; width: 150px; height: 150px; background: linear-gradient(135deg, #1976d2, #0d47a1); transform: rotate(45deg); border-radius: 30px; opacity: 0.1;"></div>
 
-        <!-- Top Decorative Banner -->
-        <div style="height: 140px; background: linear-gradient(135deg, #1e40af, #3b82f6); width: 100%; position: absolute; top: 0; left: 0; z-index: 1;">
-            <!-- decorative circles -->
-            <div style="position: absolute; top: -20px; left: -20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-            <div style="position: absolute; bottom: -30px; right: 20px; width: 80px; height: 80px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
-        </div>
-
-        <div style="position: relative; z-index: 2; padding: 0 30px 40px 30px;">
-            <!-- Profile Picture -->
-            <div style="margin-top: 70px; margin-bottom: 20px;">
-                <div style="position: relative; display: inline-block;">
-                    <img src="{{ $base64Image }}" alt="Profile" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 6px solid #ffffff; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); background-color: #ffffff;">
-
-                    <!-- Verified Badge -->
-                    <div style="position: absolute; bottom: 8px; right: 5px; background: #10b981; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 4px solid #ffffff; font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
+        <div style="position: relative; z-index: 2;">
+            <!-- अभिनंदन! Text with 3D Gold Shadow -->
+            <h1 style="color: #1e3a8a; font-weight: 900; font-size: 54px; margin: 0 0 20px 0; text-shadow: 2px 2px 0px #fde68a, 4px 4px 0px #fbbf24, 6px 6px 15px rgba(0,0,0,0.15); letter-spacing: 1px;">অভিনন্দন!</h1>
+            
+            <!-- Image with Gold Ring -->
+            <div style="position: relative; display: inline-block; margin-bottom: 20px;">
+                <div style="position: absolute; top: -12px; left: -12px; right: -12px; bottom: -12px; border: 4px dashed #d4af37; border-radius: 50%;"></div>
+                <div style="position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px; border: 2px solid #ffd700; border-radius: 50%;"></div>
+                
+                <img src="{{ $base64Image }}" alt="Profile" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); position: relative; z-index: 3;">
+                
+                <!-- Verified Checkmark -->
+                <div style="position: absolute; bottom: 5px; right: 0px; background: #0055ff; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 3px solid #ffffff; font-size: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 4;">
+                    <i class="fa-solid fa-check"></i>
                 </div>
             </div>
 
-            <!-- Texts -->
-            <h2 style="color: #1e3a8a; font-weight: 800; margin-bottom: 5px; font-size: 32px; letter-spacing: -0.5px;">অভিনন্দন!</h2>
-            <h4 style="color: #0f172a; font-weight: 700; margin-bottom: 25px; font-size: 24px;">{{ $user->name }}</h4>
+            <!-- Name Ribbon -->
+            <div style="margin-bottom: 25px;">
+                <div style="display: inline-block; background: #0022aa; color: white; padding: 8px 50px; border-radius: 8px; font-weight: 800; font-size: 24px; box-shadow: 0 6px 12px rgba(0,34,170,0.3); position: relative;">
+                    {{ $user->name }}
+                    <div style="position: absolute; left: -10px; top: 10px; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-right: 10px solid #001155;"></div>
+                    <div style="position: absolute; right: -10px; top: 10px; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 10px solid #001155;"></div>
+                </div>
+            </div>
 
-            <div style="background-color: #ffffff; border-radius: 16px; padding: 22px 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
-                <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0; font-weight: 500;">
-                    আপনার অ্যাকাউন্টটি সফলভাবে ভেরিফাই করা হয়েছে! <strong style="color: #2563eb;">Rootva</strong>-এর একজন সম্মানিত মেম্বার হিসেবে আপনাকে স্বাগতম। এখন থেকে আপনি আমাদের সকল প্রিমিয়াম সুবিধা উপভোগ করতে পারবেন।
+            <!-- Text Box -->
+            <div style="background-color: #ffffff; border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+                <p style="color: #1e293b; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 600;">
+                    আপনার ২৫০ টাকা পেমেন্ট সফলভাবে সম্পন্ন হয়েছে এবং <span style="color: #0055ff; font-weight: 800;">Rootva</span> অ্যাকাউন্ট ভেরিফাই হয়েছে। এখন থেকে আপনি সকল <span style="color: #0055ff; font-weight: 800;">প্রিমিয়াম সুবিধা</span> উপভোগ করতে পারবেন।
                 </p>
             </div>
 
-            <!-- Button -->
-            <div style="background: #003366; color: white; border-radius: 50px; padding: 15px 30px; font-weight: bold; font-size: 18px; box-shadow: 0 10px 20px rgba(0, 51, 102, 0.3); display: inline-block; width: 80%; letter-spacing: 0.5px;">
-                ধন্যবাদ
+            <!-- 4 Icons Section -->
+            <div style="background: linear-gradient(to right, #002288, #0044cc); border-radius: 16px; padding: 15px 10px; margin-bottom: 25px; display: flex; justify-content: space-around; box-shadow: 0 6px 15px rgba(0,34,136,0.3);">
+                <div style="text-align: center; color: white; width: 25%;">
+                    <div style="background: rgba(255,255,255,0.15); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
+                        <i class="fa-solid fa-shield-halved" style="font-size: 18px; color: #99ccff;"></i>
+                    </div>
+                    <div style="font-size: 10px; font-weight: bold; line-height: 1.3;">একাউন্ট<br>নিরাপদ</div>
+                </div>
+                <div style="text-align: center; color: white; width: 25%;">
+                    <div style="background: rgba(255,255,255,0.15); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
+                        <i class="fa-solid fa-medal" style="font-size: 18px; color: #ffd700;"></i>
+                    </div>
+                    <div style="font-size: 10px; font-weight: bold; line-height: 1.3;">প্রিমিয়াম<br>সুবিধা</div>
+                </div>
+                <div style="text-align: center; color: white; width: 25%;">
+                    <div style="background: rgba(255,255,255,0.15); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
+                        <i class="fa-solid fa-gift" style="font-size: 18px; color: #66d9ff;"></i>
+                    </div>
+                    <div style="font-size: 10px; font-weight: bold; line-height: 1.3;">এক্সক্লুসিভ<br>অফার</div>
+                </div>
+                <div style="text-align: center; color: white; width: 25%;">
+                    <div style="background: rgba(255,255,255,0.15); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;">
+                        <i class="fa-solid fa-bolt" style="font-size: 18px; color: #ffcc00;"></i>
+                    </div>
+                    <div style="font-size: 10px; font-weight: bold; line-height: 1.3;">দ্রুত<br>সাপোর্ট</div>
+                </div>
+            </div>
+
+            <!-- Bottom Button -->
+            <div style="background: linear-gradient(to right, #002288, #001155); color: #ffffff; border-radius: 30px; padding: 10px 40px; font-weight: 900; font-size: 20px; display: inline-block; box-shadow: 0 4px 10px rgba(0, 17, 85, 0.4); border: 2px solid #ffffff;">
+                ★ ধন্যবাদ ★
             </div>
         </div>
     </div>

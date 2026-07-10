@@ -81,8 +81,20 @@ class LegacyBonusController extends Controller
             ]);
         }
 
-        $week_start_date = $request->query('week_start_date');
-        $week_end_date = Carbon::parse($week_start_date)->addDays(6)->toDateString();
+        $bengali_digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        $english_digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $raw_date = $request->query('week_start_date');
+        $week_start_date = str_replace($bengali_digits, $english_digits, $raw_date);
+
+        try {
+            $week_end_date = Carbon::parse($week_start_date)->addDays(6)->toDateString();
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid date format',
+                'winner' => []
+            ]);
+        }
 
         $start = $week_start_date . ' 00:00:00';
         $end = $week_end_date . ' 23:59:59';
