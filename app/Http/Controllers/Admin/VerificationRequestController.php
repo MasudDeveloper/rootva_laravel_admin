@@ -140,7 +140,8 @@ class VerificationRequestController extends Controller
                     'description' => "লেভেল $current_level এফিলিয়েট বোনাস যুক্ত হয়েছে",
                     'update_at' => $current_time,
                     'created_at' => $current_time,
-                    'payment_gateway' => 'Internal'
+                    'payment_gateway' => 'Internal',
+                    'date' => now()
                 ]);
 
                 $referredByCode = $referrer->referredBy;

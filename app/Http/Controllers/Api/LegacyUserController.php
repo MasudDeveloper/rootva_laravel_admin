@@ -25,6 +25,27 @@ class LegacyUserController extends Controller
 
         $user = SignUp::where('number', $number)->first();
         if ($user) {
+            $api_token = $request->header('Authorization') ?: $request->query('api_token') ?: $request->input('api_token');
+            if (strpos((string)$api_token, 'Bearer ') === 0) {
+                $api_token = substr($api_token, 7);
+            }
+            $password = $request->input('password') ?: $request->header('Auth-Password');
+
+            $isAuthenticated = false;
+            if ($api_token && $user->api_token === $api_token) {
+                $isAuthenticated = true;
+            } elseif ($password && (\Illuminate\Support\Facades\Hash::check($password, $user->password) || $password === $user->password)) {
+                $isAuthenticated = true;
+            }
+
+            if (!$isAuthenticated) {
+                // DON'T leak data! If the password doesn't match, return Unauthorized
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized request'
+                ], 401);
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'ইউজার তথ্য সফলভাবে পাওয়া গেছে',

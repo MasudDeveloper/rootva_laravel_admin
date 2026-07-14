@@ -41,23 +41,37 @@ Route::get('/courses', [ModuleController::class, 'getCourses']);
 Route::get('/services', [ModuleController::class, 'getServices']);
 Route::get('/profile', [ModuleController::class, 'getProfile']);
 
-Route::get('get_leaderboard.php', [LeaderboardController::class, 'getRanking']);
-Route::post('login.php', [LegacyAuthController::class, 'login']);
-Route::post('register.php', [LegacyAuthController::class, 'register']);
+Route::post('login.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'login']);
+Route::post('register.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'register']);
+Route::post('send_email_otp.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'sendEmailOtp']);
+Route::post('reset_password.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'resetPassword']);
+
+// --- Public Legacy APIs ---
+Route::get('get_banners.php', [LegacyContentController::class, 'getBanners']);
+Route::get('get_reviews.php', [LegacyContentController::class, 'getReviews']);
+Route::get('get_social_links.php', [LegacyContentController::class, 'getSocialLinks']);
+Route::get('get_latest_update.php', [LegacyUserController::class, 'getUpdate']);
+Route::get('get_categories.php', [LegacyContentController::class, 'getCategories']);
+Route::get('get_products.php', [ModuleController::class, 'getProducts']);
+Route::get('get_products_by_category.php', [ModuleController::class, 'getProducts']);
+Route::get('get_popup.php', [LegacyContentController::class, 'getPopupData']);
+Route::get('get_courses.php', [LegacyCourseController::class, 'getAllVideos']);
+Route::get('get_sim_offer.php', [LegacySimOfferController::class, 'getSimOffers']);
+
 Route::middleware('legacy.auth')->group(function () {
+    // --- Protected Leaderboard APIs ---
+    Route::get('get_leaderboard.php', [LeaderboardController::class, 'getRanking']);
+    Route::get('get_daily_winners.php', [LeaderboardController::class, 'getDailyWinners']);
+    Route::get('get_weekly_ranking.php', [LegacyBonusController::class, 'getWeeklyRanking']);
+    Route::get('get_weekly_winners_by_date.php', [LegacyBonusController::class, 'getWeeklyWinnersByDate']);
+    Route::get('get_daily_winners_by_date.php', [LegacyBonusController::class, 'getWinnersByDate']);
+    Route::get('get_daily_live_ranking.php', [LegacyBonusController::class, 'getTodayLiveRanking']);
+
     Route::post('get_Data.php', [LegacyUserController::class, 'getUserData']);
-    Route::get('get_banners.php', [LegacyContentController::class, 'getBanners']);
-    Route::get('get_reviews.php', [LegacyContentController::class, 'getReviews']);
-    Route::get('get_social_links.php', [LegacyContentController::class, 'getSocialLinks']);
-    Route::get('get_latest_update.php', [LegacyUserController::class, 'getUpdate']);
     Route::post('get_wallet_balance.php', [LegacyWalletController::class, 'getBalance']);
     Route::get('get_transaction_history.php', [LegacyWalletController::class, 'getTransactionHistory']);
     Route::get('get_income_report.php', [LegacyWalletController::class, 'getIncomeReport']);
     Route::get('get_income_history.php', [LegacyWalletController::class, 'getIncomeHistory']);
-    Route::get('get_sim_offer.php', [LegacySimOfferController::class, 'getSimOffers']);
-    Route::get('get_categories.php', [LegacyContentController::class, 'getCategories']);
-    Route::get('get_products.php', [ModuleController::class, 'getProducts']);
-    Route::get('get_products_by_category.php', [ModuleController::class, 'getProducts']);
     Route::get('get_referral_tree.php', [LegacyTeamController::class, 'getReferralTree']);
     Route::get('get_team_summary.php', [LegacyTeamController::class, 'getTeamSummary']);
     Route::get('get_referral_tree2.php', [LegacyTeamController::class, 'searchUserInMyTree']);
@@ -74,7 +88,7 @@ Route::middleware('legacy.auth')->group(function () {
     Route::post('submit_verification_request.php', [LegacyVerifyController::class, 'submitVerificationRequest']);
     Route::post('recharge_request.php', [LegacyRechargeController::class, 'doRecharge']);
     Route::get('get_recharge_history.php', [LegacyRechargeController::class, 'getRechargeHistory']);
-    Route::get('get_courses.php', [LegacyCourseController::class, 'getAllVideos']);
+    // (Moved get_courses.php to public block)
     Route::get('get_course_progress.php', [LegacyCourseController::class, 'getCourseProgress']);
     Route::post('salary_request.php', [LegacySalaryController::class, 'applySalaryRequest']);
     Route::get('get_salary_request_status.php', [LegacySalaryController::class, 'getSalaryRequestStatus']);
@@ -85,6 +99,7 @@ Route::middleware('legacy.auth')->group(function () {
     Route::get('get_notifications.php', [LegacyNotificationController::class, 'getNotifications']);
     Route::post('mark_notifications_read.php', [LegacyNotificationController::class, 'markNotificationsAsRead']);
     Route::post('spin_wheel.php', [LegacySpinController::class, 'submitSpinResult']);
+    Route::post('claim_spin_bonus.php', [LegacySpinController::class, 'claimSpinBonus']);
     Route::get('check-password-update.php', [LegacyAuthController::class, 'checkPasswordUpdate']);
     Route::post('upload_profile_pic.php', [LegacyUserController::class, 'uploadProfilePic']);
     Route::post('submit_order_request.php', [LegacyOrderController::class, 'submitOrder']);
@@ -100,11 +115,6 @@ Route::middleware('legacy.auth')->group(function () {
     Route::post('mark_verification_popup_seen.php', [LegacyUserController::class, 'markVerificationPopupSeen']);
 
     // Missing Endpoints added for functional parity
-    Route::get('get_daily_winners.php', [LeaderboardController::class, 'getDailyWinners']);
-    Route::get('get_weekly_ranking.php', [LegacyBonusController::class, 'getWeeklyRanking']);
-    Route::get('get_weekly_winners_by_date.php', [LegacyBonusController::class, 'getWeeklyWinnersByDate']);
-
-    Route::get('get_popup.php', [LegacyContentController::class, 'getPopupData']);
 
     Route::post('get_math_income.php', [LegacyMathController::class, 'getMathIncome']);
     Route::get('get_salary_progress.php', [LegacySalaryController::class, 'getSalaryProgress']);
@@ -124,8 +134,6 @@ Route::middleware('legacy.auth')->group(function () {
     Route::get('get_job_text.php', [LegacyJobController::class, 'getJobText']);
     Route::get('get_job_tutorial.php', [LegacyJobController::class, 'getJobTutorial']);
 
-    Route::post('send_email_otp.php', [LegacyAuthController::class, 'sendEmailOtp']);
-    Route::post('reset_password.php', [LegacyAuthController::class, 'resetPassword']);
     Route::post('send_withdraw_otp.php', [LegacyWithdrawController::class, 'sendWithdrawOtp']);
 
     Route::post('confirm_sim_offer.php', [LegacySimOfferController::class, 'confirmSimOffer']);
@@ -148,8 +156,7 @@ Route::middleware('legacy.auth')->group(function () {
     Route::post('update_submission_status.php', [LegacyMicrojobController::class, 'updateSubmissionStatus']);
     Route::post('update_microjob_status.php', [LegacyMicrojobController::class, 'updateMicrojobStatus']);
     Route::get('get_users_microjobs_posts.php', [LegacyMicrojobController::class, 'getUserMicrojobsPosts']);
-    Route::get('get_daily_winners_by_date.php', [LegacyBonusController::class, 'getWinnersByDate']);
-    Route::get('get_daily_live_ranking.php', [LegacyBonusController::class, 'getTodayLiveRanking']);
+    // (Moved to protected leaderboard block above)
 
     // PCash Automated System
     Route::get('get_pcash_sim_offers.php', [PcashApiController::class, 'getSimOffers']);

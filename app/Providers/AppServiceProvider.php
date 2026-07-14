@@ -23,5 +23,14 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Paginator::useBootstrap();
+
+        \Carbon\Carbon::macro('parseMixed', function ($time = null, $tz = null) {
+            if (is_string($time)) {
+                $bengali = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+                $english = ['0','1','2','3','4','5','6','7','8','9'];
+                $time = str_replace($bengali, $english, $time);
+            }
+            return new static($time, $tz);
+        });
     }
 }

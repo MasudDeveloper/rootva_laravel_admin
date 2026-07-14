@@ -72,6 +72,7 @@ class LeadershipController extends Controller
                     'description' => $claim->reward_type . " Reward",
                     'update_at' => now()->toDateTimeString(),
                     'created_at' => now()->toDateTimeString(),
+                    'date' => now()
                 ]);
             }
 

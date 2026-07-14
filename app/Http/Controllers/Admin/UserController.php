@@ -50,8 +50,16 @@ class UserController extends Controller
 
         // Quick action: Only status change (e.g. Suspend from dropdown)
         if ($request->has('is_verified') && !$request->has('name')) {
-            $user->update(['is_verified' => (int) $request->input('is_verified')]);
-            $label = (int) $request->input('is_verified') === 4 ? 'suspended' : 'updated';
+            $newStatus = (int) $request->input('is_verified');
+            $updateData = ['is_verified' => $newStatus];
+            
+            if ($user->is_verified != 1 && $newStatus == 1) {
+                $updateData['verified_at'] = date("d-m-Y h:i A");
+                $updateData['verified_raw_time'] = now()->toDateTimeString();
+            }
+
+            $user->update($updateData);
+            $label = $newStatus === 4 ? 'suspended' : 'updated';
             return back()->with('success', "User has been {$label} successfully.");
         }
         
@@ -65,9 +73,14 @@ class UserController extends Controller
         ]);
 
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+            $data['password'] = \Illuminate\Support\Facades\Hash::make($data['password']);
         } else {
             unset($data['password']);
+        }
+
+        if ($user->is_verified != 1 && isset($data['is_verified']) && $data['is_verified'] == 1) {
+            $data['verified_at'] = date("d-m-Y h:i A");
+            $data['verified_raw_time'] = now()->toDateTimeString();
         }
 
         $user->update($data);

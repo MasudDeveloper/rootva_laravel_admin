@@ -65,7 +65,7 @@
                         </td>
                         <td class="py-3">
                             <div class="text-dark small fw-medium">
-                                {{ \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A') }}
+                                {{ \Carbon\Carbon::parseMixed($req->created_at)->format('d-m-Y h:i A') }}
                             </div>
                         </td>
                         <td class="py-3 text-end fw-bold text-success">

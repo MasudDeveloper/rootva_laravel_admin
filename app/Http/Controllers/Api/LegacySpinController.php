@@ -83,6 +83,11 @@ class LegacySpinController extends Controller
         if ($user_id <= 0 || $amount <= 0) {
             return response()->json(['error' => true, 'message' => 'Invalid input']);
         }
+        
+        // Anti-exploit check: Maximum legitimate spin amount is 30 in the Android app.
+        if ($amount > 30) {
+            return response()->json(['error' => true, 'message' => 'Suspicious activity detected! Invalid amount.']);
+        }
 
         try {
             return DB::transaction(function () use ($user_id, $amount) {

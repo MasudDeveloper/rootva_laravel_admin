@@ -20,11 +20,28 @@ class VerifyLegacyApiAuth
      */
     public function handle(Request $request, Closure $next)
     {
-        $user_id = $request->input('user_id') ?? $request->query('user_id') ?? ($_POST['user_id'] ?? null);
+        // Basic User-Agent check to block scripts globally (Postman, Python, etc.)
+        $ua = strtolower($request->header('User-Agent', ''));
+        if (empty($ua) || str_contains($ua, 'postman') || str_contains($ua, 'python') || str_contains($ua, 'curl') || str_contains($ua, 'guzzle') || str_contains($ua, 'insomnia')) {
+            Log::warning('Legacy API Blocked: Suspicious User-Agent', [
+                'ip' => $request->ip(), 
+                'ua' => $ua,
+                'url' => $request->fullUrl()
+            ]);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized request'], 401);
+        }
 
-        // If no user_id is provided, let it pass (e.g. login, register endpoints)
-        if (!$user_id) {
-            return $next($request);
+        // Always prioritize the Auth-User-Id header injected by the App for authentication.
+        // If not present, fallback to request inputs (for backward compatibility).
+        $user_id = $request->header('Auth-User-Id') ?? $request->input('user_id') ?? $request->query('user_id') ?? ($_POST['user_id'] ?? null);
+
+        // Strictly enforce that a user_id must be provided for all legacy.auth APIs
+        if (!$user_id || $user_id == '0') {
+            Log::warning('Legacy API Blocked: Missing User ID', [
+                'ip' => $request->ip(),
+                'url' => $request->fullUrl()
+            ]);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized request. Missing user identifier.'], 401);
         }
 
         $user = SignUp::find($user_id);
@@ -33,48 +50,44 @@ class VerifyLegacyApiAuth
         }
 
         $api_token = $request->header('Authorization') ?: $request->query('api_token') ?: $request->input('api_token');
-        if (strpos($api_token, 'Bearer ') === 0) {
+        if (strpos((string)$api_token, 'Bearer ') === 0) {
             $api_token = substr($api_token, 7);
         }
-        $password = $request->input('password');
+        $password = $request->input('password') ?: $request->header('Auth-Password');
+
+        $isAuthenticated = false;
 
         if ($api_token && $user->api_token === $api_token) {
-            return $next($request);
+            $isAuthenticated = true;
         } elseif ($password && (Hash::check($password, $user->password) || $password === $user->password)) {
-            return $next($request);
+            $isAuthenticated = true;
         }
 
-        // Heuristic fallback for legacy apps without auth
-        $ip = $request->ip();
-        
-        // Basic User-Agent check
-        $ua = strtolower($request->header('User-Agent', ''));
-        if (empty($ua) || str_contains($ua, 'postman') || str_contains($ua, 'python') || str_contains($ua, 'curl') || str_contains($ua, 'guzzle') || str_contains($ua, 'insomnia')) {
-            Log::warning('Legacy API Blocked: Suspicious User-Agent', [
-                'ip' => $ip, 
-                'ua' => $ua,
-                'url' => $request->fullUrl(),
-                'payload' => $request->except(['password'])
+        if (!$isAuthenticated) {
+            Log::warning('Legacy API Blocked: Missing or Invalid Credentials', [
+                'ip' => $request->ip(),
+                'user_id' => $user_id,
+                'url' => $request->fullUrl()
             ]);
-            return response()->json(['message' => 'Unauthorized request'], 401);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized request'], 401);
         }
 
-        $cacheKey = 'legacy_api_users_by_ip_' . md5($ip);
-        $userIds = Cache::get($cacheKey, []);
-        
-        if (!in_array($user_id, $userIds)) {
-            $userIds[] = $user_id;
-            if (count($userIds) > 20) { // Max 20 distinct users per IP (to allow CGNAT Mobile users)
-                Log::warning('Legacy API Blocked: Too many distinct users from IP', [
-                    'ip' => $ip, 
-                    'user_id' => $user_id,
-                    'url' => $request->fullUrl(),
-                    'user_agent' => $request->header('User-Agent'),
-                    'payload' => $request->except(['password'])
-                ]);
-                return response()->json(['message' => 'Unauthorized request. Suspicious activity detected.'], 401);
+        // --- IDOR Prevention ---
+        // Force all controllers to act ONLY on the authenticated user's ID
+        // Exceptions for endpoints that legitimately read other users' data
+        $exceptions = ['get_profile.php'];
+        $isException = false;
+        foreach ($exceptions as $ex) {
+            if (str_ends_with($request->path(), $ex)) {
+                $isException = true;
+                break;
             }
-            Cache::put($cacheKey, $userIds, now()->addHours(1));
+        }
+
+        if (!$isException) {
+            // Overwrite any forged user_id in the request payload
+            $request->merge(['user_id' => $user_id]);
+            $request->query->set('user_id', $user_id);
         }
 
         return $next($request);

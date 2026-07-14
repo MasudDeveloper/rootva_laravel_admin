@@ -90,7 +90,7 @@
                             <div class="text-dark small fw-medium">
                                 @php
                                     try {
-                                        $date = \Carbon\Carbon::parse($req->created_at)->format('d-m-Y h:i A');
+                                        $date = \Carbon\Carbon::parseMixed($req->created_at)->format('d-m-Y h:i A');
                                     } catch (\Exception $e) {
                                         $date = $req->created_at;
                                     }

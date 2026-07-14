@@ -19,6 +19,18 @@ class LegacyTeamController extends Controller
         ini_set('memory_limit', '512M');
         
         $referCode = $request->input('referCode');
+        
+        // If referCode is empty, find it using the logged-in user ID
+        if (empty($referCode)) {
+            $authUserId = $request->header('Auth-User-Id') ?? $request->input('user_id');
+            if ($authUserId) {
+                $authUser = SignUp::find($authUserId);
+                if ($authUser) {
+                    $referCode = $authUser->referCode;
+                }
+            }
+        }
+        
         $isUpdated = $request->input('isUpdated') === 'true';
         $limit = (int)$request->input('limit', 20);
         $offset = (int)$request->input('offset', 0);
@@ -91,7 +103,7 @@ class LegacyTeamController extends Controller
             $pageIds = $pageNodes->pluck('id')->toArray();
             $users = SignUp::whereIn('id', $pageIds)
                 ->orderBy('id', 'desc')
-                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at', 'verified_at']);
+                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at', 'verified_at', 'referredBy']);
                 
             // 3. Re-attach Level and UserID fields
             $levelMap = $pageNodes->pluck('level', 'id')->toArray();
@@ -122,7 +134,7 @@ class LegacyTeamController extends Controller
             $users = SignUp::whereIn('id', $allIds)
                 ->orderBy('id', 'desc')
                 ->limit(500) // Hard limit for non-paginated to prevent crashes
-                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at']);
+                ->get(['id', 'name', 'number', 'referCode', 'is_verified', 'profile_pic_url', 'created_at', 'referredBy']);
                 
             $levelMap = $allNodes->pluck('level', 'id')->toArray();
             foreach ($users as $user) {

@@ -157,7 +157,7 @@
                                     $net = $row->total_added - $row->total_withdrawn;
                                 @endphp
                                 <tr>
-                                    <td class="fw-semibold text-dark">{{ \Carbon\Carbon::parse($row->transaction_date)->format('d M, Y') }}</td>
+                                    <td class="fw-semibold text-dark">{{ \Carbon\Carbon::parseMixed($row->transaction_date)->format('d M, Y') }}</td>
                                     <td class="text-success fw-bold">+৳{{ number_format($row->total_added, 2) }}</td>
                                     <td class="text-danger fw-bold">-৳{{ number_format($row->total_withdrawn, 2) }}</td>
                                     <td class="fw-bold {{ $net >= 0 ? 'text-success' : 'text-danger' }}">
@@ -240,7 +240,7 @@
                                     </td>
                                     <td><span class="text-muted small">{{ $txn->description ?: 'No description' }}</span></td>
                                     <td class="text-muted small">
-                                        {{ $txn->date ? \Carbon\Carbon::parse($txn->date)->format('d M, Y - h:i A') : $txn->update_at }}
+                                        {{ $txn->date ? \Carbon\Carbon::parseMixed($txn->date)->format('d M, Y - h:i A') : $txn->update_at }}
                                     </td>
                                 </tr>
                             @empty
