@@ -19,6 +19,9 @@ class GeoBlockMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        // TEMPORARILY DISABLED FOR GOOGLE PLAY STORE REVIEW
+        return $next($request);
+
         $ip = $request->ip();
 
         // Localhost IPs bypass geo-blocking
