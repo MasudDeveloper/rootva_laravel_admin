@@ -19,6 +19,9 @@ class GeoBlockMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        // TEMPORARILY DISABLED FOR GOOGLE PLAY STORE REVIEW
+        return $next($request);
+
         $ip = $request->ip();
 
         // Localhost IPs bypass geo-blocking
@@ -27,7 +30,7 @@ class GeoBlockMiddleware
         }
 
         $cacheKey = 'geoip_country_' . str_replace(':', '_', $ip);
-        
+
         $countryCode = Cache::remember($cacheKey, now()->addHours(24), function () use ($ip) {
             try {
                 // Using ip-api.com to get the country code

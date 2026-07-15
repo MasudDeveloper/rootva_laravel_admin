@@ -34,9 +34,14 @@ class VerifyLegacyApiAuth
         // Always prioritize the Auth-User-Id header injected by the App for authentication.
         // If not present, fallback to request inputs (for backward compatibility).
         $user_id = $request->header('Auth-User-Id') ?? $request->input('user_id') ?? $request->query('user_id') ?? ($_POST['user_id'] ?? null);
+        $isNewApp = $request->hasHeader('Auth-User-Id');
 
         // Strictly enforce that a user_id must be provided for all legacy.auth APIs
         if (!$user_id || $user_id == '0') {
+            if (!$isNewApp) {
+                // Backward compatibility: If no user_id is provided by an old app, let it pass (e.g. get_Data.php)
+                return $next($request);
+            }
             Log::warning('Legacy API Blocked: Missing User ID', [
                 'ip' => $request->ip(),
                 'url' => $request->fullUrl()
@@ -64,12 +69,32 @@ class VerifyLegacyApiAuth
         }
 
         if (!$isAuthenticated) {
-            Log::warning('Legacy API Blocked: Missing or Invalid Credentials', [
-                'ip' => $request->ip(),
-                'user_id' => $user_id,
-                'url' => $request->fullUrl()
-            ]);
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized request'], 401);
+            if ($isNewApp) {
+                Log::warning('Legacy API Blocked: Missing or Invalid Credentials', [
+                    'ip' => $request->ip(),
+                    'user_id' => $user_id,
+                    'url' => $request->fullUrl()
+                ]);
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized request'], 401);
+            } else {
+                // Heuristic fallback for legacy apps without auth
+                $ip = $request->ip();
+                $cacheKey = 'legacy_api_users_by_ip_' . md5($ip);
+                $userIds = Cache::get($cacheKey, []);
+                
+                if (!in_array($user_id, $userIds)) {
+                    $userIds[] = $user_id;
+                    if (count($userIds) > 20) { // Max 20 distinct users per IP
+                        Log::warning('Legacy API Blocked: Too many distinct users from IP', [
+                            'ip' => $ip,
+                            'user_id' => $user_id,
+                            'url' => $request->fullUrl()
+                        ]);
+                        return response()->json(['status' => 'error', 'message' => 'Unauthorized request. Suspicious activity detected.'], 401);
+                    }
+                    Cache::put($cacheKey, $userIds, now()->addHours(1));
+                }
+            }
         }
 
         // --- IDOR Prevention ---
