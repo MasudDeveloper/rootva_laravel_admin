@@ -38,7 +38,8 @@ class LegacyUserController extends Controller
                 $isAuthenticated = true;
             }
 
-            if (!$isAuthenticated) {
+            $isNewApp = $request->hasHeader('Auth-User-Id');
+            if ($isNewApp && !$isAuthenticated) {
                 // DON'T leak data! If the password doesn't match, return Unauthorized
                 return response()->json([
                     'status' => 'error',
