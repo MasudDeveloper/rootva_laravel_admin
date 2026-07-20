@@ -12,4 +12,14 @@ Artisan::command('pcash:check-pending', function () {
     $this->info('Pending PCash recharges checked and updated.');
 })->purpose('Check and update pending/processing PCash recharge statuses');
 
-\Illuminate\Support\Facades\Schedule::command('pcash:check-pending')->everyFiveMinutes();
+\Illuminate\Support\Facades\Schedule::command('pcash:check-pending')
+    ->everyFiveMinutes()
+    ->appendOutputTo(storage_path('logs/cron_pcash.log'));
+
+\Illuminate\Support\Facades\Schedule::command('pcash:reconcile-payments')
+    ->everyMinute()
+    ->appendOutputTo(storage_path('logs/cron_payments.log'));
+
+\Illuminate\Support\Facades\Schedule::command('microjob:auto-approve')
+    ->everyMinute()
+    ->appendOutputTo(storage_path('logs/cron_microjobs.log'));
