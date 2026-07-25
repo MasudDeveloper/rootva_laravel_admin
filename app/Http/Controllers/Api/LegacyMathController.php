@@ -21,12 +21,17 @@ class LegacyMathController extends Controller
 
         $user = SignUp::find($userId);
 
-        if ($user && (int)$user->math_game > 0) {
+        // Use query builder with condition to prevent race conditions that cause negative balance
+        $updated = false;
+        if ($user) {
+            $updated = SignUp::where('id', $userId)
+                ->where('math_game', '>', 0)
+                ->decrement('math_game', 1);
+        }
+
+        if ($updated) {
             
             $is_correct = ($correct_answer == $user_answer);
-
-            // 1. Reduce math_game count
-            $user->decrement('math_game', 1);
 
             if ($is_correct) {
                 $amount = 1.00;
