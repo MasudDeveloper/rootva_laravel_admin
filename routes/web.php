@@ -48,6 +48,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
     // Users
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/top-holders', [UserController::class, 'topHolders'])->name('users.top-holders');
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
     Route::patch('/users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::post('/users/{id}/add-money', [UserController::class, 'addMoney'])->name('users.add-money');
@@ -198,6 +199,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             Route::get('/refer-bonus/history', [RewardController::class, 'referBonusHistory'])->name('refer-bonus.history');
             Route::patch('/refer-bonus/{id}', [RewardController::class, 'editReferBonus'])->name('refer-bonus.update');
             Route::delete('/refer-bonus/{id}', [RewardController::class, 'deleteReferBonus'])->name('refer-bonus.delete');
+            Route::get('/date-bonus', [RewardController::class, 'dateBonusIndex'])->name('date-bonus');
+            Route::post('/date-bonus/distribute', [RewardController::class, 'distributeDateBonus'])->name('date-bonus.distribute');
         });
 
         // PCashMoney API Integration

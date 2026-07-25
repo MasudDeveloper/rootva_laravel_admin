@@ -65,40 +65,7 @@ class NotificationController extends Controller
             return back()->with('error', 'No eligible users found with valid FCM tokens.');
         }
 
-        $successCount = 0;
-        foreach ($users as $user) {
-            // 1. Save to database notification table for app history
-            /* 
-            Notification::create([
-                'user_id' => $user->id,
-                'title' => $title,
-                'message' => $body,
-                'image' => $image,
-                'link' => $link,
-                'created_at' => date("d-m-Y h:i A")
-            ]);
-            */
-
-            // 2. Send Push Notification via FCM Service
-            try {
-                $response = Http::asForm()->post('https://rootvaadmin.rootvabd.com/send_notification.php', [
-                    'token' => $user->fcm_token,
-                    'title' => $title,
-                    'body'  => $body,
-                    'image' => $image,
-                    'image_url' => $image,
-                    'url' => $image,
-                    'link' => $link,
-                    'click_action' => $link
-                ]);
-
-                if ($response->successful()) {
-                    $successCount++;
-                }
-            } catch (\Exception $e) {
-                // Log or ignore
-            }
-        }
+        $successCount = $this->sendNotificationsToUsers($users, $title, $body, $image, $link);
 
         return back()->with('success', "Notification sent to $successCount users successfully!");
     }
@@ -148,6 +115,10 @@ class NotificationController extends Controller
 
     public function sendDraft(Request $request, $id)
     {
+        // Prevent execution timeout and memory limit issues for large user lists
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
+
         $draft = SavedPushNotification::findOrFail($id);
 
         $request->validate([
@@ -174,41 +145,120 @@ class NotificationController extends Controller
             return back()->with('error', 'No eligible users found with valid FCM tokens.');
         }
 
-        $successCount = 0;
-        foreach ($users as $user) {
-            // 1. Save to database notification table for app history
-            /*
-            Notification::create([
-                'user_id' => $user->id,
-                'title' => $draft->title,
-                'message' => $draft->body,
-                'image' => $draft->image,
-                'link' => $draft->link,
-                'created_at' => date("d-m-Y h:i A")
-            ]);
-            */
-
-            // 2. Send Push Notification via FCM Service
-            try {
-                $response = Http::asForm()->post('https://rootvaadmin.rootvabd.com/send_notification.php', [
-                    'token' => $user->fcm_token,
-                    'title' => $draft->title,
-                    'body'  => $draft->body,
-                    'image' => $draft->image,
-                    'image_url' => $draft->image,
-                    'url' => $draft->image,
-                    'link' => $draft->link,
-                    'click_action' => $draft->link
-                ]);
-
-                if ($response->successful()) {
-                    $successCount++;
-                }
-            } catch (\Exception $e) {
-                // Log or ignore
-            }
-        }
+        $successCount = $this->sendNotificationsToUsers($users, $draft->title, $draft->body, $draft->image, $draft->link);
 
         return back()->with('success', "Saved notification sent to $successCount users successfully!");
+    }
+
+    private function getFcmAccessToken()
+    {
+        $serviceAccountFile = base_path('public/fcm-service-account.json');
+        if (!file_exists($serviceAccountFile)) {
+            $serviceAccountFile = '/home/syfoocuv/rootvaadmin.rootvabd.com/public/fcm-service-account.json';
+        }
+        
+        if (!file_exists($serviceAccountFile)) {
+            return null;
+        }
+
+        $json = json_decode(file_get_contents($serviceAccountFile), true);
+        $header = ['alg'=>'RS256','typ'=>'JWT'];
+        $now = time();
+        $claim = [
+            'iss' => $json['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud' => 'https://oauth2.googleapis.com/token',
+            'iat' => $now,
+            'exp' => $now + 3600
+        ];
+
+        $header_encoded = rtrim(strtr(base64_encode(json_encode($header)), '+/', '-_'), '=');
+        $claim_encoded = rtrim(strtr(base64_encode(json_encode($claim)), '+/', '-_'), '=');
+        $signature_input = "$header_encoded.$claim_encoded";
+        openssl_sign($signature_input, $signature, $json['private_key'], 'SHA256');
+        $jwt = "$signature_input." . rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => 'https://oauth2.googleapis.com/token',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion' => $jwt
+            ])
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($response, true);
+        return $data['access_token'] ?? null;
+    }
+
+    private function sendNotificationsToUsers($users, $title, $body, $image, $link)
+    {
+        $successCount = 0;
+        $accessToken = $this->getFcmAccessToken();
+
+        if ($accessToken) {
+            $projectId = 'rootva-f7b1f'; 
+            $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
+            
+            $chunks = $users->chunk(50);
+            
+            foreach ($chunks as $chunk) {
+                $responses = Http::pool(function ($pool) use ($chunk, $url, $accessToken, $title, $body, $image, $link) {
+                    return $chunk->map(function ($user) use ($pool, $url, $accessToken, $title, $body, $image, $link) {
+                        $message = [
+                            'token' => $user->fcm_token,
+                            'data' => [
+                                'title' => (string) $title,
+                                'body' => (string) $body
+                            ]
+                        ];
+                        
+                        if ($image) {
+                            $message['data']['image'] = (string) $image;
+                            $message['data']['image_url'] = (string) $image;
+                            $message['data']['url'] = (string) $image;
+                        }
+                        if ($link) {
+                            $message['data']['link'] = (string) $link;
+                            $message['data']['click_action'] = (string) $link;
+                            if (!$image) {
+                                $message['data']['url'] = (string) $link;
+                            }
+                        }
+                        
+                        return $pool->withToken($accessToken)->asJson()->post($url, ['message' => $message]);
+                    });
+                });
+                
+                foreach ($responses as $response) {
+                    if ($response instanceof \Illuminate\Http\Client\Response && $response->successful()) {
+                        $successCount++;
+                    }
+                }
+            }
+        } else {
+            foreach ($users as $user) {
+                try {
+                    $response = Http::asForm()->post('https://rootvaadmin.rootvabd.com/send_notification.php', [
+                        'token' => $user->fcm_token,
+                        'title' => $title,
+                        'body'  => $body,
+                        'image' => $image,
+                        'image_url' => $image,
+                        'url' => $image,
+                        'link' => $link,
+                        'click_action' => $link
+                    ]);
+
+                    if ($response->successful()) {
+                        $successCount++;
+                    }
+                } catch (\Exception $e) {}
+            }
+        }
+        return $successCount;
     }
 }

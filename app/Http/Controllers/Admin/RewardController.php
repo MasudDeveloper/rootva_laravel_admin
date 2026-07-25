@@ -289,4 +289,157 @@ class RewardController extends Controller
 
         return back()->with('success', "Bonus deleted successfully. ৳$amount subtracted from user's balance.");
     }
+
+    /**
+     * Date-wise Bulk Bonus Distribution Section
+     */
+    public function dateBonusIndex()
+    {
+        $recentBonuses = Transaction::with('user')
+            ->whereIn('payment_gateway', ['Registration Bonus', 'Special Bonus', 'Daily Bonus', 'Date Bonus', 'Verification Bonus'])
+            ->orderBy('id', 'desc')
+            ->paginate(20);
+
+        return view('admin.rewards.date_bonus', compact('recentBonuses'));
+    }
+
+    public function distributeDateBonus(Request $request)
+    {
+        $request->validate([
+            'target_date' => 'required|date',
+            'bonus_type' => 'required|in:referrer_bonus,verified_user_bonus,all_verified_bonus',
+            'amount' => 'required|numeric|min:1',
+            'payment_gateway' => 'required|string|max:100',
+            'description' => 'required|string',
+        ]);
+
+        $targetDate = $request->target_date; // e.g. '2026-07-24'
+        $amount = (float) $request->amount;
+        $gateway = $request->payment_gateway;
+        $desc = $request->description;
+
+        $count = 0;
+        $totalAmount = 0;
+
+        if ($request->bonus_type === 'referrer_bonus') {
+            // ১. নির্দিষ্ট তারিখে ভেরিফাই হওয়া ইউজারদের রেফারারদের বোনাস (যেমন রেজিস্ট্রেশন রেফার বোনাস)
+            $approvedRequests = VerificationRequest::where('status', 'Approved')
+                ->where(function($q) use ($targetDate) {
+                    $q->whereDate('verified_raw_time', $targetDate)
+                      ->orWhere('updated_at', 'like', $targetDate . '%');
+                })
+                ->whereNotNull('refer_id')
+                ->where('refer_id', '!=', '')
+                ->get();
+
+            DB::transaction(function () use ($approvedRequests, $amount, $gateway, $desc, &$count, &$totalAmount) {
+                foreach ($approvedRequests as $vr) {
+                    $referrer = SignUp::where('referCode', $vr->refer_id)->first();
+                    $verifiedUser = SignUp::find($vr->user_id);
+
+                    if ($referrer && $verifiedUser) {
+                        $exists = Transaction::where('user_id', $referrer->id)
+                            ->where('refer_id', $verifiedUser->referCode)
+                            ->where('payment_gateway', $gateway)
+                            ->exists();
+
+                        if (!$exists) {
+                            $referrer->increment('wallet_balance', $amount);
+
+                            Transaction::create([
+                                'user_id' => $referrer->id,
+                                'refer_id' => $verifiedUser->referCode,
+                                'amount' => $amount,
+                                'type' => 'income',
+                                'payment_gateway' => $gateway,
+                                'description' => $desc,
+                                'update_at' => now()->format('d-m-Y h:i A'),
+                                'created_at' => now()->format('d-m-Y h:i A'),
+                                'date' => now()
+                            ]);
+
+                            $count++;
+                            $totalAmount += $amount;
+                        }
+                    }
+                }
+            });
+
+            return back()->with('success', "সফলভাবে $count টি রেফার বোনাস বিতরণ করা হয়েছে! মোট বিতরণ: ৳" . number_format($totalAmount, 2));
+        } elseif ($request->bonus_type === 'verified_user_bonus') {
+            // ২. নির্দিষ্ট তারিখে ভেরিফাই/রেজিস্ট্রেশনকৃত ইউজারদের সরাসরি বোনাস
+            $users = SignUp::whereIn('is_verified', [1, 3])
+                ->where(function($q) use ($targetDate) {
+                    $q->whereDate('verified_raw_time', $targetDate)
+                      ->orWhere('verified_at', 'like', date('d-m-Y', strtotime($targetDate)) . '%')
+                      ->orWhereDate('created_at', $targetDate);
+                })
+                ->get();
+
+            DB::transaction(function () use ($users, $amount, $gateway, $desc, &$count, &$totalAmount, $targetDate) {
+                foreach ($users as $user) {
+                    $exists = Transaction::where('user_id', $user->id)
+                        ->where('payment_gateway', $gateway)
+                        ->whereDate('date', $targetDate)
+                        ->exists();
+
+                    if (!$exists) {
+                        $user->increment('wallet_balance', $amount);
+
+                        Transaction::create([
+                            'user_id' => $user->id,
+                            'refer_id' => $user->referCode,
+                            'amount' => $amount,
+                            'type' => 'income',
+                            'payment_gateway' => $gateway,
+                            'description' => $desc,
+                            'update_at' => now()->format('d-m-Y h:i A'),
+                            'created_at' => now()->format('d-m-Y h:i A'),
+                            'date' => now()
+                        ]);
+
+                        $count++;
+                        $totalAmount += $amount;
+                    }
+                }
+            });
+
+            return back()->with('success', "সফলভাবে $count জন ভেরিফাইড ইউজারকে বোনাস বিতরণ করা হয়েছে! মোট বিতরণ: ৳" . number_format($totalAmount, 2));
+        } elseif ($request->bonus_type === 'all_verified_bonus') {
+            // ৩. সিস্টেমের সকল ভেরিফাইড ইউজারকে বোনাস
+            $users = SignUp::whereIn('is_verified', [1, 3])->get();
+
+            DB::transaction(function () use ($users, $amount, $gateway, $desc, &$count, &$totalAmount) {
+                foreach ($users as $user) {
+                    $exists = Transaction::where('user_id', $user->id)
+                        ->where('payment_gateway', $gateway)
+                        ->whereDate('date', now())
+                        ->exists();
+
+                    if (!$exists) {
+                        $user->increment('wallet_balance', $amount);
+
+                        Transaction::create([
+                            'user_id' => $user->id,
+                            'refer_id' => $user->referCode,
+                            'amount' => $amount,
+                            'type' => 'income',
+                            'payment_gateway' => $gateway,
+                            'description' => $desc,
+                            'update_at' => now()->format('d-m-Y h:i A'),
+                            'created_at' => now()->format('d-m-Y h:i A'),
+                            'date' => now()
+                        ]);
+
+                        $count++;
+                        $totalAmount += $amount;
+                    }
+                }
+            });
+
+            return back()->with('success', "সফলভাবে সকল ভেরিফাইড ($count জন) ইউজারকে বোনাস বিতরণ করা হয়েছে! মোট বিতরণ: ৳" . number_format($totalAmount, 2));
+        }
+
+        return back()->with('error', 'অকার্যকর বোনাস অপশন নির্বাচিত হয়েছে।');
+    }
 }

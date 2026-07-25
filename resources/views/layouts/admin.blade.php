@@ -43,9 +43,14 @@
                 <span>Dashboard</span>
             </a>
             
-            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*'))) ? 'active' : '' }}">
                 <i class="fa-solid fa-users"></i>
                 <span>Users Management</span>
+            </a>
+            
+            <a href="{{ route('admin.users.top-holders') }}" class="nav-link {{ request()->is('admin/users/top-holders*') ? 'active' : '' }}">
+                <i class="fa-solid fa-vault text-success"></i>
+                <span>Top Wallet Holders</span>
             </a>
             
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Service Modules</div>
@@ -188,6 +193,11 @@
             <a href="{{ route('admin.rewards.refer-bonus') }}" class="nav-link {{ request()->is('admin/rewards/refer-bonus*') ? 'active' : '' }}">
                 <i class="fa-solid fa-sitemap"></i>
                 <span>Manual Refer Bonus</span>
+            </a>
+
+            <a href="{{ route('admin.rewards.date-bonus') }}" class="nav-link {{ request()->is('admin/rewards/date-bonus*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calendar-check text-warning"></i>
+                <span>Date-wise Bulk Bonus</span>
             </a>
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Settings</div>

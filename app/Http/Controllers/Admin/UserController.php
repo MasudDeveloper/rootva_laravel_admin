@@ -183,4 +183,62 @@ class UserController extends Controller
 
         return back()->with('success', 'Balance withdrawn successfully.');
     }
+
+    /**
+     * High Balance Users / Top Wallet Holders List
+     */
+    public function topHolders(Request $request)
+    {
+        $minBalance = $request->input('min_balance', '1000');
+        $verType = $request->input('ver_type', 'real_verified'); // ডিফল্ট রিয়েল ভেরিফাইড (is_verified = 1)
+        $search = $request->input('search');
+
+        $query = SignUp::query();
+
+        // ১. ভেরিফিকেশন টাইপ ফিল্টার (ডেমো বাদ দিয়ে বা রিয়েল ভেরিফাইড)
+        if ($verType === 'real_verified') {
+            $query->where('is_verified', 1);
+        } elseif ($verType === 'no_demo') {
+            $query->where('is_verified', '!=', 3);
+        } elseif ($verType === 'demo_only') {
+            $query->where('is_verified', 3);
+        }
+
+        // ২. ব্যালেন্স ফিল্টার
+        if ($minBalance !== 'all' && $minBalance !== null && $minBalance !== '') {
+            $query->where('wallet_balance', '>=', (float) $minBalance);
+        }
+
+        // ৩. সার্চ ফিল্টার
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('number', 'like', "%{$search}%")
+                  ->orWhere('referCode', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('refer_id', 'like', "%{$search}%");
+            });
+        }
+
+        // সর্বোচ্চ যার কাছে আছে ওইটা সবার উপরে থাকবে (Order by wallet_balance DESC)
+        $users = $query->orderBy('wallet_balance', 'desc')->paginate(50)->withQueryString();
+
+        // স্ট্যাটিস্টিকস এর জন্যও একই ভেরিফিকেশন ফিল্টার প্রয়োগ
+        $statsQuery = SignUp::query();
+        if ($verType === 'real_verified') {
+            $statsQuery->where('is_verified', 1);
+        } elseif ($verType === 'no_demo') {
+            $statsQuery->where('is_verified', '!=', 3);
+        } elseif ($verType === 'demo_only') {
+            $statsQuery->where('is_verified', 3);
+        }
+
+        $stats = [
+            'total_1k' => (clone $statsQuery)->where('wallet_balance', '>=', 1000)->count(),
+            'total_5k' => (clone $statsQuery)->where('wallet_balance', '>=', 5000)->count(),
+            'total_10k' => (clone $statsQuery)->where('wallet_balance', '>=', 10000)->count(),
+            'total_balance_1k' => (clone $statsQuery)->where('wallet_balance', '>=', 1000)->sum('wallet_balance'),
+        ];
+
+        return view('admin.users.top_holders', compact('users', 'minBalance', 'verType', 'search', 'stats'));
+    }
 }
