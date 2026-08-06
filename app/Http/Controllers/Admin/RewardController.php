@@ -77,6 +77,13 @@ class RewardController extends Controller
                 'created_at' => now()->format('d-m-Y h:i A'),
                 'date' => now()
             ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'message' => "অভিনন্দন! আপনি ডেইলি বোনাস হিসেবে ৳{$amount} পেয়েছেন।",
+                'is_read' => 0,
+                'created_at' => now()->format('d-m-Y h:i A')
+            ]);
         });
 
         return back()->with('success', "Daily bonus of ৳100 successfully awarded to {$topReferrer->name}!");
@@ -141,6 +148,13 @@ class RewardController extends Controller
                 'update_at' => now()->format('d-m-Y h:i A'),
                 'created_at' => now()->format('d-m-Y h:i A'),
                 'date' => now()
+            ]);
+
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'message' => "অভিনন্দন! আপনি উইকলি টপ রেফারার হিসেবে ৳{$amount} বোনাস পেয়েছেন।",
+                'is_read' => 0,
+                'created_at' => now()->format('d-m-Y h:i A')
             ]);
         });
 
@@ -216,6 +230,13 @@ class RewardController extends Controller
                         'update_at' => now()->format('d-m-Y h:i A'),
                         'created_at' => now()->format('d-m-Y h:i A'),
                         'date' => now()
+                    ]);
+
+                    \App\Models\Notification::create([
+                        'user_id' => $upliner->id,
+                        'message' => "অভিনন্দন! লেভেল $currentLevel এফিলিয়েট হিসেবে আপনি ৳{$bonus} রেফার বোনাস পেয়েছেন।",
+                        'is_read' => 0,
+                        'created_at' => now()->format('d-m-Y h:i A')
                     ]);
 
                     // 3. Extra Perk for Level 1
@@ -358,6 +379,13 @@ class RewardController extends Controller
                                 'date' => now()
                             ]);
 
+                            \App\Models\Notification::create([
+                                'user_id' => $referrer->id,
+                                'message' => "অভিনন্দন! আপনি ৳{$amount} বোনাস পেয়েছেন।",
+                                'is_read' => 0,
+                                'created_at' => now()->format('d-m-Y h:i A')
+                            ]);
+
                             $count++;
                             $totalAmount += $amount;
                         }
@@ -398,6 +426,13 @@ class RewardController extends Controller
                             'date' => now()
                         ]);
 
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'message' => "অভিনন্দন! আপনি ৳{$amount} বোনাস পেয়েছেন।",
+                            'is_read' => 0,
+                            'created_at' => now()->format('d-m-Y h:i A')
+                        ]);
+
                         $count++;
                         $totalAmount += $amount;
                     }
@@ -429,6 +464,13 @@ class RewardController extends Controller
                             'update_at' => now()->format('d-m-Y h:i A'),
                             'created_at' => now()->format('d-m-Y h:i A'),
                             'date' => now()
+                        ]);
+
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'message' => "অভিনন্দন! আপনি ৳{$amount} বোনাস পেয়েছেন।",
+                            'is_read' => 0,
+                            'created_at' => now()->format('d-m-Y h:i A')
                         ]);
 
                         $count++;

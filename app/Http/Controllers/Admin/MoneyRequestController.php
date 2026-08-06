@@ -62,6 +62,15 @@ class MoneyRequestController extends Controller
                 'status' => $action,
                 'updated_at' => now()->toDateTimeString(),
             ]);
+
+            // Create notification
+            $message = $action === 'Approved' ? "অভিনন্দন! আপনার ৳{$moneyRequest->amount} অ্যাড মানি রিকোয়েস্টটি অ্যাপ্রুভ হয়েছে এবং ব্যালেন্স যুক্ত করা হয়েছে।" : "দুঃখিত, আপনার ৳{$moneyRequest->amount} অ্যাড মানি রিকোয়েস্টটি রিজেক্ট করা হয়েছে।";
+            \App\Models\Notification::create([
+                'user_id' => $moneyRequest->user_id,
+                'message' => $message,
+                'is_read' => 0,
+                'created_at' => now()->format('d-m-Y h:i A')
+            ]);
         });
 
         return back()->with('success', "Request has been {$action} successfully.");

@@ -167,6 +167,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
         // Leadership Rewards
         Route::prefix('leadership')->name('leadership.')->group(function () {
+            Route::get('/leaders', [LeadershipController::class, 'leaders'])->name('leaders');
             Route::get('/history', [LeadershipController::class, 'history'])->name('history');
             Route::get('/requests', [LeadershipController::class, 'requests'])->name('requests');
             Route::post('/requests/{id}/process', [LeadershipController::class, 'processRequest'])->name('process');

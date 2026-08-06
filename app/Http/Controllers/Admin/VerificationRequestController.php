@@ -59,6 +59,7 @@ class VerificationRequestController extends Controller
             \App\Models\Notification::create([
                 'user_id' => $user->id,
                 'message' => 'আপনার ভেরিফিকেশন সফল হয়েছে, আপডেট না হলে রিফ্রেশ করুন',
+                'is_read' => 0,
                 'created_at' => $current_time
             ]);
 
@@ -103,6 +104,7 @@ class VerificationRequestController extends Controller
             \App\Models\Notification::create([
                 'user_id' => $user->id,
                 'message' => 'আপনার ভেরিফিকেশন রিজেক্ট করা হয়েছে, অনুগ্রহ করে টাকা সেন্ড মানি করে সঠিক মোবাইল নাম্বার ও ট্রানজেশন আই.ডি দিন',
+                'is_read' => 0,
                 'created_at' => $current_time
             ]);
 

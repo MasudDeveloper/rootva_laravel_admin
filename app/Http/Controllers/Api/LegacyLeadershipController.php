@@ -33,18 +33,30 @@ class LegacyLeadershipController extends Controller
         $l1Ids = $level1->pluck('id')->toArray();
 
         // Step 3: Get verified counts for referrals of L1 (L2 verified counts) in bulk (Distinct users)
-        $verifiedCountsL2 = VerificationRequest::join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
-            ->where('verification_requests.status', 'Approved')
-            ->whereIn('sign_up.referredBy', $l1Codes)
-            ->groupBy('sign_up.referredBy')
-            ->select('sign_up.referredBy', DB::raw('COUNT(DISTINCT verification_requests.user_id) as count'))
-            ->pluck('count', 'referredBy');
+        $verifiedCountsL2 = collect();
+        if (!empty($l1Codes)) {
+            foreach (array_chunk($l1Codes, 1000) as $chunk) {
+                $counts = VerificationRequest::join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
+                    ->where('verification_requests.status', 'Approved')
+                    ->whereIn('sign_up.referredBy', $chunk)
+                    ->groupBy('sign_up.referredBy')
+                    ->select('sign_up.referredBy', DB::raw('COUNT(DISTINCT verification_requests.user_id) as count'))
+                    ->pluck('count', 'referredBy');
+                $verifiedCountsL2 = $verifiedCountsL2->merge($counts);
+            }
+        }
 
         // Step 4: Get verified count of L1 members themselves (Distinct users)
-        $verifiedCount = VerificationRequest::whereIn('user_id', $l1Ids)
-            ->where('status', 'Approved')
-            ->distinct('user_id')
-            ->count('user_id');
+        $verifiedCount = 0;
+        if (!empty($l1Ids)) {
+            foreach (array_chunk($l1Ids, 1000) as $chunk) {
+                $count = VerificationRequest::whereIn('user_id', $chunk)
+                    ->where('status', 'Approved')
+                    ->distinct('user_id')
+                    ->count('user_id');
+                $verifiedCount += $count;
+            }
+        }
         
         // Count leaders (L1 members with 15+ verified referrals)
         $silverCandidateCodes = $verifiedCountsL2->filter(fn($count) => $count >= 15)->keys()->toArray();
@@ -62,16 +74,41 @@ class LegacyLeadershipController extends Controller
 
         if ($leaderCount > 0) {
             // Fetch all Level 2 members under all silver candidates
-            $allL2s = SignUp::whereIn('referredBy', $silverCandidateCodes)->select('referCode', 'referredBy')->get();
+            $allL2s = collect();
+            if (!empty($silverCandidateCodes)) {
+                foreach (array_chunk($silverCandidateCodes, 1000) as $chunk) {
+                    $l2s = DB::table('sign_up')
+                        ->whereIn('referredBy', $chunk)
+                        ->whereExists(function ($query) {
+                            $query->select(DB::raw(1))
+                                  ->from('sign_up as child')
+                                  ->join('verification_requests as v', 'v.user_id', '=', 'child.id')
+                                  ->whereColumn('child.referredBy', 'sign_up.referCode')
+                                  ->where('v.status', 'Approved');
+                        })
+                        ->select('referCode', 'referredBy')
+                        ->get();
+                    
+                    foreach ($l2s as $l2) {
+                        $allL2s->push($l2);
+                    }
+                }
+            }
             $l2Codes = $allL2s->pluck('referCode')->filter()->toArray();
 
             // Verified count per L2 member's referrals (L3 verified counts) in bulk (Distinct users)
-            $verifiedCountsL3 = VerificationRequest::join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
-                ->where('verification_requests.status', 'Approved')
-                ->whereIn('sign_up.referredBy', $l2Codes)
-                ->groupBy('sign_up.referredBy')
-                ->select('sign_up.referredBy', DB::raw('COUNT(DISTINCT verification_requests.user_id) as count'))
-                ->pluck('count', 'referredBy');
+            $verifiedCountsL3 = collect();
+            if (!empty($l2Codes)) {
+                foreach (array_chunk($l2Codes, 1000) as $chunk) {
+                    $counts = VerificationRequest::join('sign_up', 'verification_requests.user_id', '=', 'sign_up.id')
+                        ->where('verification_requests.status', 'Approved')
+                        ->whereIn('sign_up.referredBy', $chunk)
+                        ->groupBy('sign_up.referredBy')
+                        ->select('sign_up.referredBy', DB::raw('COUNT(DISTINCT verification_requests.user_id) as count'))
+                        ->pluck('count', 'referredBy');
+                    $verifiedCountsL3 = $verifiedCountsL3->merge($counts);
+                }
+            }
 
             // Identify sub-leaders (L2s with 15+ verified L3 referrals)
             $subLeaderReferrers = $allL2s->filter(function($l2) use ($verifiedCountsL3) {

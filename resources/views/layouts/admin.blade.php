@@ -120,6 +120,10 @@
             </a>
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Leadership & Rewards</div>
+            <a href="{{ route('admin.leadership.leaders') }}" class="nav-link {{ request()->is('admin/services/leadership/leaders*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-viewfinder"></i>
+                <span>Leaders List</span>
+            </a>
             <a href="{{ route('admin.leadership.requests') }}" class="nav-link {{ request()->is('admin/services/leadership/requests*') ? 'active' : '' }}">
                 <i class="fa-solid fa-crown"></i>
                 <span>Reward Claims</span>
