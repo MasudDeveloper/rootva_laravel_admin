@@ -135,4 +135,12 @@ class ProductController extends Controller
         $product->delete();
         return back()->with('success', 'Product deleted successfully!');
     }
+
+    public function approve($id)
+    {
+        $product = Product::findOrFail($id);
+        $product->is_approved = 1;
+        $product->save();
+        return back()->with('success', 'Product approved successfully!');
+    }
 }

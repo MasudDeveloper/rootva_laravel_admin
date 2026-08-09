@@ -49,4 +49,14 @@ class SignUp extends Authenticatable
         'math_game' => 'integer',
         'verification_popup_shown' => 'integer',
     ];
+
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class, 'user_id');
+    }
+
+    public function favorites()
+    {
+        return $this->hasMany(ProductFavorite::class, 'user_id');
+    }
 }

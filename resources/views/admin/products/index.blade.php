@@ -76,6 +76,11 @@
                 </div>
                 <div class="p-3 flex-grow-1">
                     <h6 class="fw-bold text-dark mb-1">{{ $product->name }}</h6>
+                    @if($product->vendor_id)
+                        <p class="mb-1 text-primary small"><i class="fa-solid fa-store me-1"></i>{{ $product->vendor->store_name ?? 'Vendor' }}</p>
+                    @else
+                        <p class="mb-1 text-muted small"><i class="fa-solid fa-user-tie me-1"></i>Admin Upload</p>
+                    @endif
                     <p class="text-muted small mb-2" style="height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ $product->description }}</p>
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -88,10 +93,23 @@
                         </div>
                     </div>
                 </div>
-                <div class="p-3 bg-light border-top text-center">
-                    <span class="badge bg-primary-soft text-primary rounded-pill px-3">
-                        Profit: ৳{{ number_format($product->reselling_price - $product->price, 0) }}
-                    </span>
+                <div class="p-3 bg-light border-top d-flex flex-column gap-2 text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary-soft text-primary rounded-pill px-3">
+                            Profit: ৳{{ number_format($product->reselling_price - $product->price, 0) }}
+                        </span>
+                        @if(!$product->is_approved)
+                            <span class="badge bg-warning text-dark rounded-pill px-2">Pending</span>
+                        @else
+                            <span class="badge bg-success text-white rounded-pill px-2">Approved</span>
+                        @endif
+                    </div>
+                    @if(!$product->is_approved)
+                        <form action="{{ route('admin.products.approve', $product->id) }}" method="POST" class="mt-1">
+                            @csrf
+                            <button class="btn btn-success btn-sm w-100 rounded-pill"><i class="fa-solid fa-check me-1"></i>Approve Product</button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>

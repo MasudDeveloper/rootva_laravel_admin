@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\VerificationRequestController;
 use App\Http\Controllers\Admin\RewardController;
 use App\Http\Controllers\Admin\SimOfferController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -57,7 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Financials
     Route::get('/money-requests', [MoneyRequestController::class, 'index'])->name('money-requests.index');
     Route::patch('/money-requests/{id}', [MoneyRequestController::class, 'update'])->name('money-requests.update');
-    
+
     Route::get('/withdraw-requests', [WithdrawRequestController::class, 'index'])->name('withdraw-requests.index');
     Route::patch('/withdraw-requests/{id}', [WithdrawRequestController::class, 'update'])->name('withdraw-requests.update');
     Route::get('/support-admin-report', [SupportAdminReportController::class, 'index'])->name('support-admin-report.index');
@@ -70,7 +71,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('/microjobs/{id}/update-job', [MicrojobController::class, 'updateJob'])->name('microjobs.update-job');
     Route::patch('/microjobs/{id}', [MicrojobController::class, 'update'])->name('microjobs.update');
     Route::delete('/microjobs/{id}', [MicrojobController::class, 'destroy'])->name('microjobs.destroy');
-    
+
     Route::get('/microjobs/{job_id}/submissions', [MicrojobController::class, 'viewSubmissions'])->name('microjobs.submissions');
     Route::post('/microjobs/submissions/{id}/approve', [MicrojobController::class, 'approveSubmission'])->name('microjobs.submissions.approve');
     Route::post('/microjobs/submissions/{id}/reject', [MicrojobController::class, 'rejectSubmission'])->name('microjobs.submissions.reject');
@@ -136,6 +137,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');
         Route::post('/products/{id}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('/products/{id}/approve', [ProductController::class, 'approve'])->name('products.approve');
+
+        // Vendors
+        Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
+        Route::post('/vendors', [VendorController::class, 'store'])->name('vendors.store');
+        Route::post('/vendors/{id}/update', [VendorController::class, 'update'])->name('vendors.update');
+        Route::delete('/vendors/{id}', [VendorController::class, 'destroy'])->name('vendors.destroy');
 
         // Orders
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

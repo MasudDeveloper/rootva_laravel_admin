@@ -18,4 +18,14 @@ class Product extends Model
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
     }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('is_approved', 1);
+    }
 }

@@ -85,6 +85,11 @@
                 <span>Reselling Shop</span>
             </a>
 
+            <a href="{{ route('admin.vendors.index') }}" class="nav-link {{ request()->is('admin/services/vendors*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Vendor Management</span>
+            </a>
+
             <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->is('admin/orders*') ? 'active' : '' }}">
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span>Reselling Orders</span>

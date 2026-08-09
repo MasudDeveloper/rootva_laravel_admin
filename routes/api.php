@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\LegacyVerifyController;
 use App\Http\Controllers\Api\LegacyMathController;
 use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\PcashApiController;
+use App\Http\Controllers\Api\ECommerceApiController;
 
 Route::post('/login', [LegacyAuthController::class, 'login']);
 Route::post('/register', [LegacyAuthController::class, 'register']);
@@ -162,6 +163,16 @@ Route::middleware('legacy.auth')->group(function () {
     Route::get('get_pcash_sim_offers.php', [PcashApiController::class, 'getSimOffers']);
     Route::post('pcash_recharge.php', [PcashApiController::class, 'recharge']);
     Route::post('buy_pcash_sim_offer.php', [PcashApiController::class, 'buySimOffer']);
+
+    // E-Commerce & Reseller Shop System
+    Route::post('vendor_apply.php', [ECommerceApiController::class, 'applyVendor']);
+    Route::get('vendor_status.php', [ECommerceApiController::class, 'getVendorStatus']);
+    Route::get('vendor_dashboard.php', [ECommerceApiController::class, 'getVendorDashboard']);
+    Route::post('vendor_upload_product.php', [ECommerceApiController::class, 'uploadProduct']);
+    Route::post('favorite_toggle.php', [ECommerceApiController::class, 'toggleFavorite']);
+    Route::get('favorite_list.php', [ECommerceApiController::class, 'getFavorites']);
+    Route::get('vendor_search.php', [ECommerceApiController::class, 'searchVendors']);
+    Route::get('vendor_store.php/{id}', [ECommerceApiController::class, 'getVendorStore']);
 });
 
 
