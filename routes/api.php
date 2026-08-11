@@ -47,6 +47,10 @@ Route::post('register.php', [App\Http\Controllers\Api\LegacyAuthController::clas
 Route::post('send_email_otp.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'sendEmailOtp']);
 Route::post('reset_password.php', [App\Http\Controllers\Api\LegacyAuthController::class, 'resetPassword']);
 
+// SMM Task APIs
+Route::post('get_smm_status.php', [\App\Http\Controllers\Api\SmmJobController::class, 'getStatus']);
+Route::post('submit_smm_task.php', [\App\Http\Controllers\Api\SmmJobController::class, 'submitTask']);
+
 // --- Public Legacy APIs ---
 Route::get('get_banners.php', [LegacyContentController::class, 'getBanners']);
 Route::get('get_reviews.php', [LegacyContentController::class, 'getReviews']);

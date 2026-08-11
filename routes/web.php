@@ -38,6 +38,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 });
 
+// SMM Portal Route
+Route::get('/smm', function () {
+    return view('smm.index');
+})->name('smm.portal');
+
+// Standalone SMM Admin Panel Dedicated Routes (Separate Authentication Space)
+Route::prefix('admin/smm-panel')->name('admin.smm.')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
+    Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
+    Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
+});
+
 // Protected Admin Routes
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -218,6 +232,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             Route::post('/settings', [PcashSettingsController::class, 'update'])->name('settings.update');
             Route::resource('sim_offers', PcashSimOfferController::class);
             Route::get('/logs', [PcashLogController::class, 'index'])->name('logs.index');
+        });
+
+        // SMM Submissions Management
+        Route::prefix('smm')->name('smm.')->group(function () {
+            Route::get('/submissions', [\App\Http\Controllers\Admin\SmmSubmissionController::class, 'index'])->name('index');
+            Route::post('/submissions/{id}/approve', [\App\Http\Controllers\Admin\SmmSubmissionController::class, 'approve'])->name('approve');
+            Route::post('/submissions/{id}/reject', [\App\Http\Controllers\Admin\SmmSubmissionController::class, 'reject'])->name('reject');
         });
     });
 });

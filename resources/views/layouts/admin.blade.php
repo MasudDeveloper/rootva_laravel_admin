@@ -160,6 +160,11 @@
                 <span>Recharge Logs</span>
             </a>
 
+            <a href="{{ route('admin.smm.index') }}" class="nav-link {{ request()->is('admin/smm*') ? 'active' : '' }}">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>SMM Submissions</span>
+            </a>
+
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Financials</div>
             
             <a href="{{ route('admin.money-requests.index') }}" class="nav-link {{ request()->is('admin/money-requests*') ? 'active' : '' }}">

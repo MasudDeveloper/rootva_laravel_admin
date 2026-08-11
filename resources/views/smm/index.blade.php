@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMM Work Portal</title>
+    <!-- Google Fonts & Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+        .active-tab {
+            color: #2563eb;
+        }
+        /* Page Transition Animations */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .scale-in {
+            animation: scaleIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center">
+
+    <!-- Mobile Device Frame Wrapper Simulator -->
+    <div class="w-full max-w-md bg-[#fafbfc] min-h-screen shadow-2xl relative flex flex-col justify-between overflow-x-hidden" id="app-container">
+        
+        <!-- ==================== STATE 1: SPLASH SCREEN ==================== -->
+        <div id="state-splash" class="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-700 z-[999] flex flex-col justify-between items-center py-16 px-6">
+            <div></div>
+            <div class="text-center scale-in space-y-6">
+                <!-- Branding Circle Icon -->
+                <div class="w-24 h-24 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl shadow-indigo-900/30">
+                    <span class="text-4xl font-extrabold text-indigo-700 tracking-tighter">RV</span>
+                </div>
+                <div class="space-y-2">
+                    <h1 class="text-3xl font-extrabold text-white tracking-wide">Rootva SMM</h1>
+                    <p class="text-blue-100 text-xs tracking-widest uppercase">Premium Work Portal</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center space-y-4">
+                <!-- Advanced Spinner -->
+                <div class="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                <p class="text-blue-200 text-[10px] uppercase tracking-wider font-semibold">Secure Connection Establishing...</p>
+            </div>
+        </div>
+
+        <!-- ==================== STATE 2: DEDICATED LOGIN PAGE ==================== -->
+        <div id="state-login" class="hidden absolute inset-0 bg-slate-50 z-[90] flex flex-col justify-center px-6 py-12">
+            <div class="w-full max-w-sm mx-auto space-y-8 fade-in">
+                <!-- Branding Header -->
+                <div class="text-center space-y-3">
+                    <div class="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-600/20 font-bold text-xl">
+                        RV
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Welcome Back</h2>
+                        <p class="text-xs text-slate-500 mt-1">Sign in with your Rootva mobile account</p>
+                    </div>
+                </div>
+
+                <!-- Login form card -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-xl shadow-slate-100/50 space-y-5">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Mobile Number</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-sm">
+                                    <i class="fa-solid fa-phone"></i>
+                                </span>
+                                <input type="text" id="login-number" placeholder="01XXXXXXXXX" class="w-full text-sm border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-slate-400">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-sm">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                                <input type="password" id="login-password" placeholder="••••••••" class="w-full text-sm border border-slate-200 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-slate-400">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all text-sm flex items-center justify-center space-x-2">
+                        <span>Sign In</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-[11px] text-slate-400">Secured with Rootva Standard Encryption</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== STATE 3: MAIN APP MODULE ==================== -->
+        <!-- App Header (Only visible post-login) -->
+        <div id="app-header" class="hidden bg-blue-600 text-white px-5 py-4 flex items-center justify-between rounded-b-3xl shadow-lg z-40">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-lg shadow-inner">
+                    R
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold opacity-85 tracking-wide">Good Evening 👋</h3>
+                    <p class="text-sm font-bold" id="username">Loading...</p>
+                </div>
+            </div>
+            <div class="relative cursor-pointer active:scale-95 transition-all">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-amber-400 text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full">2</span>
+            </div>
+        </div>
+
+        <!-- Scrollable Workspace (Only visible post-login) -->
+        <div id="app-workspace" class="hidden flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20 fade-in">
+            
+            <!-- Dashboard Section (Advanced Redesign) -->
+            <div id="section-dashboard" class="space-y-5">
+                
+                <!-- Premium Glassmorphic Promo Card -->
+                <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group">
+                    <img src="/download_page/banner_website_free.png" alt="SMM Banner" class="w-full h-40 object-cover transform group-hover:scale-105 transition-all duration-700" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=500&q=80'">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent flex flex-col justify-end p-5 text-white">
+                        <span class="text-[9px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full w-max mb-2">Social Selling Network</span>
+                        <h4 class="text-lg font-black tracking-wide">Social Media Selling</h4>
+                        <p class="text-[10px] text-slate-300 mt-1">কমিশন সিস্টেমে রুটবা SMM এর সাথে ইনকাম শুরু করুন</p>
+                    </div>
+                </div>
+
+                <!-- Custom Modern Banner Notice (frosted glowing outline) -->
+                <div class="bg-indigo-950/5 border border-indigo-500/15 rounded-2xl p-3.5 flex items-center space-x-3 shadow-inner">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-sm shadow">
+                        <i class="fa-solid fa-bullhorn animate-pulse"></i>
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <marquee class="text-xs text-indigo-950 font-bold" scrollamount="3">রুটবা SMM পোর্টাল থেকে সরাসরি সাবমিট করে ইনকাম করুন ঝামেলা মুক্তভাবে!</marquee>
+                    </div>
+                </div>
+
+                <!-- Wallet Card Widget (Luxurious Dark Navy Gradient with Cyan Glow Elements) -->
+                <div class="bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-2xl border border-indigo-500/25 relative overflow-hidden">
+                    <div class="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                    <div class="absolute -left-12 -bottom-12 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+                    
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest block">Wallet Balance</span>
+                            <h2 class="text-3xl font-black mt-2 bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">৳ <span id="dashboard-balance" class="text-white">0.00</span></h2>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-lg text-indigo-300 shadow">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects grid items -->
+                <div class="space-y-3.5">
+                    <div class="flex items-center justify-between px-1">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">সক্রিয় কাজ সমূহ</h3>
+                        <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">Grid Matrix</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4" id="projects-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Detail submission UI -->
+            <div id="section-task" class="hidden space-y-4">
+                <button onclick="showDashboard()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center space-x-1 active:scale-95 transition-all">
+                    <i class="fa-solid fa-arrow-left"></i> <span>Go Back</span>
+                </button>
+                
+                <!-- Guidelines Info Card -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shadow" id="task-icon-container">
+                                <i id="task-icon"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-md" id="task-title">Gmail Marketing</h3>
+                                <span class="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full mt-1" id="task-rate">Today's Price: ৳ 18.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100" id="task-notice"></div>
+                    
+                    <!-- Dynamic password display -->
+                    <div class="border border-dashed border-blue-200 rounded-xl p-3 bg-blue-50/50 flex items-center justify-between" id="wrapper-daily-password">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Required Password to Register</span>
+                            <span class="text-sm font-extrabold text-blue-800" id="task-daily-password">Loading...</span>
+                        </div>
+                        <button onclick="copyDailyPassword()" class="text-xs text-blue-600 bg-white border border-blue-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all font-semibold">Copy</button>
+                    </div>
+
+                    <a id="task-tutorial-btn" target="_blank" class="hidden w-full items-center justify-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 py-3 rounded-xl">
+                        <i class="fa-brands fa-youtube text-red-500 text-sm"></i> <span>ভিডিও টিউটোরিয়াল দেখুন</span>
+                    </a>
+                </div>
+
+                <!-- Input Submissions form layout -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Submit Work Proof</h3>
+                    <div class="space-y-3" id="dynamic-inputs-container">
+                        <!-- Inputs render dynamically -->
+                    </div>
+                    <button onclick="submitTaskProof()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl shadow-md active:scale-95 transition-all text-sm flex items-center justify-center space-x-2">
+                        <i class="fa-regular fa-paper-plane"></i> <span>Submit Work</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wallet History Custom High-End Redesign -->
+            <div id="section-wallet" class="hidden space-y-6 fade-in">
+                
+                <!-- Premium Frosted Glow Panel -->
+                <div class="bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-2xl border border-indigo-500/20 relative overflow-hidden">
+                    <div class="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                    <div class="absolute -left-12 -bottom-12 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
+                    
+                    <div class="relative z-10 space-y-4">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                            <span class="text-[11px] font-bold text-indigo-300 uppercase tracking-widest">SMM Account Balance</span>
+                            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Verified Ledger</span>
+                        </div>
+                        <div>
+                            <span class="text-xs opacity-60 block">সর্বমোট অর্জিত ব্যালেন্স</span>
+                            <h2 class="text-4xl font-black tracking-tight mt-1 bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">৳ <span id="wallet-total-balance" class="text-white">0.00</span></h2>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1">
+                            <span>Last Updated: Just Now</span>
+                            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-nodes mr-1"></i>Secure Node</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Modern Status Badges -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Pending Box -->
+                    <div class="bg-white border border-slate-100 rounded-2xl p-4 flex items-center space-x-3.5 shadow-sm">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">পেন্ডিং কাজ</span>
+                            <h3 class="text-lg font-extrabold text-slate-800" id="wallet-pending-count">0</h3>
+                        </div>
+                    </div>
+
+                    <!-- Today Complete Box -->
+                    <div class="bg-white border border-slate-100 rounded-2xl p-4 flex items-center space-x-3.5 shadow-sm">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-lg">
+                            <i class="fa-regular fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">আজকের কাজ</span>
+                            <h3 class="text-lg font-extrabold text-slate-800" id="wallet-today-count">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Analytics Listing Layout (Not copying mockup grid) -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between px-1">
+                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">পরিষেবা ভিত্তিক বিক্রয় বিশ্লেষণ</h3>
+                        <span class="text-[10px] text-slate-400">Detailed Analytics</span>
+                    </div>
+                    
+                    <!-- Advanced custom list containers -->
+                    <div class="space-y-2.5" id="wallet-analytics-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Unified Bottom Navigation Menu (Only visible post-login) -->
+        <div id="app-nav" class="hidden absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-2 flex items-center justify-between rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.04)] z-50">
+            <button onclick="navClick('home')" class="flex flex-col items-center justify-center py-1 flex-1 text-slate-400 active-tab" id="nav-home">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] mt-0.5 font-medium">Home</span>
+            </button>
+            <button onclick="navClick('wallet')" class="flex flex-col items-center justify-center py-1 flex-1 text-slate-400" id="nav-wallet">
+                <i class="fa-solid fa-wallet text-lg"></i>
+                <span class="text-[10px] mt-0.5 font-medium">History</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Scripting for UI operations & API communication -->
+    <script>
+        let currentUser = null;
+        let smmRates = {};
+        let currentSelectedTask = '';
+
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('smm_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    // Fetch status directly
+                    fetch('/api/get_smm_status.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ number: currentUser.number, password: currentUser.password })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('state-splash').classList.add('hidden');
+                        if (data.status === 'success') {
+                            currentUser.details = data.user;
+                            document.getElementById('app-header').classList.remove('hidden');
+                            document.getElementById('app-workspace').classList.remove('hidden');
+                            document.getElementById('app-nav').classList.remove('hidden');
+                            document.getElementById('username').innerText = data.user.name;
+                            showDashboard();
+                        } else {
+                            localStorage.removeItem('smm_user');
+                            document.getElementById('state-login').classList.remove('hidden');
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('state-splash').classList.add('hidden');
+                        document.getElementById('state-login').classList.remove('hidden');
+                    });
+                } catch(e) {
+                    localStorage.removeItem('smm_user');
+                    setTimeout(() => {
+                        document.getElementById('state-splash').classList.add('hidden');
+                        document.getElementById('state-login').classList.remove('hidden');
+                    }, 1000);
+                }
+            } else {
+                setTimeout(() => {
+                    // Remove splash screen and show login
+                    document.getElementById('state-splash').classList.add('hidden');
+                    document.getElementById('state-login').classList.remove('hidden');
+                }, 1500);
+            }
+        });
+
+        function handleLogin() {
+            const num = document.getElementById('login-number').value;
+            const pass = document.getElementById('login-password').value;
+
+            if (!num || !pass) {
+                alert('দয়া করে নম্বর ও পাসওয়ার্ড দিন');
+                return;
+            }
+
+            fetch('/api/get_smm_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number: num, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentUser = { number: num, password: pass, details: data.user };
+                    localStorage.setItem('smm_user', JSON.stringify({ number: num, password: pass }));
+                    
+                    // Trigger state switch
+                    document.getElementById('state-login').classList.add('hidden');
+                    document.getElementById('app-header').classList.remove('hidden');
+                    document.getElementById('app-workspace').classList.remove('hidden');
+                    document.getElementById('app-nav').classList.remove('hidden');
+
+                    document.getElementById('username').innerText = data.user.name;
+                    showDashboard();
+                } else {
+                    alert(data.message || 'লগইন ব্যর্থ হয়েছে');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            });
+        }
+
+        function navClick(tab) {
+            document.querySelectorAll('button[id^="nav-"]').forEach(btn => btn.classList.remove('active-tab'));
+            document.getElementById('nav-' + tab).classList.add('active-tab');
+
+            // Hide sections
+            document.getElementById('section-dashboard').classList.add('hidden');
+            document.getElementById('section-task').classList.add('hidden');
+            document.getElementById('section-wallet').classList.add('hidden');
+
+            if (tab === 'home') {
+                showDashboard();
+            } else if (tab === 'wallet') {
+                document.getElementById('section-wallet').classList.remove('hidden');
+                loadSmmData();
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('section-task').classList.add('hidden');
+            document.getElementById('section-wallet').classList.add('hidden');
+            document.getElementById('section-dashboard').classList.remove('hidden');
+            loadSmmData();
+        }
+
+        function loadSmmData() {
+            if (!currentUser) return;
+            fetch('/api/get_smm_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number: currentUser.number, password: currentUser.password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    smmRates = data.rates;
+                    document.getElementById('dashboard-balance').innerText = data.user.wallet_balance.toFixed(2);
+                    
+                    // Update Redesigned Wallet values
+                    document.getElementById('wallet-total-balance').innerText = data.total_smm_earnings.toFixed(2);
+                    
+                    // Count pending and today's tasks
+                    let pendingCount = 0;
+                    let todayCount = 0;
+                    const todayStr = new Date().toISOString().split('T')[0];
+
+                    data.recent_submissions.forEach(sub => {
+                        if (sub.status === 'pending') {
+                            pendingCount++;
+                        }
+                        if (sub.created_at && sub.created_at.startsWith(todayStr)) {
+                            todayCount++;
+                        }
+                    });
+
+                    document.getElementById('wallet-pending-count').innerText = pendingCount;
+                    document.getElementById('wallet-today-count').innerText = todayCount;
+
+                    // Render project grid cards
+                    let gridHtml = '';
+                    for (const [key, details] of Object.entries(data.rates)) {
+                        let icon = 'fa-envelope';
+                        let color = 'bg-blue-500';
+                        if (key === 'facebook') { icon = 'fa-facebook'; color = 'bg-blue-600'; }
+                        else if (key === 'instagram') { icon = 'fa-instagram'; color = 'bg-pink-500'; }
+                        else if (key === 'whatsapp') { icon = 'fa-whatsapp'; color = 'bg-emerald-500'; }
+                        else if (key === 'telegram') { icon = 'fa-telegram'; color = 'bg-sky-500'; }
+
+                        const inactiveClass = details.status !== 'active' ? 'opacity-60 grayscale' : '';
+
+                        gridHtml += `
+                            <div onclick="selectTask('${key}')" class="glass-card rounded-2xl p-4 flex flex-col items-center text-center cursor-pointer active:scale-95 transition-all ${inactiveClass}">
+                                <div class="w-11 h-11 rounded-2xl ${color} text-white flex items-center justify-center text-lg mb-2.5 shadow">
+                                    <i class="fa-brands ${icon} ${key === 'gmail' ? 'fa-regular fa-envelope text-white' : ''}"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-slate-800">${details.name}</h4>
+                                <span class="text-[10px] text-emerald-600 font-bold mt-1">৳ ${details.rate.toFixed(2)}</span>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('projects-grid').innerHTML = gridHtml;
+
+                    // Render Custom Premium Wallet Analytics list cards (not duplicating mockup grid)
+                    let analyticsHtml = '';
+                    for (const [key, details] of Object.entries(data.rates)) {
+                        let icon = 'fa-envelope';
+                        let color = 'bg-blue-500/10 text-blue-600';
+                        if (key === 'facebook') { icon = 'fa-facebook'; color = 'bg-blue-600/10 text-blue-600'; }
+                        else if (key === 'instagram') { icon = 'fa-instagram'; color = 'bg-pink-500/10 text-pink-500'; }
+                        else if (key === 'whatsapp') { icon = 'fa-whatsapp'; color = 'bg-emerald-500/10 text-emerald-600'; }
+                        else if (key === 'telegram') { icon = 'fa-telegram'; color = 'bg-sky-500/10 text-sky-500'; }
+
+                        // Extract total counts and earnings per type
+                        const typeInfo = data.analytics[key] || { count: 0, earnings: 0.0 };
+
+                        analyticsHtml += `
+                            <div class="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                                <div class="flex items-center space-x-3.5">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg ${color}">
+                                        <i class="fa-brands ${icon} ${key === 'gmail' ? 'fa-regular fa-envelope' : ''}"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-800">${details.name}</h4>
+                                        <span class="text-[10px] text-slate-400">Total Sells: ${typeInfo.count} items</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-black text-indigo-950 block">৳ ${typeInfo.earnings.toFixed(2)}</span>
+                                    <span class="text-[9px] text-slate-400 font-medium">Earned</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('wallet-analytics-grid').innerHTML = analyticsHtml;
+
+                    // Render submissions history
+                    let historyHtml = '';
+                    if (data.recent_submissions.length === 0) {
+                        historyHtml = '<p class="text-xs text-slate-400 text-center py-8">কোনো কাজের হিস্ট্রি পাওয়া যায়নি</p>';
+                    } else {
+                        data.recent_submissions.forEach(task => {
+                            let badgeColor = 'bg-amber-50 text-amber-700 border border-amber-100';
+                            if (task.status === 'approved') badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                            else if (task.status === 'rejected') badgeColor = 'bg-red-50 text-red-700 border border-red-100';
+
+                            historyHtml += `
+                                <div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-800 uppercase">${task.task_type} Sell</h4>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">${task.input_field_1}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-semibold text-slate-800 block">৳ ${task.price}</span>
+                                        <span class="inline-block text-[9px] px-2 py-0.5 rounded-full font-bold uppercase mt-1 ${badgeColor}">${task.status}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    document.getElementById('submissions-list').innerHTML = historyHtml;
+                }
+            });
+        }
+
+        function selectTask(key) {
+            const task = smmRates[key];
+            if (!task) return;
+
+            if (task.status !== 'active') {
+                alert(task.notice);
+                return;
+            }
+
+            currentSelectedTask = key;
+
+            // Show task workspace
+            document.getElementById('section-dashboard').classList.add('hidden');
+            document.getElementById('section-task').classList.remove('hidden');
+
+            document.getElementById('task-title').innerText = task.name;
+            document.getElementById('task-rate').innerText = "Today's Price: ৳ " + task.rate.toFixed(2);
+            document.getElementById('task-notice').innerText = task.notice;
+
+            // Handle Brand Icons
+            let iconClass = 'fa-envelope';
+            let bgClass = 'bg-blue-500';
+            if (key === 'facebook') { iconClass = 'fa-facebook'; bgClass = 'bg-blue-600'; }
+            else if (key === 'instagram') { iconClass = 'fa-instagram'; bgClass = 'bg-pink-500'; }
+            else if (key === 'whatsapp') { iconClass = 'fa-whatsapp'; bgClass = 'bg-green-500'; }
+            else if (key === 'telegram') { iconClass = 'fa-telegram'; bgClass = 'bg-sky-500'; }
+
+            const iconCont = document.getElementById('task-icon-container');
+            iconCont.className = `w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shadow ${bgClass}`;
+            document.getElementById('task-icon').className = `fa-brands ${iconClass} ${key === 'gmail' ? 'fa-regular fa-envelope text-white' : ''}`;
+
+            // Video Tutorial
+            const tutBtn = document.getElementById('task-tutorial-btn');
+            if (task.video_url) {
+                tutBtn.href = task.video_url;
+                tutBtn.classList.remove('hidden');
+                tutBtn.classList.add('flex');
+            } else {
+                tutBtn.classList.add('hidden');
+                tutBtn.classList.remove('flex');
+            }
+
+            // Daily password
+            const pwdWrap = document.getElementById('wrapper-daily-password');
+            if (task.daily_password) {
+                document.getElementById('task-daily-password').innerText = task.daily_password;
+                pwdWrap.classList.remove('hidden');
+            } else {
+                pwdWrap.classList.add('hidden');
+            }
+
+            // Load inputs dynamically based on config
+            const inputsCont = document.getElementById('dynamic-inputs-container');
+            let inputsHtml = '';
+            
+            if (task.required_fields && task.required_fields.length > 0) {
+                task.required_fields.forEach((field, index) => {
+                    // Make labels human readable
+                    let labelName = field.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    let inputType = field.includes('password') ? 'text' : 'text';
+                    let placeholder = `Enter your ${labelName.toLowerCase()}...`;
+
+                    inputsHtml += `
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">${labelName}</label>
+                            <input type="${inputType}" id="task-field-${index}" placeholder="${placeholder}" class="w-full text-sm border border-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all">
+                        </div>
+                    `;
+                });
+            } else {
+                // Fallback basic input
+                inputsHtml = `
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600 block mb-1">Details Link/Username</label>
+                        <input type="text" id="task-field-0" placeholder="Type here..." class="w-full text-sm border border-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all">
+                    </div>
+                `;
+            }
+            inputsCont.innerHTML = inputsHtml;
+        }
+
+        function copyDailyPassword() {
+            const pwd = document.getElementById('task-daily-password').innerText;
+            navigator.clipboard.writeText(pwd).then(() => {
+                alert('পাসওয়ার্ড কপি করা হয়েছে!');
+            });
+        }
+
+        function submitTaskProof() {
+            const task = smmRates[currentSelectedTask];
+            if (!task) return;
+
+            let field1 = '';
+            let field2 = '';
+
+            if (task.required_fields && task.required_fields.length > 0) {
+                const f1Val = document.getElementById('task-field-0');
+                const f2Val = document.getElementById('task-field-1');
+                
+                field1 = f1Val ? f1Val.value : '';
+                field2 = f2Val ? f2Val.value : '';
+            } else {
+                const fVal = document.getElementById('task-field-0');
+                field1 = fVal ? fVal.value : '';
+            }
+
+            if (!field1) {
+                alert('দয়া করে প্রয়োজনীয় ফিল্ডটি পূরণ করুন');
+                return;
+            }
+
+            fetch('/api/submit_smm_task.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    number: currentUser.number,
+                    password: currentUser.password,
+                    task_type: currentSelectedTask,
+                    field1: field1,
+                    field2: field2
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    showDashboard();
+                } else {
+                    alert(data.message || 'সাবমিট ব্যর্থ হয়েছে');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            });
+        }
+    </script>
+</body>
+</html>
