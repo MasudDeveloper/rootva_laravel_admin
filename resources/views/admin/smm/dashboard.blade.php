@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,16 +15,18 @@
             background-color: #0b0f19;
             min-height: 100vh;
         }
+
         .dark-card {
             background-color: #111827;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
+
 <body class="text-slate-200 py-8 px-4 sm:px-6 lg:px-8">
 
     <div class="max-w-6xl mx-auto space-y-8">
-        
+
         <!-- Header -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-6">
             <div class="flex items-center space-x-4">
@@ -48,62 +51,84 @@
         </div>
 
         @if(session('success'))
-            <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-5 py-4 rounded-2xl flex items-center space-x-2">
-                <i class="fa-solid fa-circle-check"></i>
-                <span>{{ session('success') }}</span>
-            </div>
+        <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-5 py-4 rounded-2xl flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>{{ session('success') }}</span>
+        </div>
         @endif
 
         @if(session('error'))
-            <div class="bg-red-500/10 border border-red-500/20 text-red-400 text-xs px-5 py-4 rounded-2xl flex items-center space-x-2">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <span>{{ session('error') }}</span>
-            </div>
+        <div class="bg-red-500/10 border border-red-500/20 text-red-400 text-xs px-5 py-4 rounded-2xl flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>{{ session('error') }}</span>
+        </div>
         @endif
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             <!-- left column: SMM Task Dynamic configuration controls -->
             <div class="space-y-6">
+                <!-- Global Announcement Settings Card -->
+                <div class="dark-card rounded-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                        <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center space-x-2">
+                            <i class="fa-solid fa-bullhorn text-indigo-500 animate-pulse"></i>
+                            <span>Global Announcement Notice</span>
+                        </h4>
+                    </div>
+                    <form action="{{ route('admin.smm.config.update', 'global_notice') }}" method="POST" class="space-y-3.5">
+                        @csrf
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">Marquee Message Text</label>
+                            <textarea name="notice" class="w-full bg-slate-900 border border-slate-800 text-xs px-3 py-2 rounded-xl text-white focus:outline-none focus:border-indigo-500" rows="3" placeholder="রুটবা SMM পোর্টাল থেকে সরাসরি সাবমিট করে ইনকাম করুন ঝামেলা মুক্তভাবে!">{{ $globalNotice ? $globalNotice->notice : '' }}</textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-md shadow-indigo-600/10">Update Message</button>
+                    </form>
+                </div>
+
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">SMM Service Settings</h3>
                 <div class="space-y-4">
                     @foreach($configs as $conf)
-                        <div class="dark-card rounded-2xl p-5 space-y-4">
-                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                                <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center space-x-2">
-                                    <span class="w-2.5 h-2.5 rounded-full {{ $conf->status === 'active' ? 'bg-emerald-500 shadow shadow-emerald-500/50' : 'bg-red-500 shadow shadow-red-500/50' }}"></span>
-                                    <span>{{ $conf->name }}</span>
-                                </h4>
-                                <span class="text-[10px] text-slate-400">Type: {{ $conf->task_type }}</span>
-                            </div>
-                            
-                            <!-- Dynamic configuration modification form -->
-                            <form action="{{ route('admin.smm.config.update', $conf->task_type) }}" method="POST" class="space-y-3">
-                                @csrf
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 block mb-1">Today's Price (৳)</label>
-                                        <input type="number" step="0.01" name="rate" value="{{ $conf->rate }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
-                                    </div>
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 block mb-1">Daily PW to Register</label>
-                                        <input type="text" name="daily_password" value="{{ $conf->daily_password }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-[10px] font-bold text-slate-400 block mb-1">Status</label>
-                                        <select name="status" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
-                                            <option value="active" {{ $conf->status === 'active' ? 'selected' : '' }}>Active</option>
-                                            <option value="inactive" {{ $conf->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">Update</button>
-                                    </div>
-                                </div>
-                            </form>
+                    <div class="dark-card rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full {{ $conf->status === 'active' ? 'bg-emerald-500 shadow shadow-emerald-500/50' : 'bg-red-500 shadow shadow-red-500/50' }}"></span>
+                                <span>{{ $conf->name }}</span>
+                            </h4>
+                            <span class="text-[10px] text-slate-400">Type: {{ $conf->task_type }}</span>
                         </div>
+
+                        <!-- Dynamic configuration modification form -->
+                        <form action="{{ route('admin.smm.config.update', $conf->task_type) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 block mb-1">Today's Price (৳)</label>
+                                    <input type="number" step="0.01" name="rate" value="{{ $conf->rate }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 block mb-1">Daily PW to Register</label>
+                                    <input type="text" name="daily_password" value="{{ $conf->daily_password }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">Service Notice Guidelines</label>
+                                <textarea name="notice" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500" rows="2">{{ $conf->notice }}</textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-400 block mb-1">Status</label>
+                                    <select name="status" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                                        <option value="active" {{ $conf->status === 'active' ? 'selected' : '' }}>Active</option>
+                                        <option value="inactive" {{ $conf->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">Update</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                     @endforeach
                 </div>
             </div>
@@ -118,60 +143,63 @@
                                 <tr class="bg-slate-900 border-b border-slate-800 text-slate-400">
                                     <th class="py-4 px-5 font-bold uppercase tracking-wider">User Store</th>
                                     <th class="py-4 px-5 font-bold uppercase tracking-wider">Task Type</th>
-                                    <th class="py-4 px-5 font-bold uppercase tracking-wider">Credential (Field 1)</th>
-                                    <th class="py-4 px-5 font-bold uppercase tracking-wider">Pass/Code (Field 2)</th>
+                                    <th class="py-4 px-5 font-bold uppercase tracking-wider">Submitted Credentials</th>
                                     <th class="py-4 px-5 font-bold uppercase tracking-wider">Payout</th>
                                     @if($status === 'pending')
-                                        <th class="py-4 px-5 font-bold uppercase tracking-wider text-right">Actions</th>
+                                    <th class="py-4 px-5 font-bold uppercase tracking-wider text-right">Actions</th>
                                     @endif
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/50">
                                 @forelse($submissions as $sub)
-                                    <tr class="hover:bg-slate-900/40 transition-colors">
-                                        <td class="py-4 px-5">
-                                            <span class="font-bold text-white block">{{ $sub->user->name ?? 'N/A' }}</span>
-                                            <span class="text-slate-500 text-[10px] mt-0.5"><i class="fa-solid fa-phone mr-1"></i>{{ $sub->user->number ?? 'N/A' }}</span>
-                                        </td>
-                                        <td class="py-4 px-5">
-                                            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">{{ $sub->task_type }}</span>
-                                        </td>
-                                        <td class="py-4 px-5">
-                                            <code class="text-blue-400 font-mono">{{ $sub->input_field_1 }}</code>
-                                        </td>
-                                        <td class="py-4 px-5">
+                                <tr class="hover:bg-slate-900/40 transition-colors">
+                                    <td class="py-4 px-5">
+                                        <span class="font-bold text-white block">{{ $sub->user->name ?? 'N/A' }}</span>
+                                        <span class="text-slate-500 text-[10px] mt-0.5"><i class="fa-solid fa-phone mr-1"></i>{{ $sub->user->number ?? 'N/A' }}</span>
+                                    </td>
+                                    <td class="py-4 px-5">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">{{ $sub->task_type }}</span>
+                                    </td>
+                                    <td class="py-4 px-5">
+                                        <div class="flex flex-col gap-1 text-[11px]">
+                                            <span class="text-blue-400 font-mono"><strong class="text-slate-500 mr-1">Field 1:</strong>{{ $sub->input_field_1 }}</span>
                                             @if($sub->input_field_2)
-                                                <code class="text-pink-400 font-mono">{{ $sub->input_field_2 }}</code>
-                                            @else
-                                                <span class="text-slate-600 italic">None</span>
+                                                <span class="text-pink-400 font-mono"><strong class="text-slate-500 mr-1">Field 2:</strong>{{ $sub->input_field_2 }}</span>
                                             @endif
-                                        </td>
-                                        <td class="py-4 px-5">
-                                            <span class="font-bold text-emerald-400">৳{{ number_format($sub->price, 2) }}</span>
-                                        </td>
-                                        @if($status === 'pending')
-                                            <td class="py-4 px-5 text-right space-x-2">
-                                                <form action="{{ route('admin.smm.approve', $sub->id) }}" method="POST" class="inline-block">
-                                                    @csrf
-                                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95" onclick="return confirm('Approve submission and distribute payment?')">Approve</button>
-                                                </form>
-                                                <button type="button" onclick="openRejectModal({{ $sub->id }})" class="bg-red-950/40 text-red-400 border border-red-950 px-3 py-1.5 rounded-lg transition-all active:scale-95">Reject</button>
-                                            </td>
-                                        @endif
-                                    </tr>
+                                            @if($sub->input_field_3)
+                                                <span class="text-emerald-400 font-mono"><strong class="text-slate-500 mr-1">Field 3:</strong>{{ $sub->input_field_3 }}</span>
+                                            @endif
+                                            @if($sub->input_field_4)
+                                                <span class="text-amber-400 font-mono"><strong class="text-slate-500 mr-1">Field 4:</strong>{{ $sub->input_field_4 }}</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-5">
+                                        <span class="font-bold text-emerald-400">৳{{ number_format($sub->price, 2) }}</span>
+                                    </td>
+                                    @if($status === 'pending')
+                                    <td class="py-4 px-5 text-right space-x-2">
+                                        <form action="{{ route('admin.smm.approve', $sub->id) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95" onclick="return confirm('Approve submission and distribute payment?')">Approve</button>
+                                        </form>
+                                        <button type="button" onclick="openRejectModal({{ $sub->id }})" class="bg-red-950/40 text-red-400 border border-red-950 px-3 py-1.5 rounded-lg transition-all active:scale-95">Reject</button>
+                                    </td>
+                                    @endif
+                                </tr>
                                 @empty
-                                    <tr>
-                                        <td colspan="6" class="py-16 text-center text-slate-500">
-                                            <i class="fa-solid fa-folder-open text-4xl mb-4 opacity-25"></i>
-                                            <p class="text-xs">No submissions found in this state</p>
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td colspan="6" class="py-16 text-center text-slate-500">
+                                        <i class="fa-solid fa-folder-open text-4xl mb-4 opacity-25"></i>
+                                        <p class="text-xs">No submissions found in this state</p>
+                                    </td>
+                                </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <div class="py-4">
                     {{ $submissions->links() }}
                 </div>
@@ -209,9 +237,11 @@
             document.getElementById('reject-form').action = '/admin/smm/submissions/' + id + '/reject';
             document.getElementById('reject-modal').classList.remove('hidden');
         }
+
         function closeRejectModal() {
             document.getElementById('reject-modal').classList.add('hidden');
         }
     </script>
 </body>
+
 </html>

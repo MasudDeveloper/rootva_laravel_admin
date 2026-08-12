@@ -24,24 +24,54 @@ class SmmTaskConfigSeeder extends Seeder
                 'required_fields' => ['gmail_address', 'password']
             ],
             [
-                'task_type' => 'facebook',
-                'name' => 'Facebook Sell',
+                'task_type' => 'facebook_cookies',
+                'name' => 'Facebook Cookies',
                 'rate' => 15.00,
                 'status' => 'active',
-                'notice' => 'Old profile required, minimum 50 friends.',
+                'notice' => 'ফ্রি ফেসবুকে কুকিজ সহ আইডি সাবমিট করুন (User, Password, Cookies)।',
                 'video_url' => '',
-                'daily_password' => 'pass1234',
-                'required_fields' => ['profile_url', 'password']
+                'daily_password' => 'fbcook12',
+                'required_fields' => ['username', 'password', 'cookies']
             ],
             [
-                'task_type' => 'instagram',
-                'name' => 'Instagram Sell',
+                'task_type' => 'facebook_zero_friend',
+                'name' => 'Facebook 0 Friend ID',
+                'rate' => 15.00,
+                'status' => 'active',
+                'notice' => '২ফা কোড সহ ০ ফ্রেন্ড ফেসবুক আইডি সাবমিট করুন (User, Password, 2FA)।',
+                'video_url' => '',
+                'daily_password' => 'fbzero34',
+                'required_fields' => ['username', 'password', 'two_factor']
+            ],
+            [
+                'task_type' => 'facebook_number_id',
+                'name' => 'Facebook Number ID',
+                'rate' => 15.00,
+                'status' => 'active',
+                'notice' => 'নাম্বার সহ ফেসবুক আইডি সাবমিট করুন (User, Password, 2FA, Number)।',
+                'video_url' => '',
+                'daily_password' => 'fbnum56',
+                'required_fields' => ['username', 'password', 'two_factor', 'phone_number']
+            ],
+            [
+                'task_type' => 'instagram_2fa',
+                'name' => 'Instagram 2FA',
                 'rate' => 12.00,
                 'status' => 'active',
-                'notice' => 'Profile picture and 5+ posts required.',
+                'notice' => '২ফা কোড সহ ইনস্টাগ্রাম আইডি সাবমিট করুন (User, Password, 2FA)।',
                 'video_url' => '',
-                'daily_password' => 'insta99',
-                'required_fields' => ['username', 'password', 'email', 'two_factor']
+                'daily_password' => 'insta2fa',
+                'required_fields' => ['username', 'password', 'two_factor']
+            ],
+            [
+                'task_type' => 'instagram_cookies',
+                'name' => 'Instagram Cookies',
+                'rate' => 12.00,
+                'status' => 'active',
+                'notice' => 'ইনস্টাগ্রাম কুকিজ সহ আইডি সাবমিট করুন (User, Password, Cookies)।',
+                'video_url' => '',
+                'daily_password' => 'instacook',
+                'required_fields' => ['username', 'password', 'cookies']
             ],
             [
                 'task_type' => 'whatsapp',
@@ -62,6 +92,16 @@ class SmmTaskConfigSeeder extends Seeder
                 'video_url' => '',
                 'daily_password' => 'tele44',
                 'required_fields' => ['phone_number', 'verification_code']
+            ],
+            [
+                'task_type' => 'global_notice',
+                'name' => 'Global Notice',
+                'rate' => 0.00,
+                'status' => 'active',
+                'notice' => 'রুটবা SMM পোর্টাল থেকে সরাসরি সাবমিট করে ইনকাম করুন ঝামেলা মুক্তভাবে!',
+                'video_url' => '',
+                'daily_password' => '',
+                'required_fields' => []
             ]
         ];
 

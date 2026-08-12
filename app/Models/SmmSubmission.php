@@ -13,6 +13,8 @@ class SmmSubmission extends Model
         'task_type',
         'input_field_1',
         'input_field_2',
+        'input_field_3',
+        'input_field_4',
         'price',
         'status',
         'admin_feedback'

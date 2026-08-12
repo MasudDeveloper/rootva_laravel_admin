@@ -38,19 +38,40 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 });
 
-// SMM Portal Route
-Route::get('/smm', function () {
-    return view('smm.index');
-})->name('smm.portal');
+// SMM Subdomain and Fallback Routing Groupings
+if (env('APP_DOMAIN')) {
+    // SMM Portal Subdomain
+    Route::domain(env('SMM_PORTAL_SUBDOMAIN', 'smm') . '.' . env('APP_DOMAIN'))->group(function () {
+        Route::get('/', function () {
+            return view('smm.index');
+        })->name('smm.portal');
+    });
 
-// Standalone SMM Admin Panel Dedicated Routes (Separate Authentication Space)
-Route::prefix('admin/smm-panel')->name('admin.smm.')->group(function () {
-    Route::get('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'showLogin'])->name('login');
-    Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
-    Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
-    Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
-});
+    // SMM Dedicated Admin Subdomain
+    Route::domain(env('SMM_ADMIN_SUBDOMAIN', 'smmadmin') . '.' . env('APP_DOMAIN'))->name('admin.smm.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('admin.smm.login');
+        });
+        Route::get('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'showLogin'])->name('login');
+        Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
+        Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
+        Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
+    });
+} else {
+    // Fallback: Prefix Routes (If APP_DOMAIN is empty or not configured)
+    Route::get('/smm', function () {
+        return view('smm.index');
+    })->name('smm.portal');
+
+    Route::prefix('admin/smm-panel')->name('admin.smm.')->group(function () {
+        Route::get('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'showLogin'])->name('login');
+        Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
+        Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
+        Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
+    });
+}
 
 // Protected Admin Routes
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {

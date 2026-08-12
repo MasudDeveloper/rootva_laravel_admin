@@ -54,9 +54,10 @@ class SmmPortalAdminController extends Controller
             ->paginate(30);
 
         // Fetch task configs for rate & password adjustments
-        $configs = SmmTaskConfig::all();
+        $configs = SmmTaskConfig::where('task_type', '!=', 'global_notice')->get();
+        $globalNotice = SmmTaskConfig::find('global_notice');
 
-        return view('admin.smm.dashboard', compact('submissions', 'status', 'configs'));
+        return view('admin.smm.dashboard', compact('submissions', 'status', 'configs', 'globalNotice'));
     }
 
     /**
