@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SMM Subdomain Routing Configuration
+    |--------------------------------------------------------------------------
+    */
+    'domain' => env('APP_DOMAIN'),
+    'smm_portal_subdomain' => env('SMM_PORTAL_SUBDOMAIN', 'smm'),
+    'smm_admin_subdomain' => env('SMM_ADMIN_SUBDOMAIN', 'smmadmin'),
+
 ];

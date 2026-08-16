@@ -22,6 +22,8 @@ class ECommerceApiController extends Controller
         $request->validate([
             'store_name' => 'required|string|max:255',
             'store_description' => 'nullable|string',
+            'logo' => 'nullable|image|max:2048',
+            'document' => 'nullable|image|max:2048'
         ]);
 
         $user_id = $request->input('user_id');
@@ -35,10 +37,33 @@ class ECommerceApiController extends Controller
             ]);
         }
 
+        $destinationPath = public_path('/uploads/vendors');
+        if (!File::isDirectory($destinationPath)) {
+            File::makeDirectory($destinationPath, 0777, true, true);
+        }
+
+        $logoPath = null;
+        if ($request->hasFile('logo')) {
+            $logo = $request->file('logo');
+            $logoName = time() . '_logo_' . uniqid() . '_' . $logo->getClientOriginalName();
+            $logo->move($destinationPath, $logoName);
+            $logoPath = '/uploads/vendors/' . $logoName;
+        }
+
+        $docPath = null;
+        if ($request->hasFile('document')) {
+            $doc = $request->file('document');
+            $docName = time() . '_doc_' . uniqid() . '_' . $doc->getClientOriginalName();
+            $doc->move($destinationPath, $docName);
+            $docPath = '/uploads/vendors/' . $docName;
+        }
+
         $vendor = Vendor::create([
             'user_id' => $user_id,
             'store_name' => $request->store_name,
             'store_description' => $request->store_description,
+            'logo' => $logoPath,
+            'document' => $docPath,
             'status' => 'pending',
             'commission_rate' => 10.00
         ]);
@@ -71,7 +96,9 @@ class ECommerceApiController extends Controller
             'is_vendor' => ($vendor->status === 'approved'),
             'status' => $vendor->status,
             'store_name' => $vendor->store_name,
-            'store_description' => $vendor->store_description
+            'store_description' => $vendor->store_description,
+            'logo' => $vendor->logo,
+            'document' => $vendor->document
         ]);
     }
 

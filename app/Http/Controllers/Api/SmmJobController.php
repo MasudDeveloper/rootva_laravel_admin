@@ -157,7 +157,7 @@ class SmmJobController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'কাজটি সফলভাবে সাবমিট করা হয়েছে। অ্যাডমিন ভেরিফাই করে ব্যালেন্স যোগ করবেন।',
+            'message' => "কাজটি সফলভাবে জমা নেওয়া হয়েছে।\n\nআগামী ৭২ ঘণ্টার মধ্যে কাজটি চেক করে পেমেন্ট প্রদান করা হবে।",
             'submission' => $submission
         ]);
     }

@@ -8,6 +8,11 @@ class PcashRechargeLog extends Model
 {
     protected $guarded = [];
 
+    public function user()
+    {
+        return $this->belongsTo(SignUp::class, 'user_id');
+    }
+
     public static function checkAndUpdatePendingLogs($userId = null)
     {
         $settings = PcashSetting::first();

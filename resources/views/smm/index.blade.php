@@ -524,7 +524,7 @@
             <!-- Title -->
             <h3 id="alert-title" class="text-md font-bold text-slate-800 tracking-wide">Alert</h3>
             <!-- Message -->
-            <p id="alert-message" class="text-xs text-slate-500 leading-relaxed font-medium"></p>
+            <p id="alert-message" class="text-xs text-slate-500 leading-relaxed font-medium whitespace-pre-line"></p>
             <!-- Close Button -->
             <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-600/10 active:scale-95 transition-all text-sm">
                 OK
