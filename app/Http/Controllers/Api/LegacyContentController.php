@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Banner;
+use App\Models\BottomBanner;
 use App\Models\Review;
 use App\Models\ProductCategory;
 
@@ -22,6 +23,17 @@ class LegacyContentController extends Controller
     {
         $banners = Cache::remember('api_banners', 1800, function () {
             return Banner::all();
+        });
+        return response()->json($banners);
+    }
+
+    /**
+     * Legacy Bottom Banners (get_bottom_banners.php)
+     */
+    public function getBottomBanners()
+    {
+        $banners = Cache::remember('api_bottom_banners', 1800, function () {
+            return BottomBanner::all();
         });
         return response()->json($banners);
     }

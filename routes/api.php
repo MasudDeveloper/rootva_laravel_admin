@@ -53,6 +53,7 @@ Route::post('submit_smm_task.php', [\App\Http\Controllers\Api\SmmJobController::
 
 // --- Public Legacy APIs ---
 Route::get('get_banners.php', [LegacyContentController::class, 'getBanners']);
+Route::get('get_bottom_banners.php', [LegacyContentController::class, 'getBottomBanners']);
 Route::get('get_reviews.php', [LegacyContentController::class, 'getReviews']);
 Route::get('get_social_links.php', [LegacyContentController::class, 'getSocialLinks']);
 Route::get('get_latest_update.php', [LegacyUserController::class, 'getUpdate']);

@@ -138,6 +138,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
     Route::delete('/banners/{id}', [BannerController::class, 'destroy'])->name('banners.destroy');
 
+    // Bottom Banners
+    Route::get('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'index'])->name('bottom-banners.index');
+    Route::post('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'store'])->name('bottom-banners.store');
+    Route::delete('/bottom-banners/{id}', [\App\Http\Controllers\Admin\BottomBannerController::class, 'destroy'])->name('bottom-banners.destroy');
+
     // Reviews
     Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
     Route::post('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'store'])->name('reviews.store');

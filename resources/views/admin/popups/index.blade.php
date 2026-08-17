@@ -73,7 +73,7 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <p class="small fw-bold text-dark mb-2">{{ $popup->message }}</p>
+                                    <p class="small fw-bold text-dark mb-2" style="white-space: pre-line;">{{ $popup->message }}</p>
                                     @if($popup->button_text)
                                         <a href="{{ $popup->button_url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                                             <i class="fa-solid fa-link me-1"></i>{{ $popup->button_text }}

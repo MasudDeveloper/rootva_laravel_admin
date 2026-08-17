@@ -196,6 +196,12 @@
             </a>
         </div>
         <div class="col">
+            <a href="{{ route('admin.bottom-banners.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-success">
+                <i class="fa-solid fa-rectangle-ad fa-xl"></i>
+                <span class="small fw-bold">Bottom Banners</span>
+            </a>
+        </div>
+        <div class="col">
             <a href="{{ route('admin.rewards.daily') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-warning">
                 <i class="fa-solid fa-gift fa-xl"></i>
                 <span class="small fw-bold">Daily Bonus</span>

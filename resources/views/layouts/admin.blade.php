@@ -226,6 +226,11 @@
                 <span>Review Banners</span>
             </a>
 
+            <a href="{{ route('admin.bottom-banners.index') }}" class="nav-link {{ request()->is('admin/bottom-banners*') ? 'active' : '' }}">
+                <i class="fa-solid fa-rectangle-ad"></i>
+                <span>Bottom Banners</span>
+            </a>
+
             <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/settings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gears"></i>
                 <span>Global Settings</span>
