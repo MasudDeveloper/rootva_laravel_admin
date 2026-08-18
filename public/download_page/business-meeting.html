@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rootva Business Meeting</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0044b5;
+            --secondary: #ffcb05;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --success: #22c55e;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans Bengali', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0f172a, #1b1b3a);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: #15152b;
+            max-width: 500px;
+            width: 100%;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            text-align: center;
+            border: 1px solid #2e2e54;
+            padding: 40px 30px;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .meeting-icon {
+            font-size: 64px;
+            color: var(--secondary);
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10dp); }
+        }
+        h1 {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        p.desc {
+            color: #a5b4fc;
+            font-size: 14px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .btn-join {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            background: linear-gradient(135deg, #4364f7, #6fb1fc);
+            color: white;
+            text-decoration: none;
+            padding: 16px 30px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 50px;
+            box-shadow: 0 10px 20px rgba(67, 100, 247, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-join:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(67, 100, 247, 0.4);
+            filter: brightness(1.1);
+        }
+        .btn-join:active {
+            transform: translateY(1px);
+        }
+        .instructions {
+            margin-top: 24px;
+            background: rgba(46, 46, 84, 0.4);
+            border: 1px solid #2e2e54;
+            padding: 15px;
+            border-radius: 14px;
+            font-size: 12px;
+            color: #a5b4fc;
+            text-align: left;
+            line-height: 1.6;
+        }
+        .instructions i {
+            color: var(--secondary);
+            margin-right: 6px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="meeting-icon">
+            <i class="fa-solid fa-handshake"></i>
+        </div>
+        <h1>রুটভা বিজনেস ও লিডারশিপ মিটিং</h1>
+        <div class="badge">
+            <i class="fa-solid fa-circle-play me-1"></i> বিজনেস মিটিং রুম
+        </div>
+        <p class="desc">
+            রুটভা অফিশিয়াল বিজনেস ও লিডারশিপ মিটিং রুমে আপনাকে স্বাগতম। এই মিটিংয়ে যুক্ত হয়ে আপনার বিজনেস টিম ম্যানেজমেন্ট, প্রজেক্ট আপডেট এবং টিম লিডারশিপের গাইডলাইন সম্পর্কে বিস্তারিত জানুন।
+        </p>
+
+        <button id="join-btn" class="btn-join">
+            <i class="fa-solid fa-door-open"></i> মিটিংয়ে যুক্ত হোন
+        </button>
+
+        <div class="instructions">
+            <p><i class="fa-solid fa-circle-info"></i> <strong>নির্দেশনা:</strong></p>
+            <p style="margin-top: 4px;">১. মিটিং শুরু হওয়ার নির্দিষ্ট সময়ে বাটনে ক্লিক করে সরাসরি গুগল মিট/জুমে যুক্ত হোন।</p>
+            <p>২. এটি রুটভা লিডার ও বিজনেস মেম্বারদের জন্য একটি অফিশিয়াল মিটিং রুম।</p>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">মিটিং লিঙ্ক এখনও সেট করা হয়নি!</div>
+
+    <script>
+        let meetingUrl = "";
+
+        // Fetch dynamic meeting link from API
+        fetch('/get_social_links.php') // Also handle direct endpoint without api prefix if legacy
+            .then(response => {
+                if(!response.ok) return fetch('/api/get_social_links.php');
+                return response;
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.social_links && data.social_links.business_meeting) {
+                    meetingUrl = data.social_links.business_meeting.trim();
+                }
+            })
+            .catch(err => console.error("Error loading meeting link:", err));
+
+        document.getElementById('join-btn').addEventListener('click', function() {
+            if (meetingUrl && meetingUrl.startsWith('http')) {
+                window.location.href = meetingUrl;
+            } else {
+                const toast = document.getElementById('toast');
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

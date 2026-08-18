@@ -231,6 +231,11 @@
                 <span>Bottom Banners</span>
             </a>
 
+            <a href="{{ route('admin.support-center.index') }}" class="nav-link {{ request()->is('admin/support-center*') ? 'active' : '' }}">
+                <i class="fa-solid fa-headset"></i>
+                <span>Support Center</span>
+            </a>
+
             <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->is('admin/settings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gears"></i>
                 <span>Global Settings</span>

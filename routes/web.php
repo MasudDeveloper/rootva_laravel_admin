@@ -148,6 +148,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'store'])->name('reviews.store');
     Route::delete('/reviews/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
 
+    // Support Center
+    Route::get('/support-center', [\App\Http\Controllers\Admin\SupportCenterController::class, 'index'])->name('support-center.index');
+    Route::post('/support-center/members', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeMember'])->name('support-center.members.store');
+    Route::delete('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyMember'])->name('support-center.members.destroy');
+    Route::post('/support-center/services', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeService'])->name('support-center.services.store');
+    Route::delete('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyService'])->name('support-center.services.destroy');
+
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');

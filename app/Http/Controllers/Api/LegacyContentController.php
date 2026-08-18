@@ -8,6 +8,8 @@ use App\Models\Banner;
 use App\Models\BottomBanner;
 use App\Models\Review;
 use App\Models\ProductCategory;
+use App\Models\SupportMember;
+use App\Models\SupportService;
 
 use App\Models\SimOffer;
 use App\Models\SignUp;
@@ -91,6 +93,16 @@ class LegacyContentController extends Controller
         return response()->json(['success' => false]);
     }
 
-
-
+    /**
+     * Get Support Center Data (get_support_center.php)
+     */
+    public function getSupportCenter()
+    {
+        $members = SupportMember::orderBy('sort_order', 'asc')->get();
+        $services = SupportService::orderBy('sort_order', 'asc')->get();
+        return response()->json([
+            'members' => $members,
+            'services' => $services
+        ]);
+    }
 }

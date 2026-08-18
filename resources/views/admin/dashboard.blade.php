@@ -202,6 +202,12 @@
             </a>
         </div>
         <div class="col">
+            <a href="{{ route('admin.support-center.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-info">
+                <i class="fa-solid fa-headset fa-xl"></i>
+                <span class="small fw-bold">Support Center</span>
+            </a>
+        </div>
+        <div class="col">
             <a href="{{ route('admin.rewards.daily') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-warning">
                 <i class="fa-solid fa-gift fa-xl"></i>
                 <span class="small fw-bold">Daily Bonus</span>

@@ -186,6 +186,7 @@ class LegacyAuthController extends Controller
     {
         $name = $request->input('name');
         $number = $request->input('number');
+        $email = $request->input('email');
         $password = $request->input('password');
         $referred_by = $request->input('referredBy');
         $created_at = $request->input('created_at', now()->toDateTimeString());
@@ -205,6 +206,10 @@ class LegacyAuthController extends Controller
             return response()->json(['message' => 'মোবাইল নম্বরটি ইতিমধ্যে ব্যবহৃত হয়েছে']);
         }
 
+        if ($email && SignUp::where('email', $email)->exists()) {
+            return response()->json(['message' => 'ইমেল ঠিকানাটি ইতিমধ্যে ব্যবহৃত হয়েছে']);
+        }
+
         $hashed_password = Hash::make($password);
 
         do {
@@ -219,7 +224,7 @@ class LegacyAuthController extends Controller
                 'referCode' => $refer_code,
                 'referredBy' => $referred_by,
                 'created_at' => $created_at,
-                'email' => '',
+                'email' => $email ?? '',
                 'address' => '',
                 'profile_pic_url' => '',
                 'gender' => 'Male',

@@ -56,6 +56,7 @@ Route::get('get_banners.php', [LegacyContentController::class, 'getBanners']);
 Route::get('get_bottom_banners.php', [LegacyContentController::class, 'getBottomBanners']);
 Route::get('get_reviews.php', [LegacyContentController::class, 'getReviews']);
 Route::get('get_social_links.php', [LegacyContentController::class, 'getSocialLinks']);
+Route::get('get_support_center.php', [LegacyContentController::class, 'getSupportCenter']);
 Route::get('get_latest_update.php', [LegacyUserController::class, 'getUpdate']);
 Route::get('get_categories.php', [LegacyContentController::class, 'getCategories']);
 Route::get('get_products.php', [ModuleController::class, 'getProducts']);
