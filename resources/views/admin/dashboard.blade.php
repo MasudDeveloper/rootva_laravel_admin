@@ -60,6 +60,20 @@
                     <div class="card-modern border-start border-4 border-success">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
+                                <h6 class="text-muted small mb-1">
+                                    <span class="spinner-grow spinner-grow-sm text-success me-1" role="status" style="width: 8px; height: 8px; animation-duration: 1.5s; vertical-align: middle;"></span>
+                                    Active Now
+                                </h6>
+                                <h4 class="fw-bold mb-0" id="stat-active">{{ $stats['users']['active_now'] ?? 0 }}</h4>
+                            </div>
+                            <div class="bg-success-soft p-2 rounded-3 text-success"><i class="fa-solid fa-users-viewfinder"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-modern border-start border-4 border-success">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
                                 <h6 class="text-muted small mb-1">Verified</h6>
                                 <h4 class="fw-bold mb-0" id="stat-verified">{{ $stats['users']['verified'] }}</h4>
                             </div>

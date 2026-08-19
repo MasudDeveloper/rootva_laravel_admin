@@ -30,6 +30,7 @@ class DashboardController extends Controller
                 'unverified' => SignUp::where('is_verified', 0)->count(),
                 'demo' => SignUp::where('is_verified', 3)->count(),
                 'suspended' => SignUp::where('is_verified', 4)->count(),
+                'active_now' => SignUp::where('last_active_at', '>=', now()->subMinutes(5))->count(),
             ],
             'pending_requests' => [
                 'verification' => VerificationRequest::where('status', 'Pending')->count(),
@@ -58,6 +59,7 @@ class DashboardController extends Controller
             'pending' => SignUp::where('is_verified', 2)->count(),
             'demo_verified' => SignUp::where('is_verified', 3)->count(),
             'suspand' => SignUp::where('is_verified', 4)->count(),
+            'active_now' => SignUp::where('last_active_at', '>=', now()->subMinutes(5))->count(),
             'verification_requests' => VerificationRequest::where('status', 'Pending')->count(),
             'money_requests' => MoneyRequest::where('status', 'Pending')->count(),
             'withdraw_requests' => WithdrawRequest::where('status', 'Pending')->count(),

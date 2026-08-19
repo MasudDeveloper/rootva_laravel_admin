@@ -35,6 +35,7 @@ class SignUp extends Authenticatable
         'verified_raw_time',
         'upline_changed_at',
         'verification_popup_shown',
+        'last_active_at',
     ];
 
     protected $hidden = [

@@ -296,4 +296,23 @@ class LegacyUserController extends Controller
 
         return response()->json($data);
     }
+
+    /**
+     * Update User Active Status (update_active_status.php)
+     */
+    public function updateActiveStatus(Request $request)
+    {
+        $userId = $request->input('user_id');
+        if (!$userId) {
+            return response()->json(['status' => 'error', 'message' => 'অবৈধ ডেটা']);
+        }
+
+        $user = SignUp::find($userId);
+        if ($user) {
+            $user->update(['last_active_at' => now()]);
+            return response()->json(['status' => 'success', 'message' => 'স্ট্যাটাস আপডেট সফল']);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'ইউজার পাওয়া যায়নি']);
+    }
 }

@@ -75,6 +75,7 @@ Route::middleware('legacy.auth')->group(function () {
     Route::get('get_daily_live_ranking.php', [LegacyBonusController::class, 'getTodayLiveRanking']);
 
     Route::post('get_Data.php', [LegacyUserController::class, 'getUserData']);
+    Route::post('update_active_status.php', [LegacyUserController::class, 'updateActiveStatus']);
     Route::post('get_wallet_balance.php', [LegacyWalletController::class, 'getBalance']);
     Route::get('get_transaction_history.php', [LegacyWalletController::class, 'getTransactionHistory']);
     Route::get('get_income_report.php', [LegacyWalletController::class, 'getIncomeReport']);
