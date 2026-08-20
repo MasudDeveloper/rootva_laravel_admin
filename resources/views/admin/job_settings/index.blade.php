@@ -56,7 +56,10 @@
                                 'reselling_shop' => 'Reselling Shop',
                                 'course' => 'Course',
                                 'freelancing_course' => 'Freelancing Course',
-                                'online_service' => 'Online Service'
+                                'online_service' => 'Online Service',
+                                'buy_sale' => 'Buy Sale',
+                                'vendor' => 'Vendor',
+                                'guide' => 'Guide'
                             ];
                         @endphp
 

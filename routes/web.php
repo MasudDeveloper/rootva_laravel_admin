@@ -151,8 +151,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Support Center
     Route::get('/support-center', [\App\Http\Controllers\Admin\SupportCenterController::class, 'index'])->name('support-center.index');
     Route::post('/support-center/members', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeMember'])->name('support-center.members.store');
+    Route::post('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateMember'])->name('support-center.members.update');
     Route::delete('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyMember'])->name('support-center.members.destroy');
     Route::post('/support-center/services', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeService'])->name('support-center.services.store');
+    Route::post('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateService'])->name('support-center.services.update');
     Route::delete('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyService'])->name('support-center.services.destroy');
 
     // Settings

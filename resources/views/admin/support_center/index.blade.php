@@ -68,8 +68,11 @@
                     @forelse($members as $member)
                         <div class="col-12">
                             <div class="card border rounded-4 shadow-sm p-3 position-relative">
-                                <div class="position-absolute top-0 end-0 p-2">
-                                    <form action="{{ route('admin.support-center.members.destroy', $member->id) }}" method="POST">
+                                <div class="position-absolute top-0 end-0 p-2 d-flex gap-1">
+                                    <button class="btn btn-sm btn-primary rounded-circle shadow" onclick='editMember(@json($member))' style="width: 32px; height: 32px; padding: 0;" type="button">
+                                        <i class="fa-solid fa-pen small"></i>
+                                    </button>
+                                    <form action="{{ route('admin.support-center.members.destroy', $member->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-danger btn-sm rounded-circle shadow" onclick="return confirm('Delete this member?')" style="width: 32px; height: 32px; padding: 0;">
@@ -144,8 +147,11 @@
                     @forelse($services as $service)
                         <div class="col-12">
                             <div class="card border rounded-4 shadow-sm p-3 position-relative">
-                                <div class="position-absolute top-0 end-0 p-2">
-                                    <form action="{{ route('admin.support-center.services.destroy', $service->id) }}" method="POST">
+                                <div class="position-absolute top-0 end-0 p-2 d-flex gap-1">
+                                    <button class="btn btn-sm btn-success rounded-circle shadow text-white" onclick='editService(@json($service))' style="width: 32px; height: 32px; padding: 0; background-color: #22c55e; border-color: #22c55e;" type="button">
+                                        <i class="fa-solid fa-pen small"></i>
+                                    </button>
+                                    <form action="{{ route('admin.support-center.services.destroy', $service->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-danger btn-sm rounded-circle shadow" onclick="return confirm('Delete this service?')" style="width: 32px; height: 32px; padding: 0;">
@@ -173,4 +179,139 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Member Modal -->
+<div class="modal fade" id="editMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold"><i class="fa-solid fa-user-pen text-primary me-2"></i>Edit Support Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editMemberForm" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Name</label>
+                            <input type="text" name="name" id="editMemberName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Designation</label>
+                            <input type="text" name="designation" id="editMemberDesignation" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Quote / Description</label>
+                            <textarea name="description" id="editMemberDescription" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Avatar (Leave blank to keep current)</label>
+                            <input type="file" name="avatar" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Sort Order</label>
+                            <input type="number" name="sort_order" id="editMemberSortOrder" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Facebook URL</label>
+                            <input type="url" name="fb_link" id="editMemberFbLink" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">WhatsApp Link</label>
+                            <input type="url" name="wa_link" id="editMemberWaLink" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Telegram Link</label>
+                            <input type="url" name="tg_link" id="editMemberTgLink" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Phone Number</label>
+                            <input type="text" name="phone_link" id="editMemberPhoneLink" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Service Modal -->
+<div class="modal fade" id="editServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold"><i class="fa-solid fa-headset text-success me-2"></i>Edit Support Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editServiceForm" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body py-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Service Name</label>
+                            <input type="text" name="name" id="editServiceName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Description</label>
+                            <input type="text" name="description" id="editServiceDescription" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Icon (Leave blank to keep current)</label>
+                            <input type="file" name="icon" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Button Text</label>
+                            <input type="text" name="button_text" id="editServiceButtonText" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Sort Order</label>
+                            <input type="number" name="sort_order" id="editServiceSortOrder" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted text-uppercase fw-bold">WhatsApp / Support URL</label>
+                            <input type="url" name="link" id="editServiceLink" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success text-white rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editMember(member) {
+    document.getElementById('editMemberForm').action = "/admin/support-center/members/" + member.id;
+    document.getElementById('editMemberName').value = member.name;
+    document.getElementById('editMemberDesignation').value = member.designation;
+    document.getElementById('editMemberDescription').value = member.description || '';
+    document.getElementById('editMemberSortOrder').value = member.sort_order;
+    document.getElementById('editMemberFbLink').value = member.fb_link || '';
+    document.getElementById('editMemberWaLink').value = member.wa_link || '';
+    document.getElementById('editMemberTgLink').value = member.tg_link || '';
+    document.getElementById('editMemberPhoneLink').value = member.phone_link || '';
+    
+    var modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
+    modal.show();
+}
+
+function editService(service) {
+    document.getElementById('editServiceForm').action = "/admin/support-center/services/" + service.id;
+    document.getElementById('editServiceName').value = service.name;
+    document.getElementById('editServiceDescription').value = service.description || '';
+    document.getElementById('editServiceButtonText').value = service.button_text || '';
+    document.getElementById('editServiceSortOrder').value = service.sort_order;
+    document.getElementById('editServiceLink').value = service.link;
+    
+    var modal = new bootstrap.Modal(document.getElementById('editServiceModal'));
+    modal.show();
+}
+</script>
 @endsection

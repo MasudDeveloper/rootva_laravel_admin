@@ -39,7 +39,10 @@ class LegacyJobController extends Controller
                 'reselling_shop' => (int)$settings->reselling_shop,
                 'course' => (int)$settings->course,
                 'freelancing_course' => (int)$settings->freelancing_course,
-                'online_service' => (int)$settings->online_service
+                'online_service' => (int)$settings->online_service,
+                'buy_sale' => (int)$settings->buy_sale,
+                'vendor' => (int)$settings->vendor,
+                'guide' => (int)$settings->guide
             ]);
         }
         return response()->json([
@@ -64,7 +67,10 @@ class LegacyJobController extends Controller
             'reselling_shop' => 0,
             'course' => 0,
             'freelancing_course' => 0,
-            'online_service' => 0
+            'online_service' => 0,
+            'buy_sale' => 1,
+            'vendor' => 1,
+            'guide' => 1
         ]);
     }
 

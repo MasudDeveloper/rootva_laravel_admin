@@ -122,4 +122,94 @@ class SupportCenterController extends Controller
         $service->delete();
         return back()->with('success', 'Support service deleted successfully.');
     }
+
+    public function updateMember(Request $request, $id)
+    {
+        $member = SupportMember::findOrFail($id);
+        $request->validate([
+            'name' => 'required|string',
+            'designation' => 'required|string',
+            'description' => 'nullable|string',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'fb_link' => 'nullable|url',
+            'wa_link' => 'nullable|url',
+            'tg_link' => 'nullable|url',
+            'phone_link' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        $avatarUrl = $member->avatar_url;
+        if ($request->hasFile('avatar')) {
+            if ($member->avatar_url) {
+                $oldPath = str_replace(asset(''), public_path(''), $member->avatar_url);
+                if (File::exists($oldPath)) {
+                    File::delete($oldPath);
+                }
+            }
+            $image = $request->file('avatar');
+            $name = time() . '_' . $image->getClientOriginalName();
+            $destinationPath = public_path('/uploads/support');
+            if (!File::isDirectory($destinationPath)) {
+                File::makeDirectory($destinationPath, 0777, true, true);
+            }
+            $image->move($destinationPath, $name);
+            $avatarUrl = asset('uploads/support/' . $name);
+        }
+
+        $member->update([
+            'name' => $request->name,
+            'designation' => $request->designation,
+            'description' => $request->description,
+            'avatar_url' => $avatarUrl,
+            'fb_link' => $request->fb_link,
+            'wa_link' => $request->wa_link,
+            'tg_link' => $request->tg_link,
+            'phone_link' => $request->phone_link,
+            'sort_order' => $request->sort_order ?? 0,
+        ]);
+
+        return back()->with('success', 'Support member updated successfully.');
+    }
+
+    public function updateService(Request $request, $id)
+    {
+        $service = SupportService::findOrFail($id);
+        $request->validate([
+            'name' => 'required|string',
+            'description' => 'nullable|string',
+            'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'link' => 'nullable|url',
+            'button_text' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        $iconUrl = $service->icon_url;
+        if ($request->hasFile('icon')) {
+            if ($service->icon_url) {
+                $oldPath = str_replace(asset(''), public_path(''), $service->icon_url);
+                if (File::exists($oldPath)) {
+                    File::delete($oldPath);
+                }
+            }
+            $image = $request->file('icon');
+            $name = time() . '_' . $image->getClientOriginalName();
+            $destinationPath = public_path('/uploads/support');
+            if (!File::isDirectory($destinationPath)) {
+                File::makeDirectory($destinationPath, 0777, true, true);
+            }
+            $image->move($destinationPath, $name);
+            $iconUrl = asset('uploads/support/' . $name);
+        }
+
+        $service->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'icon_url' => $iconUrl,
+            'link' => $request->link,
+            'button_text' => $request->button_text ?? 'WhatsApp সাপোর্ট',
+            'sort_order' => $request->sort_order ?? 0,
+        ]);
+
+        return back()->with('success', 'Support service updated successfully.');
+    }
 }

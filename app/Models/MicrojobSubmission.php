@@ -38,6 +38,6 @@ class MicrojobSubmission extends Model
             $url = 'uploads/proofs/' . $url;
         }
 
-        return "https://api.rootvabd.com/" . $url;
+        return "https://rootvaadmin.rootvabd.com/public/" . $url;
     }
 }

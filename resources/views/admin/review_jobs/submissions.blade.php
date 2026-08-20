@@ -42,8 +42,8 @@
                         </td>
                         <td class="py-3 text-center">
                             @if($sub->proof_image_url)
-                                <a href="javascript:void(0)" onclick="openImage('https://api.rootvabd.com/{{ $sub->proof_image_url }}', 'Proof by {{ $sub->user->name ?? 'User' }}')">
-                                    <img src="https://api.rootvabd.com/{{ $sub->proof_image_url }}" 
+                                <a href="javascript:void(0)" onclick="openImage('https://rootvaadmin.rootvabd.com/public/{{ $sub->proof_image_url }}', 'Proof by {{ $sub->user->name ?? 'User' }}')">
+                                    <img src="https://rootvaadmin.rootvabd.com/public/{{ $sub->proof_image_url }}" 
                                          class="rounded shadow-sm border p-1" style="height: 60px; object-fit: cover;">
                                 </a>
                             @else

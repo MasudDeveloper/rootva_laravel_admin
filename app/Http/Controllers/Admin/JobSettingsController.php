@@ -46,6 +46,9 @@ class JobSettingsController extends Controller
             'course' => $request->has('course') ? 1 : 0,
             'freelancing_course' => $request->has('freelancing_course') ? 1 : 0,
             'online_service' => $request->has('online_service') ? 1 : 0,
+            'buy_sale' => $request->has('buy_sale') ? 1 : 0,
+            'vendor' => $request->has('vendor') ? 1 : 0,
+            'guide' => $request->has('guide') ? 1 : 0,
         ];
 
         $status->update($data);
