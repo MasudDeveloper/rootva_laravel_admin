@@ -9,12 +9,18 @@
         <a href="{{ route('admin.users.index') }}" class="btn btn-light rounded-pill shadow-sm">
             <i class="fa-solid fa-arrow-left me-2"></i>Back to List
         </a>
-        <div class="d-flex gap-2">
-            <button class="btn btn-success rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addMoneyModal">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#addMoneyModal">
                 <i class="fa-solid fa-plus me-2"></i>Add Balance
             </button>
-            <button class="btn btn-danger rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#withdrawMoneyModal">
+            <button class="btn btn-danger rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#withdrawMoneyModal">
                 <i class="fa-solid fa-minus me-2"></i>Withdraw
+            </button>
+            <button class="btn btn-warning text-white rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#transferVoucherModal">
+                <i class="fa-solid fa-right-left me-2"></i>Transfer Voucher
+            </button>
+            <button class="btn btn-info text-white rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#addDemoOrderModal">
+                <i class="fa-solid fa-cart-plus me-2"></i>Add Demo Order
             </button>
         </div>
     </div>
@@ -88,6 +94,204 @@
 
         <!-- Edit Form & Stats -->
         <div class="col-md-8">
+            <!-- Leadership Progress Status -->
+            <div class="card-modern mb-4 shadow-sm border-0 rounded-4">
+                <h5 class="fw-bold mb-4"><i class="fa-solid fa-medal text-warning me-2"></i>Leadership Achievement Progress</h5>
+                <div class="row g-3">
+                    <!-- Rootva Leader -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-primary">Rootva Leader</span>
+                                <span class="badge bg-primary-soft text-primary rounded-pill">{{ $leadership['l1_verified'] }} / 15 L1 Verified</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $leadership['rootva_progress'] }}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted extra-small">Requires 15 L1 Verified Members</small>
+                                @if($leadership['rootva_achieved'])
+                                    <span class="badge bg-success text-white rounded-pill"><i class="fa-solid fa-circle-check"></i> Achieved</span>
+                                @else
+                                    <span class="badge bg-secondary-soft text-secondary rounded-pill">In Progress</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Silver Leader -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-success">Silver Leader</span>
+                                <span class="badge bg-success-soft text-success rounded-pill">{{ $leadership['l1_rootvas'] }} / 10 Rootvas</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $leadership['silver_progress'] }}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted extra-small">Requires 10 L1 Rootva Leaders</small>
+                                @if($leadership['silver_achieved'])
+                                    <span class="badge bg-success text-white rounded-pill"><i class="fa-solid fa-circle-check"></i> Achieved</span>
+                                @else
+                                    <span class="badge bg-secondary-soft text-secondary rounded-pill">In Progress</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gold Leader -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-warning">Gold Leader</span>
+                                <span class="badge bg-warning-soft text-warning rounded-pill">{{ $leadership['l1_silvers'] }} / 10 Silvers</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $leadership['gold_progress'] }}%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted extra-small">Requires 10 L1 Silver Leaders</small>
+                                @if($leadership['gold_achieved'])
+                                    <span class="badge bg-success text-white rounded-pill"><i class="fa-solid fa-circle-check"></i> Achieved</span>
+                                @else
+                                    <span class="badge bg-secondary-soft text-secondary rounded-pill">In Progress</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diamond & Top Leader Summary -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100 d-flex flex-column justify-content-between">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-info">Personal Confirmed Orders</span>
+                                <span class="badge bg-info-soft text-info rounded-pill">{{ $leadership['order_count'] }} Orders</span>
+                            </div>
+                            <div class="small mb-1">
+                                <span class="fw-semibold text-muted">Diamond Leader:</span>
+                                @if($leadership['diamond_achieved'])
+                                    <span class="badge bg-success text-white rounded-pill"><i class="fa-solid fa-circle-check"></i> Achieved</span>
+                                @else
+                                    <span class="text-muted extra-small">(Needs Gold & 3 Personal Orders)</span>
+                                @endif
+                            </div>
+                            <div class="small">
+                                <span class="fw-semibold text-muted">Top Leader:</span>
+                                @if($leadership['top_achieved'])
+                                    <span class="badge bg-success text-white rounded-pill"><i class="fa-solid fa-circle-check"></i> Achieved</span>
+                                @else
+                                    <span class="text-muted extra-small">(Needs Gold & 10 Personal Orders)</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Salary Progress Status -->
+            <div class="card-modern mb-4 shadow-sm border-0 rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-briefcase text-primary me-2"></i>Monthly Salary Progress</h5>
+                    <span class="text-muted small">Tracking since: <strong class="text-dark">{{ $salaryProgress['start_date'] != '2000-01-01 00:00:00' ? date('d M Y, h:i A', strtotime($salaryProgress['start_date'])) : 'Beginning' }}</strong></span>
+                </div>
+                
+                @if($salaryProgress['eligible'])
+                    <div class="alert alert-success border-0 rounded-pill px-4 py-2 mb-4 d-flex align-items-center">
+                        <i class="fa-solid fa-circle-check fa-lg me-3"></i>
+                        <div>
+                            <span class="fw-bold text-success me-1">Eligible for Monthly Salary!</span> This user qualifies for salary bonus.
+                        </div>
+                    </div>
+                @else
+                    <div class="alert alert-warning border-0 rounded-pill px-4 py-2 mb-4 d-flex align-items-center" style="background-color: #fffbeb; color: #b45309;">
+                        <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                        <div>
+                            <span class="fw-bold">Incomplete Requirements.</span> User is not yet eligible for salary.
+                        </div>
+                    </div>
+                @endif
+
+                <div class="row g-3">
+                    <!-- Level 1 Verified -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark">L1 Verified (New)</span>
+                                <span class="badge bg-primary-soft text-primary rounded-pill">{{ $salaryProgress['l1_verified'] }} / 30</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $salaryProgress['l1_verified_progress'] }}%"></div>
+                            </div>
+                            <small class="text-muted extra-small">Requires 30 verified Level 1 members since last salary.</small>
+                        </div>
+                    </div>
+
+                    <!-- Level 2 Verified -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark">L2 Verified (New)</span>
+                                <span class="badge bg-success-soft text-success rounded-pill">{{ $salaryProgress['l2_verified'] }} / 60</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $salaryProgress['l2_verified_progress'] }}%"></div>
+                            </div>
+                            <small class="text-muted extra-small">Requires 60 verified Level 2 members since last salary.</small>
+                        </div>
+                    </div>
+
+                    <!-- Level 1 Active -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark">L1 Active Members</span>
+                                <span class="badge bg-warning-soft text-warning rounded-pill">{{ $salaryProgress['l1_active'] }} / 10</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $salaryProgress['l1_active_progress'] }}%"></div>
+                            </div>
+                            <small class="text-muted extra-small d-block">Requires 10 Active Level 1 members (each has verified L1 + 2 L2 verified).</small>
+                            
+                            @if(count($salaryProgress['active_members']) > 0)
+                                <div class="mt-2">
+                                    <a class="btn btn-warning-soft text-warning btn-sm w-100 rounded-pill extra-small fw-bold py-1" data-bs-toggle="collapse" href="#activeMembersList" role="button">
+                                        <i class="fa-solid fa-users me-1"></i> View Active Members ({{ count($salaryProgress['active_members']) }})
+                                    </a>
+                                    <div class="collapse mt-2" id="activeMembersList">
+                                        <div class="bg-white border rounded-3 p-2" style="max-height: 200px; overflow-y: auto;">
+                                            @foreach($salaryProgress['active_members'] as $member)
+                                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="font-size: 11px;">
+                                                    <div>
+                                                        <div class="fw-bold text-dark">{{ $member['name'] }}</div>
+                                                        <div class="text-muted" style="font-size: 10px;">{{ $member['number'] }} (REF: {{ $member['refer_code'] }})</div>
+                                                    </div>
+                                                    <span class="badge bg-success-soft text-success rounded-pill font-monospace">+{{ $member['l2_count'] }} L2</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Delivered Orders -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded-4 bg-light h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-info">Delivered Orders</span>
+                                <span class="badge bg-info-soft text-info rounded-pill">{{ $salaryProgress['orders'] }} / 1 Delivered</span>
+                            </div>
+                            <div class="progress rounded-pill mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ $salaryProgress['orders_progress'] }}%"></div>
+                            </div>
+                            <small class="text-muted extra-small">Requires 1 delivered reselling order since last salary.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-modern mb-4" id="edit">
                 <h5 class="fw-bold mb-4">Edit User Account</h5>
                 <form action="{{ route('admin.users.update', $user->id) }}" method="POST">
@@ -246,6 +450,69 @@
             <div class="modal-footer border-0 p-4 pt-0">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger rounded-pill px-4 shadow-sm">Confirm Withdraw</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transfer Voucher Modal -->
+<div class="modal fade" id="transferVoucherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content border-0 shadow rounded-4" action="{{ route('admin.users.transfer-voucher', $user->id) }}" method="POST">
+            @csrf
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">Transfer Voucher Balance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Voucher Balance: <span class="fw-bold text-dark">৳{{ number_format($user->voucher_balance, 2) }}</span></p>
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Transfer Amount (৳)</label>
+                    <input type="number" step="0.01" name="amount" class="form-control form-control-lg text-warning fw-bold" placeholder="0.00" required max="{{ $user->voucher_balance }}">
+                    <div class="extra-small text-muted mt-1">This will deduct from Voucher balance and add directly to Main Wallet.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning text-white rounded-pill px-4 shadow-sm">Confirm Transfer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Demo Order Modal -->
+<div class="modal fade" id="addDemoOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content border-0 shadow rounded-4" action="{{ route('admin.users.add-demo-order', $user->id) }}" method="POST">
+            @csrf
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">Add Confirmed Demo Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Product Name</label>
+                    <input type="text" name="product_name" class="form-control" placeholder="e.g. Premium Reselling Package" required value="Demo Reselling Order">
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Product Price (৳)</label>
+                        <input type="number" step="0.01" name="product_price" class="form-control" placeholder="0.00" required value="500">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Quantity</label>
+                        <input type="number" name="quantity" class="form-control" placeholder="1" required value="1">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Order Date (Custom Date)</label>
+                    <input type="date" name="created_at" class="form-control" required value="{{ date('Y-m-d') }}">
+                    <div class="extra-small text-muted mt-1">This order will count towards this user's leadership/salary on the selected date.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-info text-white rounded-pill px-4 shadow-sm">Confirm Demo Order</button>
             </div>
         </form>
     </div>

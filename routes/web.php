@@ -94,6 +94,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('/users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::post('/users/{id}/add-money', [UserController::class, 'addMoney'])->name('users.add-money');
     Route::post('/users/{id}/withdraw-money', [UserController::class, 'withdrawMoney'])->name('users.withdraw-money');
+    Route::post('/users/{id}/transfer-voucher', [UserController::class, 'transferVoucher'])->name('users.transfer-voucher');
+    Route::post('/users/{id}/add-demo-order', [UserController::class, 'addDemoOrder'])->name('users.add-demo-order');
 
     // Financials
     Route::get('/money-requests', [MoneyRequestController::class, 'index'])->name('money-requests.index');
