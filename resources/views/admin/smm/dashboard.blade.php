@@ -101,7 +101,7 @@
                         <!-- Dynamic configuration modification form -->
                         <form action="{{ route('admin.smm.config.update', $conf->task_type) }}" method="POST" class="space-y-3">
                             @csrf
-                            <div class="grid grid-cols-2 gap-3">
+                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 block mb-1">Today's Price (৳)</label>
                                     <input type="number" step="0.01" name="rate" value="{{ $conf->rate }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
@@ -110,6 +110,10 @@
                                     <label class="text-[10px] font-bold text-slate-400 block mb-1">Daily PW to Register</label>
                                     <input type="text" name="daily_password" value="{{ $conf->daily_password }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
                                 </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">YouTube Tutorial Video URL</label>
+                                <input type="url" name="video_url" value="{{ $conf->video_url }}" placeholder="https://youtube.com/watch?v=..." class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 block mb-1">Service Notice Guidelines</label>

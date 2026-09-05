@@ -41,258 +41,176 @@ class UserController extends Controller
         $user = SignUp::findOrFail($id);
         $transactions = Transaction::where('user_id', $id)->orderBy('id', 'desc')->paginate(20);
         
-        // --- Calculate Leadership Stats ---
-        // 1. Rootva Leader (L1 Verified count)
-        $l1VerifiedCount = DB::table('sign_up as u1')
-            ->join('verification_requests as v', 'v.user_id', '=', 'u1.id')
-            ->where('u1.referredBy', $user->referCode)
-            ->where('v.status', 'Approved')
-            ->count();
-
-        // Get L1 members
-        $l1Members = DB::table('sign_up')
-            ->where('referredBy', $user->referCode)
-            ->pluck('referCode')
-            ->toArray();
-
-        // 2. Silver Leader (Number of L1 members who have >= 15 verified L2 members)
-        $silverCount = 0;
-        $goldCount = 0;
-
-        if (!empty($l1Members)) {
-            $silverCount = DB::table('sign_up as u2')
-                ->join('verification_requests as v', 'v.user_id', '=', 'u2.id')
-                ->whereIn('u2.referredBy', $l1Members)
-                ->where('v.status', 'Approved')
-                ->select('u2.referredBy', DB::raw('COUNT(DISTINCT v.user_id) as total_verified'))
-                ->groupBy('u2.referredBy')
-                ->get()
-                ->filter(function($row) {
-                    return $row->total_verified >= 15;
-                })
-                ->count();
-
-            // L2 members for Gold Leader calculation
-            $l2Members = DB::table('sign_up')
-                ->whereIn('referredBy', $l1Members)
-                ->select('referCode', 'referredBy')
-                ->get();
-            
-            $l2Codes = $l2Members->pluck('referCode')->toArray();
-            
-            if (!empty($l2Codes)) {
-                $l2SubLeaderCounts = DB::table('sign_up as u3')
-                    ->join('verification_requests as v', 'v.user_id', '=', 'u3.id')
-                    ->whereIn('u3.referredBy', $l2Codes)
-                    ->where('v.status', 'Approved')
-                    ->select('u3.referredBy', DB::raw('COUNT(DISTINCT v.user_id) as total_verified'))
-                    ->groupBy('u3.referredBy')
-                    ->get()
-                    ->filter(function($row) {
-                        return $row->total_verified >= 15;
-                    })
-                    ->pluck('referredBy')
-                    ->toArray();
-
-                $l1SilverCounts = [];
-                foreach ($l2Members as $l2) {
-                    if (in_array($l2->referCode, $l2SubLeaderCounts)) {
-                        $l1SilverCounts[$l2->referredBy] = ($l1SilverCounts[$l2->referredBy] ?? 0) + 1;
-                    }
-                }
-
-                foreach ($l1SilverCounts as $l1Code => $rootvaCount) {
-                    if ($rootvaCount >= 10) {
-                        $goldCount++;
-                    }
-                }
-            }
-        }
-
-        // 3. User confirmed/delivered orders for leadership
-        $orderCount = DB::table('orders')
-            ->where('user_id', $user->id)
-            ->whereIn('order_status', ['Confirmed', 'Delivered'])
-            ->count();
-
-        // Calculate Leadership achievements
+        // --- Calculate Leadership & Salary Stats safely ---
         $leadership = [
-            'l1_verified' => $l1VerifiedCount,
-            'rootva_progress' => min(100, ($l1VerifiedCount / 15) * 100),
-            'rootva_achieved' => $l1VerifiedCount >= 15,
-            
-            'l1_rootvas' => $silverCount,
-            'silver_progress' => min(100, ($silverCount / 10) * 100),
-            'silver_achieved' => $silverCount >= 10,
-            
-            'l1_silvers' => $goldCount,
-            'gold_progress' => min(100, ($goldCount / 10) * 100),
-            'gold_achieved' => $goldCount >= 10,
-
-            'order_count' => $orderCount,
-            'diamond_achieved' => ($goldCount >= 10 && $orderCount >= 3),
-            'top_achieved' => ($goldCount >= 10 && $orderCount >= 10),
+            'l1_verified' => 0,
+            'rootva_progress' => 0,
+            'rootva_achieved' => false,
+            'l1_rootvas' => 0,
+            'silver_progress' => 0,
+            'silver_achieved' => false,
+            'l1_silvers' => 0,
+            'gold_progress' => 0,
+            'gold_achieved' => false,
+            'order_count' => 0,
+            'diamond_achieved' => false,
+            'top_achieved' => false,
         ];
-
-        // --- Calculate Salary Progress (API logic clone) ---
-        // 1. Get last monthly salary bonus date
-        $lastBonus = DB::table('bonus_tracker')
-            ->where('user_id', $user->id)
-            ->where('bonus_type', 'monthly_salary')
-            ->orderBy('created_at', 'desc')
-            ->first();
-        
-        $salaryStartDate = $lastBonus ? $lastBonus->created_at : '2000-01-01 00:00:00';
-        if (is_object($salaryStartDate)) {
-            $salaryStartDate = $salaryStartDate->toDateTimeString();
-        }
-
-        // 2. Fetch Level 1 and Level 2 referrals
-        $salaryL1 = DB::table('sign_up')
-            ->where('referredBy', $user->referCode)
-            ->get(['id', 'referCode', 'upline_changed_at']);
-
-        $salaryL1VerifiedCount = 0;
-        $salaryL1Active = 0;
-        $salaryL2VerifiedTotal = 0;
-        $salaryOrders = 0;
-
-        if ($salaryL1->isNotEmpty()) {
-            $salaryL1Codes = $salaryL1->pluck('referCode')->filter()->toArray();
-            $salaryL2 = DB::table('sign_up')
-                ->whereIn('referredBy', $salaryL1Codes)
-                ->get(['id', 'referredBy', 'verified_raw_time']);
-
-            $salaryL2ByParent = $salaryL2->groupBy('referredBy');
-
-            // Pre-fetch Approved verifications
-            $allReferralIds = $salaryL1->pluck('id')->merge($salaryL2->pluck('id'))->unique()->toArray();
-            $allVerifications = DB::table('verification_requests')
-                ->whereIn('user_id', $allReferralIds)
-                ->where('status', 'Approved')
-                ->get(['user_id', 'verified_raw_time', 'updated_at'])
-                ->groupBy('user_id');
-
-            $tz = 'Asia/Dhaka';
-            $salaryStartTs = \Carbon\Carbon::parse($salaryStartDate, $tz)->getTimestamp();
-            $salaryL1ActiveMembers = [];
-
-            foreach ($salaryL1 as $l1) {
-                $l1TransferDate = $l1->upline_changed_at;
-                if ($l1TransferDate === '0000-00-00 00:00:00' || !$l1TransferDate) {
-                    $l1TransferDate = null;
-                }
-
-                $l1TransferTs = $l1TransferDate ? \Carbon\Carbon::parse($l1TransferDate, $tz)->getTimestamp() : 0;
-                $l1FilterTs = max($salaryStartTs, $l1TransferTs);
-                
-                // L1 verified check
-                $l1Vers = $allVerifications->get($l1->id);
-                $isL1Verified = false;
-                if ($l1Vers) {
-                    foreach ($l1Vers as $v) {
-                        $vTimeStr = $v->verified_raw_time;
-                        if (($vTimeStr === '0000-00-00 00:00:00' || !$vTimeStr) && isset($v->updated_at)) {
-                            $vTimeStr = $v->updated_at;
-                        }
-
-                        if ($vTimeStr && $vTimeStr !== '0000-00-00 00:00:00') {
-                            try {
-                                $vTs = null;
-                                if (preg_match('/^\d{2}-\d{2}-\d{4}/', $vTimeStr)) {
-                                    $vTs = \Carbon\Carbon::createFromFormat('d-m-Y h:i A', $vTimeStr, $tz)->getTimestamp();
-                                } else {
-                                    $vTs = \Carbon\Carbon::parse($vTimeStr, $tz)->getTimestamp();
-                                }
-
-                                if ($vTs > $l1FilterTs) {
-                                    $isL1Verified = true;
-                                }
-                            } catch (\Exception $e) {}
-                        }
-                    }
-                }
-                
-                if ($isL1Verified) {
-                    $salaryL1VerifiedCount++;
-                }
-
-                // L2 verifications check for active status
-                $l2OfThisL1 = $salaryL2ByParent->get($l1->referCode, collect());
-                $l2VerifiedOfThisL1ForActive = 0;
-
-                foreach ($l2OfThisL1 as $l2Member) {
-                    $l2Vers = $allVerifications->get($l2Member->id);
-                    if ($l2Vers) {
-                        foreach ($l2Vers as $v) {
-                            $vTimeStr = $v->verified_raw_time;
-                            if (($vTimeStr === '0000-00-00 00:00:00' || !$vTimeStr) && isset($v->updated_at)) {
-                                $vTimeStr = $v->updated_at;
-                            }
-
-                            if ($vTimeStr && $vTimeStr !== '0000-00-00 00:00:00') {
-                                try {
-                                    $vTs = null;
-                                    if (preg_match('/^\d{2}-\d{2}-\d{4}/', $vTimeStr)) {
-                                        $vTs = \Carbon\Carbon::createFromFormat('d-m-Y h:i A', $vTimeStr, $tz)->getTimestamp();
-                                    } else {
-                                        $vTs = \Carbon\Carbon::parse($vTimeStr, $tz)->getTimestamp();
-                                    }
-
-                                    $l2TotalFilterTs = max($salaryStartTs, $l1TransferTs);
-                                    if ($vTs > $l2TotalFilterTs) {
-                                        $salaryL2VerifiedTotal++;
-                                    }
-
-                                    $l2ActiveFilterTs = max($salaryStartTs, $l1TransferTs);
-                                    if ($vTs > $l2ActiveFilterTs) {
-                                        $l2VerifiedOfThisL1ForActive++;
-                                    }
-                                } catch (\Exception $e) {}
-                            }
-                        }
-                    }
-                }
-
-                // Level 1 Active Condition
-                if ($isL1Verified && $l2VerifiedOfThisL1ForActive >= 2) {
-                    $salaryL1Active++;
-                    
-                    $l1User = DB::table('sign_up')->where('id', $l1->id)->first(['name', 'number']);
-                    $salaryL1ActiveMembers[] = [
-                        'name' => $l1User->name ?? 'Unknown',
-                        'number' => $l1User->number ?? 'N/A',
-                        'refer_code' => $l1->referCode,
-                        'l2_count' => $l2VerifiedOfThisL1ForActive
-                    ];
-                }
-            }
-
-            // Total Delivered Orders
-            $salaryOrders = DB::table('orders')
-                ->where('user_id', $user->id)
-                ->where('order_status', 'Delivered')
-                ->where('created_at', '>', $salaryStartDate)
-                ->count();
-        }
 
         $salaryProgress = [
-            'l1_verified' => $salaryL1VerifiedCount,
-            'l1_verified_progress' => min(100, ($salaryL1VerifiedCount / 30) * 100),
-            
-            'l1_active' => $salaryL1Active,
-            'l1_active_progress' => min(100, ($salaryL1Active / 10) * 100),
-            'active_members' => $salaryL1ActiveMembers ?? [],
-            
-            'l2_verified' => $salaryL2VerifiedTotal,
-            'l2_verified_progress' => min(100, ($salaryL2VerifiedTotal / 60) * 100),
-            
-            'orders' => $salaryOrders,
-            'orders_progress' => min(100, ($salaryOrders / 1) * 100),
-            
-            'eligible' => ($salaryL1VerifiedCount >= 30 && $salaryL2VerifiedTotal >= 60 && $salaryL1Active >= 10 && $salaryOrders >= 1),
-            'start_date' => $salaryStartDate
+            'l1_verified' => 0,
+            'l1_verified_progress' => 0,
+            'l1_active' => 0,
+            'l1_active_progress' => 0,
+            'active_members' => [],
+            'l2_verified' => 0,
+            'l2_verified_progress' => 0,
+            'orders' => 0,
+            'orders_progress' => 0,
+            'eligible' => false,
+            'start_date' => '2000-01-01 00:00:00'
         ];
+
+        try {
+            if (!empty($user->referCode)) {
+                $refQuote = DB::getPdo()->quote($user->referCode);
+
+                // 1. Rootva Leader (L1 Verified count)
+                $l1VerifiedCount = DB::table('sign_up as u1')
+                    ->join('verification_requests as v', 'v.user_id', '=', 'u1.id')
+                    ->where('u1.referredBy', $user->referCode)
+                    ->where('v.status', 'Approved')
+                    ->count();
+
+                // 2. Silver Count (L1 members with >= 15 verified L2)
+                $silverCount = DB::table(DB::raw("(
+                    SELECT u2.referredBy
+                    FROM sign_up u1
+                    JOIN sign_up u2 ON u2.referredBy = u1.referCode
+                    JOIN verification_requests v ON v.user_id = u2.id AND v.status = 'Approved'
+                    WHERE u1.referredBy = {$refQuote}
+                    GROUP BY u2.referredBy
+                    HAVING COUNT(DISTINCT v.user_id) >= 15
+                ) as sub"))->count();
+
+                // 3. Gold Count (L1 members with >= 10 L2 Silver members)
+                $goldSubQuery = DB::table(DB::raw("(
+                    SELECT u2.referredBy as l1_code, u3.referredBy as l2_code
+                    FROM sign_up u1
+                    JOIN sign_up u2 ON u2.referredBy = u1.referCode
+                    JOIN sign_up u3 ON u3.referredBy = u2.referCode
+                    JOIN verification_requests v ON v.user_id = u3.id AND v.status = 'Approved'
+                    WHERE u1.referredBy = {$refQuote}
+                    GROUP BY u2.referredBy, u3.referredBy
+                    HAVING COUNT(DISTINCT v.user_id) >= 15
+                ) as l2_leaders"))
+                ->select('l1_code', DB::raw('COUNT(DISTINCT l2_code) as silver_count'))
+                ->groupBy('l1_code')
+                ->havingRaw('COUNT(DISTINCT l2_code) >= 10')
+                ->get();
+
+                $goldCount = $goldSubQuery->count();
+
+                // 4. Order count
+                $orderCount = DB::table('orders')
+                    ->where('user_id', $user->id)
+                    ->whereIn('order_status', ['Confirmed', 'Delivered'])
+                    ->count();
+
+                $leadership = [
+                    'l1_verified' => $l1VerifiedCount,
+                    'rootva_progress' => min(100, ($l1VerifiedCount / 15) * 100),
+                    'rootva_achieved' => $l1VerifiedCount >= 15,
+                    'l1_rootvas' => $silverCount,
+                    'silver_progress' => min(100, ($silverCount / 10) * 100),
+                    'silver_achieved' => $silverCount >= 10,
+                    'l1_silvers' => $goldCount,
+                    'gold_progress' => min(100, ($goldCount / 10) * 100),
+                    'gold_achieved' => $goldCount >= 10,
+                    'order_count' => $orderCount,
+                    'diamond_achieved' => ($goldCount >= 10 && $orderCount >= 3),
+                    'top_achieved' => ($goldCount >= 10 && $orderCount >= 10),
+                ];
+
+                // --- Calculate Salary Progress via Fast SQL ---
+                $lastBonus = DB::table('bonus_tracker')
+                    ->where('user_id', $user->id)
+                    ->where('bonus_type', 'monthly_salary')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $salaryStartDate = $lastBonus ? $lastBonus->created_at : '2000-01-01 00:00:00';
+                if (is_object($salaryStartDate)) {
+                    $salaryStartDate = $salaryStartDate->toDateTimeString();
+                }
+
+                $salaryL1VerifiedCount = DB::table('sign_up as u1')
+                    ->join('verification_requests as v', 'v.user_id', '=', 'u1.id')
+                    ->where('u1.referredBy', $user->referCode)
+                    ->where('v.status', 'Approved')
+                    ->where(function($q) use ($salaryStartDate) {
+                        $q->where('v.verified_raw_time', '>', $salaryStartDate)
+                          ->orWhere('v.updated_at', '>', $salaryStartDate);
+                    })
+                    ->count();
+
+                $salaryL2VerifiedTotal = DB::table('sign_up as u1')
+                    ->join('sign_up as u2', 'u2.referredBy', '=', 'u1.referCode')
+                    ->join('verification_requests as v', 'v.user_id', '=', 'u2.id')
+                    ->where('u1.referredBy', $user->referCode)
+                    ->where('v.status', 'Approved')
+                    ->where(function($q) use ($salaryStartDate) {
+                        $q->where('v.verified_raw_time', '>', $salaryStartDate)
+                          ->orWhere('v.updated_at', '>', $salaryStartDate);
+                    })
+                    ->count();
+
+                $activeRows = DB::table('sign_up as u1')
+                    ->join('verification_requests as v1', 'v1.user_id', '=', 'u1.id')
+                    ->join('sign_up as u2', 'u2.referredBy', '=', 'u1.referCode')
+                    ->join('verification_requests as v2', 'v2.user_id', '=', 'u2.id')
+                    ->where('u1.referredBy', $user->referCode)
+                    ->where('v1.status', 'Approved')
+                    ->where('v2.status', 'Approved')
+                    ->select('u1.id', 'u1.name', 'u1.number', 'u1.referCode', DB::raw('COUNT(DISTINCT u2.id) as l2_count'))
+                    ->groupBy('u1.id', 'u1.name', 'u1.number', 'u1.referCode')
+                    ->havingRaw('COUNT(DISTINCT u2.id) >= 2')
+                    ->get();
+
+                $salaryL1Active = $activeRows->count();
+                $salaryL1ActiveMembers = [];
+                foreach ($activeRows as $r) {
+                    $salaryL1ActiveMembers[] = [
+                        'name' => $r->name ?? 'Unknown',
+                        'number' => $r->number ?? 'N/A',
+                        'refer_code' => $r->referCode,
+                        'l2_count' => $r->l2_count
+                    ];
+                }
+
+                $salaryOrders = DB::table('orders')
+                    ->where('user_id', $user->id)
+                    ->where('order_status', 'Delivered')
+                    ->where('created_at', '>', $salaryStartDate)
+                    ->count();
+
+                $salaryProgress = [
+                    'l1_verified' => $salaryL1VerifiedCount,
+                    'l1_verified_progress' => min(100, ($salaryL1VerifiedCount / 30) * 100),
+                    'l1_active' => $salaryL1Active,
+                    'l1_active_progress' => min(100, ($salaryL1Active / 10) * 100),
+                    'active_members' => $salaryL1ActiveMembers,
+                    'l2_verified' => $salaryL2VerifiedTotal,
+                    'l2_verified_progress' => min(100, ($salaryL2VerifiedTotal / 60) * 100),
+                    'orders' => $salaryOrders,
+                    'orders_progress' => min(100, ($salaryOrders / 1) * 100),
+                    'eligible' => ($salaryL1VerifiedCount >= 30 && $salaryL2VerifiedTotal >= 60 && $salaryL1Active >= 10 && $salaryOrders >= 1),
+                    'start_date' => $salaryStartDate
+                ];
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error calculating leadership/salary stats for user {$user->id}: " . $e->getMessage());
+        }
         
         return view('admin.users.show', compact('user', 'transactions', 'leadership', 'salaryProgress'));
     }

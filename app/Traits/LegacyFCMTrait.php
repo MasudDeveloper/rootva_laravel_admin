@@ -4,13 +4,15 @@ namespace App\Traits;
 trait LegacyFCMTrait
 {
     /**
-     * FCM Helpers
+     * FCM Access Token Generator
      */
     private function getFCMAccessToken($serviceAccountFile)
     {
         if (!file_exists($serviceAccountFile)) return null;
         
         $json = json_decode(file_get_contents($serviceAccountFile), true);
+        if (!$json || !isset($json['client_email']) || !isset($json['private_key'])) return null;
+
         $header = ['alg' => 'RS256', 'typ' => 'JWT'];
         $now = time();
         $claim = [
@@ -43,31 +45,60 @@ trait LegacyFCMTrait
         return $data['access_token'] ?? null;
     }
 
-    private function sendFCMNotification($fcmToken, $title, $body, $image = null)
+    /**
+     * Send FCM Push Notification (Data-only payload to trigger Android showNotification receiver)
+     */
+    public function sendFCMNotification($fcmToken, $title, $body, $image = null, $link = null)
     {
-        $jsonPath = 'c:\Users\Admin\Desktop\Rootva\Api\fcm-service-account.json';
+        if (empty($fcmToken)) return false;
+
+        $possiblePaths = [
+            public_path('fcm-service-account.json'),
+            base_path('public/fcm-service-account.json'),
+            '/home/syfoocuv/rootvaadmin.rootvabd.com/public/fcm-service-account.json',
+            'c:\Users\Admin\Desktop\Rootva\Api\fcm-service-account.json'
+        ];
+
+        $jsonPath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $jsonPath = $path;
+                break;
+            }
+        }
+
+        if (!$jsonPath) return false;
+
         $accessToken = $this->getFCMAccessToken($jsonPath);
         if (!$accessToken) return false;
 
         $projectId = 'rootva-f7b1f';
         $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
 
+        // 'data' payload ensures Android app's foreground and background receiver triggers showNotification()
         $message = [
             'token' => $fcmToken,
-            'notification' => [
-                'title' => $title,
-                'body' => $body
+            'data' => [
+                'title' => (string)$title,
+                'body' => (string)$body
             ]
         ];
 
         if ($image) {
-            $message['notification']['image'] = $image;
             $message['data']['image'] = $image;
+            $message['data']['image_url'] = $image;
+            $message['data']['url'] = $image;
         }
 
-        $payload = json_encode([
-            'message' => $message
-        ]);
+        if ($link) {
+            $message['data']['link'] = $link;
+            $message['data']['click_action'] = $link;
+            if (!$image) {
+                $message['data']['url'] = $link;
+            }
+        }
+
+        $payload = json_encode(['message' => $message]);
 
         $ch = curl_init();
         curl_setopt_array($ch, [

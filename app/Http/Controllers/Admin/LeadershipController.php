@@ -316,16 +316,15 @@ class LeadershipController extends Controller
                     'type' => 'income',
                     'payment_gateway' => 'Leadership Bonus',
                     'description' => $claim->reward_type . " Reward",
-                    'update_at' => now()->toDateTimeString(),
+                    'update_at' => now()->format('d-m-Y h:i A'),
                     'created_at' => now()->toDateTimeString(),
-                    'date' => now()
+                    'date' => now()->toDateTimeString()
                 ]);
             }
 
             // Update Claim Status
             $claim->update([
                 'status' => $action,
-                'updated_at' => now()->toDateTimeString(),
             ]);
 
             // Create notification

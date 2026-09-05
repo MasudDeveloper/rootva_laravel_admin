@@ -73,6 +73,7 @@ class SmmPortalAdminController extends Controller
         $config->update([
             'rate' => $request->input('rate', $config->rate),
             'daily_password' => $request->input('daily_password', $config->daily_password),
+            'video_url' => $request->input('video_url', $config->video_url),
             'status' => $request->input('status', $config->status),
             'notice' => $request->input('notice', $config->notice)
         ]);

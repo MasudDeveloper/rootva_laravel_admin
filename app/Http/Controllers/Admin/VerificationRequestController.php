@@ -7,10 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\VerificationRequest;
 use App\Models\SignUp;
 use App\Models\Transaction;
+use App\Traits\LegacyFCMTrait;
 use Illuminate\Support\Facades\DB;
 
 class VerificationRequestController extends Controller
 {
+    use LegacyFCMTrait;
     public function index(Request $request)
     {
         $status = $request->input('status', 'Pending');
@@ -63,6 +65,14 @@ class VerificationRequestController extends Controller
                 'created_at' => $current_time
             ]);
 
+            if (!empty($user->fcm_token)) {
+                $this->sendFCMNotification(
+                    $user->fcm_token,
+                    '🎉 ভেরিফিকেশন সফল!',
+                    'আপনার রুটবা অ্যাকাউন্ট সফলভাবে ভেরিফাই করা হয়েছে।'
+                );
+            }
+
             // 3. Update Request status
             $verificationRequest->update([
                 'status' => 'Approved',
@@ -108,6 +118,14 @@ class VerificationRequestController extends Controller
                 'created_at' => $current_time
             ]);
 
+            if (!empty($user->fcm_token)) {
+                $this->sendFCMNotification(
+                    $user->fcm_token,
+                    '❌ ভেরিফিকেশন বাতিল',
+                    'আপনার ভেরিফিকেশন আবেদন রিজেক্ট করা হয়েছে। সঠিক তথ্য দিয়ে আবার চেষ্টা করুন।'
+                );
+            }
+
             // 3. Update Request status
             $verificationRequest->update([
                 'status' => 'Rejected',
@@ -145,6 +163,15 @@ class VerificationRequestController extends Controller
                     'payment_gateway' => 'Internal',
                     'date' => now()
                 ]);
+
+                // Send Push Notification for Affiliate Bonus
+                if (!empty($referrer->fcm_token)) {
+                    $this->sendFCMNotification(
+                        $referrer->fcm_token,
+                        '🎁 এফিলিয়েট বোনাস যুক্ত হয়েছে!',
+                        "লেভেল $current_level রেফারেল বোনাস ৳$bonus আপনার অ্যাকাউন্টে জমা হয়েছে।"
+                    );
+                }
 
                 $referredByCode = $referrer->referredBy;
                 $current_level++;

@@ -10,11 +10,34 @@
             <h4 class="fw-bold mb-0">SMM Submissions</h4>
             <p class="text-muted small mb-0">Approve and verify Gmail, Facebook, Telegram, WhatsApp or Instagram selling submissions</p>
         </div>
-        <div>
+        <div class="d-flex gap-3 align-items-center flex-wrap">
+            <form action="{{ route('admin.smm.index') }}" method="GET" class="d-flex gap-2 flex-wrap" id="smmFilterForm">
+                <input type="hidden" name="status" value="{{ $status }}">
+                <select name="task_type" class="form-select rounded-pill border shadow-sm px-3 text-xs" style="width: auto;" onchange="this.form.submit()">
+                    <option value="">All Tasks</option>
+                    @foreach(['gmail', 'facebook_cookies', 'facebook_zero_friend', 'facebook_number_id', 'instagram_2fa', 'instagram_cookies', 'whatsapp', 'telegram'] as $type)
+                        <option value="{{ $type }}" {{ request('task_type') == $type ? 'selected' : '' }}>{{ strtoupper(str_replace('_', ' ', $type)) }}</option>
+                    @endforeach
+                </select>
+                
+                <input type="date" name="start_date" class="form-control rounded-pill border shadow-sm px-3 text-xs" style="width: auto;" value="{{ request('start_date') }}" onchange="this.form.submit()" placeholder="Start Date">
+                <input type="date" name="end_date" class="form-control rounded-pill border shadow-sm px-3 text-xs" style="width: auto;" value="{{ request('end_date') }}" onchange="this.form.submit()" placeholder="End Date">
+                
+                <input type="text" name="search" class="form-control rounded-pill border shadow-sm px-3 text-xs" style="width: auto; max-width: 180px;" value="{{ request('search') }}" placeholder="Search Phone/Refer/Name..." onkeypress="if(event.key === 'Enter') { this.form.submit(); }">
+                
+                @if(request('task_type') || request('start_date') || request('end_date') || request('search'))
+                    <a href="{{ route('admin.smm.index', ['status' => $status]) }}" class="btn btn-outline-secondary btn-sm rounded-pill d-flex align-items-center px-3"><i class="fa-solid fa-xmark me-1"></i>Clear</a>
+                @endif
+
+                <button type="submit" name="export" value="csv" class="btn btn-success text-white rounded-pill px-4 shadow-sm text-xs fw-bold">
+                    <i class="fa-solid fa-file-excel me-2"></i>Export CSV
+                </button>
+            </form>
+
             <div class="btn-group rounded-pill overflow-hidden shadow-sm">
-                <a href="{{ route('admin.smm.index', ['status' => 'pending']) }}" class="btn {{ $status === 'pending' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Pending</a>
-                <a href="{{ route('admin.smm.index', ['status' => 'approved']) }}" class="btn {{ $status === 'approved' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Approved</a>
-                <a href="{{ route('admin.smm.index', ['status' => 'rejected']) }}" class="btn {{ $status === 'rejected' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Rejected</a>
+                <a href="{{ route('admin.smm.index', array_merge(request()->all(), ['status' => 'pending'])) }}" class="btn {{ $status === 'pending' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Pending</a>
+                <a href="{{ route('admin.smm.index', array_merge(request()->all(), ['status' => 'approved'])) }}" class="btn {{ $status === 'approved' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Approved</a>
+                <a href="{{ route('admin.smm.index', array_merge(request()->all(), ['status' => 'rejected'])) }}" class="btn {{ $status === 'rejected' ? 'btn-primary' : 'btn-outline-primary' }} px-4">Rejected</a>
             </div>
         </div>
     </div>

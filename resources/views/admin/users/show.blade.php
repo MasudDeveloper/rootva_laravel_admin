@@ -82,7 +82,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="extra-small text-muted text-uppercase fw-bold d-block">Referral Info</label>
-                        <div class="fw-medium">Referred By: {{ $user->referredBy ?: 'System' }}</div>
+                        <div class="fw-medium">Referred By Code: {{ $user->referredBy ?: 'System (Direct)' }}</div>
+                        @if($user->referredBy)
+                            @php
+                                $referrer = \App\Models\SignUp::where('referCode', $user->referredBy)->first();
+                            @endphp
+                            @if($referrer)
+                                <div class="small text-muted">
+                                    Name: <strong>{{ $referrer->name }}</strong><br>
+                                    Phone: <strong>{{ $referrer->number }}</strong>
+                                </div>
+                            @else
+                                <div class="small text-danger italic">Referrer not found in database</div>
+                            @endif
+                        @endif
                     </div>
                     <div class="mb-0">
                         <label class="extra-small text-muted text-uppercase fw-bold d-block">Member Since</label>

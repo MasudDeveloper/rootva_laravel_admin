@@ -261,6 +261,12 @@
                     <button onclick="switchInstagramSubtask('instagram_cookies')" id="btn-subtask-instagram_cookies" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50">Cookies</button>
                 </div>
 
+                <!-- TikTok Sub-task Selector Buttons -->
+                <div id="tiktok-subtask-container" class="hidden bg-slate-100 p-1 rounded-2xl border border-slate-200/50 flex space-x-1">
+                    <button onclick="switchTiktokSubtask('tiktok_2fa')" id="btn-subtask-tiktok_2fa" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all bg-white text-red-600 shadow-sm">2FA ID</button>
+                    <button onclick="switchTiktokSubtask('tiktok_cookies')" id="btn-subtask-tiktok_cookies" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50">Cookies String</button>
+                </div>
+
                 <!-- Guidelines Info Card -->
                 <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
@@ -276,13 +282,13 @@
                     </div>
                     <div class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100" id="task-notice"></div>
 
-                    <!-- Dynamic password display -->
-                    <div class="border border-dashed border-blue-200 rounded-xl p-3 bg-blue-50/50 flex items-center justify-between" id="wrapper-daily-password">
-                        <div>
-                            <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Required Password to Register</span>
-                            <span class="text-sm font-extrabold text-blue-800" id="task-daily-password">Loading...</span>
+                    <!-- Dynamic password / category price list display -->
+                    <div class="border border-indigo-100/80 rounded-2xl p-4 bg-indigo-50/40 space-y-2" id="wrapper-daily-password">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-indigo-700 font-extrabold uppercase tracking-wider" id="daily-password-label">Required Password to Register</span>
+                            <button onclick="copyDailyPassword()" id="btn-copy-daily-password" class="text-xs text-blue-600 bg-white border border-blue-200 px-3 py-1 rounded-lg active:scale-95 transition-all font-semibold shadow-xs">Copy</button>
                         </div>
-                        <button onclick="copyDailyPassword()" class="text-xs text-blue-600 bg-white border border-blue-200 px-3 py-1.5 rounded-lg active:scale-95 transition-all font-semibold">Copy</button>
+                        <div id="task-daily-password" class="text-sm font-extrabold text-indigo-950">Loading...</div>
                     </div>
 
                     <a id="task-tutorial-btn" target="_blank" class="hidden w-full items-center justify-center space-x-2 text-xs font-bold text-blue-600 bg-blue-50 py-3 rounded-xl">
@@ -718,6 +724,7 @@
             if (key === 'gmail') return 'fa-solid fa-envelope';
             if (key.startsWith('facebook')) return 'fa-brands fa-facebook';
             if (key === 'instagram') return 'fa-brands fa-instagram';
+            if (key.startsWith('tiktok')) return 'fa-brands fa-tiktok';
             if (key === 'whatsapp') return 'fa-brands fa-whatsapp';
             if (key === 'telegram') return 'fa-brands fa-telegram';
             return 'fa-solid fa-envelope';
@@ -863,9 +870,31 @@
             document.getElementById('state-login').classList.remove('hidden');
         }
 
-        function navClick(tab) {
+        // Handle Android Device Back Button Navigation using HTML5 History API
+        function pushSectionState(sectionName) {
+            if (window.location.hash !== '#' + sectionName) {
+                history.pushState({ section: sectionName }, '', '#' + sectionName);
+            }
+        }
+
+        window.addEventListener('popstate', function(e) {
+            const taskSec = document.getElementById('section-task');
+            const walletSec = document.getElementById('section-wallet');
+            const supportSec = document.getElementById('section-support');
+
+            const isSubSectionOpen = (taskSec && !taskSec.classList.contains('hidden')) ||
+                                    (walletSec && !walletSec.classList.contains('hidden')) ||
+                                    (supportSec && !supportSec.classList.contains('hidden'));
+
+            if (isSubSectionOpen) {
+                showDashboard(false);
+            }
+        });
+
+        function navClick(tab, pushState = true) {
             document.querySelectorAll('button[id^="nav-"]').forEach(btn => btn.classList.remove('active-tab'));
-            document.getElementById('nav-' + tab).classList.add('active-tab');
+            const targetNav = document.getElementById('nav-' + tab);
+            if (targetNav) targetNav.classList.add('active-tab');
 
             // Hide sections
             document.getElementById('section-dashboard').classList.add('hidden');
@@ -874,20 +903,28 @@
             document.getElementById('section-support').classList.add('hidden');
 
             if (tab === 'home') {
-                showDashboard();
+                showDashboard(pushState);
             } else if (tab === 'wallet') {
                 document.getElementById('section-wallet').classList.remove('hidden');
+                if (pushState) pushSectionState('wallet');
                 loadSmmData();
             } else if (tab === 'support') {
                 document.getElementById('section-support').classList.remove('hidden');
+                if (pushState) pushSectionState('support');
             }
         }
 
-        function showDashboard() {
+        function showDashboard(pushState = true) {
             document.getElementById('section-task').classList.add('hidden');
             document.getElementById('section-wallet').classList.add('hidden');
             document.getElementById('section-support').classList.add('hidden');
             document.getElementById('section-dashboard').classList.remove('hidden');
+            document.querySelectorAll('button[id^="nav-"]').forEach(btn => btn.classList.remove('active-tab'));
+            const homeNav = document.getElementById('nav-home');
+            if (homeNav) homeNav.classList.add('active-tab');
+            if (pushState && window.location.hash) {
+                history.replaceState({ section: 'home' }, '', window.location.pathname);
+            }
             loadSmmData();
         }
 
@@ -1009,6 +1046,7 @@
                         let gridHtml = '';
                         let hasFacebook = false;
                         let hasInstagram = false;
+                        let hasTiktok = false;
                         for (const [key, details] of Object.entries(data.rates)) {
                             if (key.startsWith('facebook')) {
                                 if (!hasFacebook) {
@@ -1037,6 +1075,23 @@
                                             <i class="fa-brands fa-instagram text-white"></i>
                                         </div>
                                         <h4 class="text-xs font-bold text-slate-800">Instagram Sell</h4>
+                                        <span class="text-[10px] text-emerald-600 font-bold mt-1">Multi-Forms</span>
+                                    </div>
+                                `;
+                                }
+                                continue;
+                            }
+
+                            if (key.startsWith('tiktok')) {
+                                if (!hasTiktok) {
+                                    hasTiktok = true;
+                                    // Output unified TikTok Sell card
+                                    gridHtml += `
+                                    <div onclick="selectTask('tiktok')" class="glass-card rounded-2xl p-4 flex flex-col items-center text-center cursor-pointer active:scale-95 transition-all">
+                                        <div class="w-11 h-11 rounded-2xl bg-black text-white flex items-center justify-center text-lg mb-2.5 shadow">
+                                            <i class="fa-brands fa-tiktok text-white"></i>
+                                        </div>
+                                        <h4 class="text-xs font-bold text-slate-800">TikTok Sell</h4>
                                         <span class="text-[10px] text-emerald-600 font-bold mt-1">Multi-Forms</span>
                                     </div>
                                 `;
@@ -1205,12 +1260,17 @@
         function selectTask(key) {
             const fbContainer = document.getElementById('facebook-subtask-container');
             const instaContainer = document.getElementById('instagram-subtask-container');
+            const tiktokContainer = document.getElementById('tiktok-subtask-container');
 
             if (key === 'facebook') {
                 fbContainer.classList.remove('hidden');
                 fbContainer.classList.add('flex');
                 instaContainer.classList.add('hidden');
                 instaContainer.classList.remove('flex');
+                if (tiktokContainer) {
+                    tiktokContainer.classList.add('hidden');
+                    tiktokContainer.classList.remove('flex');
+                }
                 switchFacebookSubtask('facebook_cookies');
                 return;
             }
@@ -1220,7 +1280,24 @@
                 instaContainer.classList.add('flex');
                 fbContainer.classList.add('hidden');
                 fbContainer.classList.remove('flex');
+                if (tiktokContainer) {
+                    tiktokContainer.classList.add('hidden');
+                    tiktokContainer.classList.remove('flex');
+                }
                 switchInstagramSubtask('instagram_2fa');
+                return;
+            }
+
+            if (key === 'tiktok') {
+                if (tiktokContainer) {
+                    tiktokContainer.classList.remove('hidden');
+                    tiktokContainer.classList.add('flex');
+                }
+                fbContainer.classList.add('hidden');
+                fbContainer.classList.remove('flex');
+                instaContainer.classList.add('hidden');
+                instaContainer.classList.remove('flex');
+                loadTaskDetails('tiktok');
                 return;
             }
 
@@ -1228,6 +1305,10 @@
             fbContainer.classList.remove('flex');
             instaContainer.classList.add('hidden');
             instaContainer.classList.remove('flex');
+            if (tiktokContainer) {
+                tiktokContainer.classList.add('hidden');
+                tiktokContainer.classList.remove('flex');
+            }
 
             loadTaskDetails(key);
         }
@@ -1262,6 +1343,10 @@
             loadTaskDetails(subKey);
         }
 
+        function switchTiktokSubtask(subKey) {
+            loadTaskDetails('tiktok');
+        }
+
         function loadTaskDetails(key) {
             const task = smmRates[key];
             if (!task) return;
@@ -1276,6 +1361,7 @@
             // Show task workspace
             document.getElementById('section-dashboard').classList.add('hidden');
             document.getElementById('section-task').classList.remove('hidden');
+            pushSectionState('task');
 
             document.getElementById('task-title').innerText = task.name;
             document.getElementById('task-rate').innerText = "Today's Price: ৳ " + task.rate.toFixed(2);
@@ -1287,8 +1373,10 @@
                 bgClass = 'bg-blue-600';
             } else if (key === 'instagram') {
                 bgClass = 'bg-pink-500';
+            } else if (key.startsWith('tiktok')) {
+                bgClass = 'bg-black';
             } else if (key === 'whatsapp') {
-                bgClass = 'bg-green-500';
+                bgClass = 'bg-emerald-500';
             } else if (key === 'telegram') {
                 bgClass = 'bg-sky-500';
             }
@@ -1423,6 +1511,43 @@
                     alert('কানেকশন সমস্যা। অনুগ্রহ করে আবার চেষ্টা করুন।');
                 });
         }
+
+        // Intercept Telegram URI schemes in Android WebView
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (!link || !link.href) return;
+            
+            let url = link.href;
+            if (url.includes('t.me/') || url.startsWith('tg:')) {
+                // 1. If link is tg:resolve?domain=username
+                if (url.startsWith('tg:')) {
+                    e.preventDefault();
+                    let domainMatch = url.match(/domain=([a-zA-Z0-9_]+)/);
+                    if (domainMatch) {
+                        window.location.href = 'https://t.me/' + domainMatch[1];
+                    }
+                    return;
+                }
+
+                // 2. Direct Telegram Links
+                if (/Android/i.test(navigator.userAgent)) {
+                    e.preventDefault();
+                    if (url.includes('/+')) {
+                        // For private invite links, try intent:// to open Telegram app directly
+                        let cleanPath = url.replace(/^https?:\/\//, '');
+                        window.location.href = 'intent://' + cleanPath + '#Intent;scheme=https;package=org.telegram.messenger;end';
+                    } else {
+                        // Public link -> Open Telegram link directly
+                        let match = url.match(/t\.me\/([a-zA-Z0-9_]{4,})$/);
+                        if (match) {
+                            window.location.href = 'https://t.me/' + match[1];
+                        } else {
+                            window.location.href = url;
+                        }
+                    }
+                }
+            }
+        }, true);
     </script>
 </body>
 
