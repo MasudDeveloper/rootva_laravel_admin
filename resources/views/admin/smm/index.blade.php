@@ -15,7 +15,7 @@
                 <input type="hidden" name="status" value="{{ $status }}">
                 <select name="task_type" class="form-select rounded-pill border shadow-sm px-3 text-xs" style="width: auto;" onchange="this.form.submit()">
                     <option value="">All Tasks</option>
-                    @foreach(['gmail', 'facebook_cookies', 'facebook_zero_friend', 'facebook_number_id', 'instagram_2fa', 'instagram_cookies', 'whatsapp', 'telegram'] as $type)
+                    @foreach(['gmail', 'facebook_cookies', 'facebook_zero_friend', 'facebook_number_id', 'hotmail_30_friends', 'hotmail_0_friends', 'instagram_2fa', 'instagram_cookies', 'whatsapp', 'telegram'] as $type)
                         <option value="{{ $type }}" {{ request('task_type') == $type ? 'selected' : '' }}>{{ strtoupper(str_replace('_', ' ', $type)) }}</option>
                     @endforeach
                 </select>

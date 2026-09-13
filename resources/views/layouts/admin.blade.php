@@ -43,6 +43,7 @@
                 <span>Dashboard</span>
             </a>
             
+            @if(auth()->user()->hasPermission('users'))
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*'))) ? 'active' : '' }}">
                 <i class="fa-solid fa-users"></i>
                 <span>Users Management</span>
@@ -52,9 +53,11 @@
                 <i class="fa-solid fa-vault text-success"></i>
                 <span>Top Wallet Holders</span>
             </a>
+            @endif
             
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Service Modules</div>
             
+            @if(auth()->user()->hasPermission('microjobs'))
             <a href="{{ route('admin.microjobs.index') }}" class="nav-link {{ request()->is('admin/microjobs*') ? 'active' : '' }}">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Micro Jobs</span>
@@ -69,17 +72,21 @@
                 <i class="fa-solid fa-list-check"></i>
                 <span>Job Configurations</span>
             </a>
+            @endif
 
             <a href="{{ route('admin.verifications.index') }}" class="nav-link {{ request()->is('admin/services/verifications*') ? 'active' : '' }}">
                 <i class="fa-solid fa-shield-check"></i>
                 <span>User Verifications</span>
             </a>
 
+            @if(auth()->user()->hasPermission('sim_offers'))
             <a href="{{ route('admin.sim-offers.index') }}" class="nav-link {{ request()->is('admin/services/sim-offers*') ? 'active' : '' }}">
                 <i class="fa-solid fa-sim-card"></i>
                 <span>SIM Offers</span>
             </a>
+            @endif
 
+            @if(auth()->user()->hasPermission('reselling'))
             <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->is('admin/services/products*') ? 'active' : '' }}">
                 <i class="fa-solid fa-shop"></i>
                 <span>Reselling Shop</span>
@@ -94,7 +101,9 @@
                 <i class="fa-solid fa-truck-ramp-box"></i>
                 <span>Reselling Orders</span>
             </a>
+            @endif
 
+            @if(auth()->user()->hasPermission('courses'))
             <a href="{{ route('admin.courses.index') }}" class="nav-link {{ request()->is('admin/services/courses*') ? 'active' : '' }}">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span>Courses</span>
@@ -109,8 +118,22 @@
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Online Service Orders</span>
             </a>
+            @endif
+
+            @if(auth()->user()->hasPermission('smm'))
+            <a href="{{ route('admin.smm.index') }}" class="nav-link {{ request()->is('admin/smm*') ? 'active' : '' }}">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>SMM Submissions</span>
+            </a>
+            @endif
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins'))
+            <a href="{{ route('admin.sub-admins.index') }}" class="nav-link {{ request()->is('admin/sub-admins*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-shield text-warning"></i>
+                <span>Sub-Admin Staff</span>
+            </a>
+            @endif
             <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications') || request()->is('admin/notifications/send') ? 'active' : '' }}">
                 <i class="fa-solid fa-bullhorn"></i>
                 <span>Push Notifications</span>
@@ -124,6 +147,7 @@
                 <span>Popup Banners</span>
             </a>
 
+            @if(auth()->user()->hasPermission('leadership'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Leadership & Rewards</div>
             <a href="{{ route('admin.leadership.leaders') }}" class="nav-link {{ request()->is('admin/services/leadership/leaders*') ? 'active' : '' }}">
                 <i class="fa-solid fa-users-viewfinder"></i>
@@ -137,16 +161,19 @@
                 <i class="fa-solid fa-trophy"></i>
                 <span>Winners History</span>
             </a>
+            @endif
 
+            @if(auth()->user()->isSuperAdmin())
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">System Management</div>
             
             <a href="{{ route('admin.api-endpoints.index') }}" class="nav-link {{ request()->is('admin/api-endpoints*') ? 'active' : '' }}">
                 <i class="fa-solid fa-code"></i>
                 <span>API Endpoints</span>
             </a>
+            @endif
 
+            @if(auth()->user()->hasPermission('sim_offers'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">PCash Automated API</div>
-            
             <a href="{{ route('admin.pcash.settings.index') }}" class="nav-link {{ request()->is('admin/pcash/settings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-plug-circle-bolt"></i>
                 <span>API Settings & Balance</span>
@@ -159,12 +186,9 @@
                 <i class="fa-solid fa-file-invoice"></i>
                 <span>Recharge Logs</span>
             </a>
+            @endif
 
-            <a href="{{ route('admin.smm.index') }}" class="nav-link {{ request()->is('admin/smm*') ? 'active' : '' }}">
-                <i class="fa-solid fa-share-nodes"></i>
-                <span>SMM Submissions</span>
-            </a>
-
+            @if(auth()->user()->hasPermission('withdrawals'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Financials</div>
             
             <a href="{{ route('admin.money-requests.index') }}" class="nav-link {{ request()->is('admin/money-requests*') ? 'active' : '' }}">
@@ -186,6 +210,7 @@
                 <i class="fa-solid fa-user-tie"></i>
                 <span>Support Admin Report</span>
             </a>
+            @endif
 
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Rewards & Bonuses</div>
             

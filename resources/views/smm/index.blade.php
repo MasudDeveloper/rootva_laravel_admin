@@ -255,6 +255,12 @@
                     <button onclick="switchFacebookSubtask('facebook_number_id')" id="btn-subtask-facebook_number_id" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50">Number ID</button>
                 </div>
 
+                <!-- Hotmail Sub-task Selector Buttons -->
+                <div id="hotmail-subtask-container" class="hidden bg-slate-100 p-1 rounded-2xl border border-slate-200/50 flex space-x-1">
+                    <button onclick="switchHotmailSubtask('hotmail_30_friends')" id="btn-subtask-hotmail_30_friends" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all bg-white text-orange-600 shadow-sm">30+ Friend</button>
+                    <button onclick="switchHotmailSubtask('hotmail_0_friends')" id="btn-subtask-hotmail_0_friends" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50">0 Friend</button>
+                </div>
+
                 <!-- Instagram Sub-task Selector Buttons -->
                 <div id="instagram-subtask-container" class="hidden bg-slate-100 p-1 rounded-2xl border border-slate-200/50 flex space-x-1">
                     <button onclick="switchInstagramSubtask('instagram_2fa')" id="btn-subtask-instagram_2fa" class="flex-1 text-[10px] font-bold py-2 rounded-xl transition-all bg-white text-pink-600 shadow-sm">2FA</button>
@@ -723,6 +729,7 @@
         function getIconClass(key) {
             if (key === 'gmail') return 'fa-solid fa-envelope';
             if (key.startsWith('facebook')) return 'fa-brands fa-facebook';
+            if (key.startsWith('hotmail')) return 'fa-solid fa-envelope';
             if (key === 'instagram') return 'fa-brands fa-instagram';
             if (key.startsWith('tiktok')) return 'fa-brands fa-tiktok';
             if (key === 'whatsapp') return 'fa-brands fa-whatsapp';
@@ -888,6 +895,8 @@
 
             if (isSubSectionOpen) {
                 showDashboard(false);
+            } else if (e.state && e.state.section === 'home') {
+                showDashboard(false);
             }
         });
 
@@ -922,8 +931,11 @@
             document.querySelectorAll('button[id^="nav-"]').forEach(btn => btn.classList.remove('active-tab'));
             const homeNav = document.getElementById('nav-home');
             if (homeNav) homeNav.classList.add('active-tab');
-            if (pushState && window.location.hash) {
-                history.replaceState({ section: 'home' }, '', window.location.pathname);
+
+            if (pushState) {
+                if (window.location.hash !== '#home') {
+                    history.pushState({ section: 'home' }, '', '#home');
+                }
             }
             loadSmmData();
         }
@@ -1045,6 +1057,7 @@
                         // Render project grid cards
                         let gridHtml = '';
                         let hasFacebook = false;
+                        let hasHotmail = false;
                         let hasInstagram = false;
                         let hasTiktok = false;
                         for (const [key, details] of Object.entries(data.rates)) {
@@ -1058,6 +1071,23 @@
                                             <i class="fa-brands fa-facebook text-white"></i>
                                         </div>
                                         <h4 class="text-xs font-bold text-slate-800">Facebook Sell</h4>
+                                        <span class="text-[10px] text-emerald-600 font-bold mt-1">Multi-Forms</span>
+                                    </div>
+                                `;
+                                }
+                                continue;
+                            }
+
+                            if (key.startsWith('hotmail')) {
+                                if (!hasHotmail) {
+                                    hasHotmail = true;
+                                    // Output unified Hotmail Sell card
+                                    gridHtml += `
+                                    <div onclick="selectTask('hotmail')" class="glass-card rounded-2xl p-4 flex flex-col items-center text-center cursor-pointer active:scale-95 transition-all">
+                                        <div class="w-11 h-11 rounded-2xl bg-orange-600 text-white flex items-center justify-center text-lg mb-2.5 shadow">
+                                            <i class="fa-solid fa-envelope text-white"></i>
+                                        </div>
+                                        <h4 class="text-xs font-bold text-slate-800">Hotmail Sell</h4>
                                         <span class="text-[10px] text-emerald-600 font-bold mt-1">Multi-Forms</span>
                                     </div>
                                 `;
@@ -1124,9 +1154,11 @@
                         let analyticsHtml = '';
                         for (const [key, details] of Object.entries(data.rates)) {
                             let color = 'bg-blue-500/10 text-blue-600';
-                            if (key === 'facebook') {
+                            if (key.startsWith('facebook')) {
                                 color = 'bg-blue-600/10 text-blue-600';
-                            } else if (key === 'instagram') {
+                            } else if (key.startsWith('hotmail')) {
+                                color = 'bg-orange-500/10 text-orange-600';
+                            } else if (key.startsWith('instagram')) {
                                 color = 'bg-pink-500/10 text-pink-500';
                             } else if (key === 'whatsapp') {
                                 color = 'bg-emerald-500/10 text-emerald-600';
@@ -1259,19 +1291,32 @@
 
         function selectTask(key) {
             const fbContainer = document.getElementById('facebook-subtask-container');
+            const hotmailContainer = document.getElementById('hotmail-subtask-container');
             const instaContainer = document.getElementById('instagram-subtask-container');
             const tiktokContainer = document.getElementById('tiktok-subtask-container');
 
             if (key === 'facebook') {
                 fbContainer.classList.remove('hidden');
                 fbContainer.classList.add('flex');
+                if (hotmailContainer) { hotmailContainer.classList.add('hidden'); hotmailContainer.classList.remove('flex'); }
                 instaContainer.classList.add('hidden');
                 instaContainer.classList.remove('flex');
-                if (tiktokContainer) {
-                    tiktokContainer.classList.add('hidden');
-                    tiktokContainer.classList.remove('flex');
-                }
+                if (tiktokContainer) { tiktokContainer.classList.add('hidden'); tiktokContainer.classList.remove('flex'); }
                 switchFacebookSubtask('facebook_cookies');
+                return;
+            }
+
+            if (key === 'hotmail') {
+                if (hotmailContainer) {
+                    hotmailContainer.classList.remove('hidden');
+                    hotmailContainer.classList.add('flex');
+                }
+                fbContainer.classList.add('hidden');
+                fbContainer.classList.remove('flex');
+                instaContainer.classList.add('hidden');
+                instaContainer.classList.remove('flex');
+                if (tiktokContainer) { tiktokContainer.classList.add('hidden'); tiktokContainer.classList.remove('flex'); }
+                switchHotmailSubtask('hotmail_30_friends');
                 return;
             }
 
@@ -1280,10 +1325,8 @@
                 instaContainer.classList.add('flex');
                 fbContainer.classList.add('hidden');
                 fbContainer.classList.remove('flex');
-                if (tiktokContainer) {
-                    tiktokContainer.classList.add('hidden');
-                    tiktokContainer.classList.remove('flex');
-                }
+                if (hotmailContainer) { hotmailContainer.classList.add('hidden'); hotmailContainer.classList.remove('flex'); }
+                if (tiktokContainer) { tiktokContainer.classList.add('hidden'); tiktokContainer.classList.remove('flex'); }
                 switchInstagramSubtask('instagram_2fa');
                 return;
             }
@@ -1295,6 +1338,7 @@
                 }
                 fbContainer.classList.add('hidden');
                 fbContainer.classList.remove('flex');
+                if (hotmailContainer) { hotmailContainer.classList.add('hidden'); hotmailContainer.classList.remove('flex'); }
                 instaContainer.classList.add('hidden');
                 instaContainer.classList.remove('flex');
                 loadTaskDetails('tiktok');
@@ -1303,6 +1347,7 @@
 
             fbContainer.classList.add('hidden');
             fbContainer.classList.remove('flex');
+            if (hotmailContainer) { hotmailContainer.classList.add('hidden'); hotmailContainer.classList.remove('flex'); }
             instaContainer.classList.add('hidden');
             instaContainer.classList.remove('flex');
             if (tiktokContainer) {
@@ -1320,6 +1365,21 @@
                 if (!btn) return;
                 if (k === subKey) {
                     btn.className = 'flex-1 text-[10px] font-bold py-2 rounded-xl transition-all bg-white text-blue-600 shadow-sm';
+                } else {
+                    btn.className = 'flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50';
+                }
+            });
+
+            loadTaskDetails(subKey);
+        }
+
+        function switchHotmailSubtask(subKey) {
+            const subtaskKeys = ['hotmail_30_friends', 'hotmail_0_friends'];
+            subtaskKeys.forEach(k => {
+                const btn = document.getElementById('btn-subtask-' + k);
+                if (!btn) return;
+                if (k === subKey) {
+                    btn.className = 'flex-1 text-[10px] font-bold py-2 rounded-xl transition-all bg-white text-orange-600 shadow-sm';
                 } else {
                     btn.className = 'flex-1 text-[10px] font-bold py-2 rounded-xl transition-all text-slate-600 hover:bg-slate-50';
                 }
@@ -1371,6 +1431,8 @@
             let bgClass = 'bg-blue-500';
             if (key.startsWith('facebook')) {
                 bgClass = 'bg-blue-600';
+            } else if (key.startsWith('hotmail')) {
+                bgClass = 'bg-orange-600';
             } else if (key === 'instagram') {
                 bgClass = 'bg-pink-500';
             } else if (key.startsWith('tiktok')) {

@@ -171,13 +171,15 @@ class SmmSubmissionController extends Controller
 
                     $upline->increment('wallet_balance', $perLevelCommission);
 
-                    Transaction::create([
+                    $taskNameClean = strtoupper(str_replace('_', ' ', $submission->task_type));
+
+                    \DB::table('transactions')->insert([
                         'user_id' => $upline->id,
                         'refer_id' => $upline->referCode,
                         'amount' => $perLevelCommission,
                         'type' => 'income',
                         'payment_gateway' => 'SMM Referral Bonus',
-                        'description' => "SMM Referral Commission (Lvl {$level}) from " . $user->name,
+                        'description' => "SMM Referral Commission (Lvl {$level}) from " . $user->name . " (" . $taskNameClean . ")",
                         'update_at' => now()->format('d-m-Y, h:i A'),
                         'created_at' => now()->toDateTimeString(),
                     ]);
@@ -186,8 +188,8 @@ class SmmSubmissionController extends Controller
                     if (!empty($upline->fcm_token)) {
                         $this->sendFCMNotification(
                             $upline->fcm_token,
-                            '🎁 রেফার কমিশন পেয়েছেন!',
-                            'আপনার রেফারেল লেভেল ' . $level . ' এর সদস্যের কাজ অনুমোদন হওয়ায় আপনি ৳' . number_format($perLevelCommission, 2) . ' কমিশন পেয়েছেন।'
+                            '🎁 সোশ্যাল ওয়ার্ক কমিশন পেয়েছেন!',
+                            'আপনার রেফারেল লেভেল ' . $level . ' এর সদস্যের (' . $taskNameClean . ') কাজ অনুমোদন হওয়ায় আপনি ৳' . number_format($perLevelCommission, 2) . ' কমিশন পেয়েছেন।'
                         );
                     }
 

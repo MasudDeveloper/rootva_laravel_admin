@@ -54,6 +54,26 @@ class SmmTaskConfigSeeder extends Seeder
                 'required_fields' => ['username', 'password', 'two_factor', 'phone_number']
             ],
             [
+                'task_type' => 'hotmail_30_friends',
+                'name' => 'HOTMAIL 30+ Friend',
+                'rate' => 20.00,
+                'status' => 'active',
+                'notice' => 'HOTMAIL 30+ Friend সাবমিট করবেন (UID, PASS, COOKIES, HOTMAIL FULL TOKEN)।',
+                'video_url' => '',
+                'daily_password' => 'hm30friend',
+                'required_fields' => ['uid', 'password', 'cookies', 'hotmail_full_token']
+            ],
+            [
+                'task_type' => 'hotmail_0_friends',
+                'name' => 'HOTMAIL 0 Friend',
+                'rate' => 15.00,
+                'status' => 'active',
+                'notice' => 'HOTMAIL 0 Friend সাবমিট করবেন (UID, PASS, HOTMAIL FULL TOKEN, COOKIES)।',
+                'video_url' => '',
+                'daily_password' => 'hm0friend',
+                'required_fields' => ['uid', 'password', 'hotmail_full_token', 'cookies']
+            ],
+            [
                 'task_type' => 'instagram_2fa',
                 'name' => 'Instagram 2FA',
                 'rate' => 12.00,
