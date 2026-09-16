@@ -74,10 +74,12 @@
             </a>
             @endif
 
+            @if(auth()->user()->hasPermission('users'))
             <a href="{{ route('admin.verifications.index') }}" class="nav-link {{ request()->is('admin/services/verifications*') ? 'active' : '' }}">
                 <i class="fa-solid fa-shield-check"></i>
                 <span>User Verifications</span>
             </a>
+            @endif
 
             @if(auth()->user()->hasPermission('sim_offers'))
             <a href="{{ route('admin.sim-offers.index') }}" class="nav-link {{ request()->is('admin/services/sim-offers*') ? 'active' : '' }}">
@@ -127,13 +129,15 @@
             </a>
             @endif
 
-            <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
             @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins'))
+            <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
             <a href="{{ route('admin.sub-admins.index') }}" class="nav-link {{ request()->is('admin/sub-admins*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-shield text-warning"></i>
                 <span>Sub-Admin Staff</span>
             </a>
             @endif
+
+            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications') || request()->is('admin/notifications/send') ? 'active' : '' }}">
                 <i class="fa-solid fa-bullhorn"></i>
                 <span>Push Notifications</span>
@@ -146,6 +150,7 @@
                 <i class="fa-solid fa-window-maximize"></i>
                 <span>Popup Banners</span>
             </a>
+            @endif
 
             @if(auth()->user()->hasPermission('leadership'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Leadership & Rewards</div>
@@ -174,10 +179,12 @@
 
             @if(auth()->user()->hasPermission('sim_offers'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">PCash Automated API</div>
+            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.pcash.settings.index') }}" class="nav-link {{ request()->is('admin/pcash/settings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-plug-circle-bolt"></i>
                 <span>API Settings & Balance</span>
             </a>
+            @endif
             <a href="{{ route('admin.pcash.sim_offers.index') }}" class="nav-link {{ request()->is('admin/pcash/sim_offers*') ? 'active' : '' }}">
                 <i class="fa-solid fa-sim-card"></i>
                 <span>Automated SIM Offers</span>
@@ -212,6 +219,7 @@
             </a>
             @endif
 
+            @if(auth()->user()->isSuperAdmin())
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Rewards & Bonuses</div>
             
             <a href="{{ route('admin.rewards.daily') }}" class="nav-link {{ request()->is('admin/rewards/daily*') ? 'active' : '' }}">
@@ -265,6 +273,7 @@
                 <i class="fa-solid fa-gears"></i>
                 <span>Global Settings</span>
             </a>
+            @endif
         </nav>
     </aside>
 
@@ -281,11 +290,13 @@
             </div>
             
             <div class="d-flex align-items-center gap-3">
+                @if(auth()->user()->isSuperAdmin())
                 <!-- Cache Clear Button -->
                 <a href="{{ route('admin.clear-cache') }}" class="btn btn-outline-warning rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" onclick="return confirm('Are you sure you want to clear system cache?');">
                     <i class="fa-solid fa-broom text-warning"></i>
                     <span class="d-none d-lg-inline fw-semibold small text-dark">Clear Cache</span>
                 </a>
+                @endif
 
                 <div class="position-relative">
                     <button class="btn btn-light rounded-circle shadow-sm">

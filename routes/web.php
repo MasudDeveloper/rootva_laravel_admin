@@ -82,10 +82,48 @@ Route::prefix('admin/smm-panel')->name('admin.smm.fallback.')->group(function ()
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/api/stats', [DashboardController::class, 'getStatsJson'])->name('api.stats');
-    Route::get('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
 
-    // API Documentation
-    Route::get('/api-endpoints', [\App\Http\Controllers\Admin\ApiDocumentController::class, 'index'])->name('api-endpoints.index');
+    // Super Admin System Routes
+    Route::middleware('permission:super_admin')->group(function () {
+        Route::get('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
+        Route::get('/api-endpoints', [\App\Http\Controllers\Admin\ApiDocumentController::class, 'index'])->name('api-endpoints.index');
+
+        // Banners, Reviews, Settings, Support Center
+        Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
+        Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
+        Route::delete('/banners/{id}', [BannerController::class, 'destroy'])->name('banners.destroy');
+
+        Route::get('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'index'])->name('bottom-banners.index');
+        Route::post('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'store'])->name('bottom-banners.store');
+        Route::delete('/bottom-banners/{id}', [\App\Http\Controllers\Admin\BottomBannerController::class, 'destroy'])->name('bottom-banners.destroy');
+
+        Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+        Route::post('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'store'])->name('reviews.store');
+        Route::delete('/reviews/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+
+        Route::get('/support-center', [\App\Http\Controllers\Admin\SupportCenterController::class, 'index'])->name('support-center.index');
+        Route::post('/support-center/members', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeMember'])->name('support-center.members.store');
+        Route::post('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateMember'])->name('support-center.members.update');
+        Route::delete('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyMember'])->name('support-center.members.destroy');
+        Route::post('/support-center/services', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeService'])->name('support-center.services.store');
+        Route::post('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateService'])->name('support-center.services.update');
+        Route::delete('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyService'])->name('support-center.services.destroy');
+
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        // Notifications & Popups
+        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
+        Route::get('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'savedIndex'])->name('notifications.saved.index');
+        Route::post('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'saveDraft'])->name('notifications.saved.store');
+        Route::delete('/notifications/saved/{id}', [\App\Http\Controllers\Admin\NotificationController::class, 'deleteDraft'])->name('notifications.saved.destroy');
+        Route::post('/notifications/saved/{id}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'sendDraft'])->name('notifications.saved.send');
+
+        Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
+        Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
+        Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
+    });
 
     // Sub-Admin Management (Super Admin only)
     Route::middleware('permission:sub_admins')->group(function () {
@@ -105,6 +143,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/users/{id}/withdraw-money', [UserController::class, 'withdrawMoney'])->name('users.withdraw-money');
         Route::post('/users/{id}/transfer-voucher', [UserController::class, 'transferVoucher'])->name('users.transfer-voucher');
         Route::post('/users/{id}/add-demo-order', [UserController::class, 'addDemoOrder'])->name('users.add-demo-order');
+
+        // Verifications
+        Route::get('/services/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
+        Route::get('/services/verifications', [VerificationRequestController::class, 'index'])->name('verifications.index');
+        Route::post('/services/verifications/{id}/approve', [VerificationRequestController::class, 'approve'])->name('verifications.approve');
+        Route::post('/services/verifications/{id}/reject', [VerificationRequestController::class, 'reject'])->name('verifications.reject');
     });
 
     // Financials & Withdrawals (permission: withdrawals)
@@ -141,6 +185,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('/review-jobs/{job_id}/submissions', [ReviewJobManagementController::class, 'submissions'])->name('review-jobs.submissions');
         Route::post('/review-jobs/submissions/{id}/approve', [ReviewJobManagementController::class, 'approve'])->name('review-jobs.approve');
         Route::post('/review-jobs/submissions/{id}/reject', [ReviewJobManagementController::class, 'reject'])->name('review-jobs.reject');
+
+        // Job Config
+        Route::get('/services/job-settings', [JobSettingsController::class, 'index'])->name('job-settings.index');
+        Route::post('/services/job-settings/status', [JobSettingsController::class, 'updateStatus'])->name('job-settings.updateStatus');
+        Route::post('/services/job-settings/texts', [JobSettingsController::class, 'updateTexts'])->name('job-settings.updateTexts');
+        Route::post('/services/job-settings/tutorials', [JobSettingsController::class, 'updateTutorials'])->name('job-settings.updateTutorials');
     });
 
     // Salary Requests & Leadership (permission: leadership)
@@ -150,44 +200,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/salary-requests/{id}/reject', [\App\Http\Controllers\Admin\SalaryRequestController::class, 'reject'])->name('salary-requests.reject');
     });
 
-    // Banners, Reviews, Settings, Support Center
-    Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
-    Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
-    Route::delete('/banners/{id}', [BannerController::class, 'destroy'])->name('banners.destroy');
-
-    Route::get('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'index'])->name('bottom-banners.index');
-    Route::post('/bottom-banners', [\App\Http\Controllers\Admin\BottomBannerController::class, 'store'])->name('bottom-banners.store');
-    Route::delete('/bottom-banners/{id}', [\App\Http\Controllers\Admin\BottomBannerController::class, 'destroy'])->name('bottom-banners.destroy');
-
-    Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
-    Route::post('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'store'])->name('reviews.store');
-    Route::delete('/reviews/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
-
-    Route::get('/support-center', [\App\Http\Controllers\Admin\SupportCenterController::class, 'index'])->name('support-center.index');
-    Route::post('/support-center/members', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeMember'])->name('support-center.members.store');
-    Route::post('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateMember'])->name('support-center.members.update');
-    Route::delete('/support-center/members/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyMember'])->name('support-center.members.destroy');
-    Route::post('/support-center/services', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeService'])->name('support-center.services.store');
-    Route::post('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateService'])->name('support-center.services.update');
-    Route::delete('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyService'])->name('support-center.services.destroy');
-
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
-
     // Service Modules
     Route::prefix('services')->group(function () {
-        // Job Config
-        Route::get('/job-settings', [JobSettingsController::class, 'index'])->name('job-settings.index');
-        Route::post('/job-settings/status', [JobSettingsController::class, 'updateStatus'])->name('job-settings.updateStatus');
-        Route::post('/job-settings/texts', [JobSettingsController::class, 'updateTexts'])->name('job-settings.updateTexts');
-        Route::post('/job-settings/tutorials', [JobSettingsController::class, 'updateTutorials'])->name('job-settings.updateTutorials');
-
-        // Verifications
-        Route::get('/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
-        Route::get('/verifications', [VerificationRequestController::class, 'index'])->name('verifications.index');
-        Route::post('/verifications/{id}/approve', [VerificationRequestController::class, 'approve'])->name('verifications.approve');
-        Route::post('/verifications/{id}/reject', [VerificationRequestController::class, 'reject'])->name('verifications.reject');
-
         // SIM Offers (permission: sim_offers)
         Route::middleware('permission:sim_offers')->group(function () {
             Route::get('/sim-offers', [SimOfferController::class, 'index'])->name('sim-offers.index');
@@ -201,8 +215,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             });
 
             Route::prefix('pcash')->name('pcash.')->group(function () {
-                Route::get('/settings', [PcashSettingsController::class, 'index'])->name('settings.index');
-                Route::post('/settings', [PcashSettingsController::class, 'update'])->name('settings.update');
+                Route::middleware('permission:super_admin')->group(function () {
+                    Route::get('/settings', [PcashSettingsController::class, 'index'])->name('settings.index');
+                    Route::post('/settings', [PcashSettingsController::class, 'update'])->name('settings.update');
+                });
                 Route::resource('sim_offers', PcashSimOfferController::class);
                 Route::get('/logs', [PcashLogController::class, 'index'])->name('logs.index');
             });
@@ -258,19 +274,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
             });
         });
 
-        // Notifications & Rewards
-        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
-        Route::get('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'savedIndex'])->name('notifications.saved.index');
-        Route::post('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'saveDraft'])->name('notifications.saved.store');
-        Route::delete('/notifications/saved/{id}', [\App\Http\Controllers\Admin\NotificationController::class, 'deleteDraft'])->name('notifications.saved.destroy');
-        Route::post('/notifications/saved/{id}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'sendDraft'])->name('notifications.saved.send');
-
-        Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
-        Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
-        Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
-
-        Route::prefix('rewards')->name('rewards.')->group(function () {
+        // Super Admin Rewards
+        Route::middleware('permission:super_admin')->prefix('rewards')->name('rewards.')->group(function () {
             Route::get('/daily', [RewardController::class, 'dailyIndex'])->name('daily');
             Route::post('/daily/run', [RewardController::class, 'runDailyDistribution'])->name('daily.run');
             Route::get('/weekly', [RewardController::class, 'weeklyIndex'])->name('weekly');

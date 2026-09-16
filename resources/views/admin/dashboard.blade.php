@@ -5,7 +5,8 @@
 
 @section('content')
 <div class="fade-in">
-    <!-- Financial Overview -->
+    @if(auth()->user()->isSuperAdmin())
+    <!-- Financial Overview (Super Admin Only) -->
     <h6 class="text-uppercase text-muted small fw-bold mb-3 mt-2">Financial Overview</h6>
     <div class="row g-4 mb-5">
         <div class="col-md-4">
@@ -39,10 +40,12 @@
             </div>
         </div>
     </div>
+    @endif
 
     <div class="row g-4 mb-5">
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('users'))
         <!-- User Statistics -->
-        <div class="col-lg-8">
+        <div class="{{ (auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('withdrawals') || auth()->user()->hasPermission('microjobs') || auth()->user()->hasPermission('reselling') || auth()->user()->hasPermission('sim_offers') || auth()->user()->hasPermission('courses') || auth()->user()->hasPermission('leadership')) ? 'col-lg-8' : 'col-lg-12' }}">
             <h6 class="text-uppercase text-muted small fw-bold mb-3">User Statistics</h6>
             <div class="row g-3">
                 <div class="col-md-4">
@@ -127,12 +130,14 @@
                 </div>
             </div>
         </div>
+        @endif
 
-        <!-- Pending Requests Table Style -->
-        <div class="col-lg-4">
+        <!-- Pending Requests Table Style (Module Permission Filtered) -->
+        <div class="{{ (auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('users')) ? 'col-lg-4' : 'col-lg-12' }}">
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Pending Action Required</h6>
             <div class="card-modern shadow-sm border-0">
                 <ul class="list-group list-group-flush" id="pending-requests-list">
+                    @if(auth()->user()->hasPermission('users'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.verifications.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-info-soft p-2 rounded-pill text-info" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-id-card small"></i></div>
@@ -140,6 +145,9 @@
                         </a>
                         <span class="badge bg-info text-white rounded-pill" id="badge-verification">{{ $stats['pending_requests']['verification'] }}</span>
                     </li>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('withdrawals'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.money-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-success-soft p-2 rounded-pill text-success" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-circle-dollar-to-slot small"></i></div>
@@ -154,6 +162,9 @@
                         </a>
                         <span class="badge bg-danger text-white rounded-pill" id="badge-withdraw">{{ $stats['pending_requests']['withdraw'] }}</span>
                     </li>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('reselling'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.orders.index', ['status' => 'Pending']) }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-primary-soft p-2 rounded-pill text-primary" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-cart-shopping small"></i></div>
@@ -161,6 +172,9 @@
                         </a>
                         <span class="badge bg-primary text-white rounded-pill" id="badge-reselling">{{ $stats['pending_requests']['reselling'] }}</span>
                     </li>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('sim_offers'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.sim-offers.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-warning-soft p-2 rounded-pill text-warning" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-sim-card small"></i></div>
@@ -168,6 +182,9 @@
                         </a>
                         <span class="badge bg-warning text-white rounded-pill" id="badge-sim">{{ $stats['pending_requests']['sim_offers'] }}</span>
                     </li>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('courses'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.online-service-orders.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-secondary-soft p-2 rounded-pill text-secondary" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-globe small"></i></div>
@@ -175,6 +192,9 @@
                         </a>
                         <span class="badge bg-secondary text-white rounded-pill" id="badge-services">{{ $stats['pending_requests']['services'] }}</span>
                     </li>
+                    @endif
+
+                    @if(auth()->user()->hasPermission('leadership'))
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.salary-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-dark-soft p-2 rounded-pill text-dark" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-file-invoice-dollar small"></i></div>
@@ -189,20 +209,85 @@
                         </a>
                         <span class="badge bg-info text-white rounded-pill" id="badge-leadership">{{ $stats['pending_requests']['leadership'] }}</span>
                     </li>
+                    @endif
                 </ul>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions Grid (Matching the concept of the old sidebar) -->
+    <!-- Quick Actions Grid (Permission-Filtered Navigation) -->
     <h6 class="text-uppercase text-muted small fw-bold mb-3">Quick Navigation (Management)</h6>
     <div class="row g-3 row-cols-2 row-cols-md-4 row-cols-lg-6 mb-5">
+        @if(auth()->user()->hasPermission('users'))
         <div class="col">
             <a href="{{ route('admin.users.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-primary">
                 <i class="fa-solid fa-users fa-xl"></i>
                 <span class="small fw-bold">All Users</span>
             </a>
         </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('microjobs'))
+        <div class="col">
+            <a href="{{ route('admin.microjobs.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-primary">
+                <i class="fa-solid fa-briefcase fa-xl"></i>
+                <span class="small fw-bold">Micro Jobs</span>
+            </a>
+        </div>
+        <div class="col">
+            <a href="{{ route('admin.job-settings.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-danger">
+                <i class="fa-solid fa-circle-question fa-xl"></i>
+                <span class="small fw-bold">Job Config</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('sim_offers'))
+        <div class="col">
+            <a href="{{ route('admin.sim-offers.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-warning">
+                <i class="fa-solid fa-sim-card fa-xl"></i>
+                <span class="small fw-bold">SIM Offers</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('reselling'))
+        <div class="col">
+            <a href="{{ route('admin.orders.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-success">
+                <i class="fa-solid fa-truck-ramp-box fa-xl"></i>
+                <span class="small fw-bold">Reselling Orders</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('courses'))
+        <div class="col">
+            <a href="{{ route('admin.courses.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-info">
+                <i class="fa-solid fa-graduation-cap fa-xl"></i>
+                <span class="small fw-bold">Courses</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('smm'))
+        <div class="col">
+            <a href="{{ route('admin.smm.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-purple">
+                <i class="fa-solid fa-share-nodes fa-xl"></i>
+                <span class="small fw-bold">SMM Submissions</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->hasPermission('withdrawals'))
+        <div class="col">
+            <a href="{{ route('admin.withdraw-requests.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-danger">
+                <i class="fa-solid fa-money-bill-transfer fa-xl"></i>
+                <span class="small fw-bold">Withdrawals</span>
+            </a>
+        </div>
+        @endif
+
+        @if(auth()->user()->isSuperAdmin())
         <div class="col">
             <a href="{{ route('admin.banners.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-success">
                 <i class="fa-solid fa-images fa-xl"></i>
@@ -222,29 +307,12 @@
             </a>
         </div>
         <div class="col">
-            <a href="{{ route('admin.rewards.daily') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-warning">
-                <i class="fa-solid fa-gift fa-xl"></i>
-                <span class="small fw-bold">Daily Bonus</span>
-            </a>
-        </div>
-        <div class="col">
-            <a href="{{ route('admin.job-settings.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-danger">
-                <i class="fa-solid fa-circle-question fa-xl"></i>
-                <span class="small fw-bold">Tutorials</span>
-            </a>
-        </div>
-        <div class="col">
             <a href="{{ route('admin.settings.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-info">
                 <i class="fa-solid fa-gears fa-xl"></i>
                 <span class="small fw-bold">App Settings</span>
             </a>
         </div>
-        <div class="col">
-            <a href="{{ route('admin.settings.index') }}" class="btn btn-light w-100 p-3 h-100 shadow-sm border-0 d-flex flex-column gap-2 text-secondary">
-                <i class="fa-solid fa-star fa-xl"></i>
-                <span class="small fw-bold">Review Link</span>
-            </a>
-        </div>
+        @endif
     </div>
 </div>
 
@@ -293,18 +361,31 @@
         fetch('/admin/api/stats')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('stat-total').innerText = data.total;
-                document.getElementById('stat-verified').innerText = data.verified;
-                document.getElementById('stat-pending').innerText = data.pending;
+                const elTotal = document.getElementById('stat-total');
+                if (elTotal) elTotal.innerText = data.total;
+                const elVerified = document.getElementById('stat-verified');
+                if (elVerified) elVerified.innerText = data.verified;
+                const elPending = document.getElementById('stat-pending');
+                if (elPending) elPending.innerText = data.pending;
+                const elActive = document.getElementById('stat-active');
+                if (elActive) elActive.innerText = data.active_now || 0;
                 
-                document.getElementById('badge-verification').innerText = data.verification_requests;
-                document.getElementById('badge-money').innerText = data.money_requests;
-                document.getElementById('badge-withdraw').innerText = data.withdraw_requests;
-                document.getElementById('badge-reselling').innerText = data.reselling_orders;
-                document.getElementById('badge-sim').innerText = data.sim_requests;
-                document.getElementById('badge-services').innerText = data.service_orders;
-                document.getElementById('badge-salary').innerText = data.salary_requests;
-                document.getElementById('badge-leadership').innerText = data.leadership_requests;
+                const elBVerif = document.getElementById('badge-verification');
+                if (elBVerif) elBVerif.innerText = data.verification_requests;
+                const elBMoney = document.getElementById('badge-money');
+                if (elBMoney) elBMoney.innerText = data.money_requests;
+                const elBWithdraw = document.getElementById('badge-withdraw');
+                if (elBWithdraw) elBWithdraw.innerText = data.withdraw_requests;
+                const elBReselling = document.getElementById('badge-reselling');
+                if (elBReselling) elBReselling.innerText = data.reselling_orders;
+                const elBSim = document.getElementById('badge-sim');
+                if (elBSim) elBSim.innerText = data.sim_requests;
+                const elBServices = document.getElementById('badge-services');
+                if (elBServices) elBServices.innerText = data.service_orders;
+                const elBSalary = document.getElementById('badge-salary');
+                if (elBSalary) elBSalary.innerText = data.salary_requests;
+                const elBLeadership = document.getElementById('badge-leadership');
+                if (elBLeadership) elBLeadership.innerText = data.leadership_requests;
 
                 // Check for new requests
                 for (let key in lastStats) {
@@ -334,15 +415,18 @@
     
     // Initial load
     window.onload = function() {
-        // Initialize lastStats from current badges
-        lastStats.verification_requests = parseInt(document.getElementById('badge-verification').innerText) || 0;
-        lastStats.money_requests = parseInt(document.getElementById('badge-money').innerText) || 0;
-        lastStats.withdraw_requests = parseInt(document.getElementById('badge-withdraw').innerText) || 0;
-        lastStats.reselling_orders = parseInt(document.getElementById('badge-reselling').innerText) || 0;
-        lastStats.sim_requests = parseInt(document.getElementById('badge-sim').innerText) || 0;
-        lastStats.service_orders = parseInt(document.getElementById('badge-services').innerText) || 0;
-        lastStats.salary_requests = parseInt(document.getElementById('badge-salary').innerText) || 0;
-        lastStats.leadership_requests = parseInt(document.getElementById('badge-leadership').innerText) || 0;
+        let getVal = id => {
+            let el = document.getElementById(id);
+            return el ? (parseInt(el.innerText) || 0) : null;
+        };
+        lastStats.verification_requests = getVal('badge-verification');
+        lastStats.money_requests = getVal('badge-money');
+        lastStats.withdraw_requests = getVal('badge-withdraw');
+        lastStats.reselling_orders = getVal('badge-reselling');
+        lastStats.sim_requests = getVal('badge-sim');
+        lastStats.service_orders = getVal('badge-services');
+        lastStats.salary_requests = getVal('badge-salary');
+        lastStats.leadership_requests = getVal('badge-leadership');
     };
 </script>
 @endsection

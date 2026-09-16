@@ -10,6 +10,10 @@ class PcashSettingsController extends Controller
 {
     public function index()
     {
+        if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard')->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! এই মডিউলে আপনার প্রবেশের অনুমতি নেই।');
+        }
+
         $settings = PcashSetting::first();
         if (!$settings) {
             $settings = PcashSetting::create(['api_user' => '', 'api_key' => '', 'default_service_code' => '64']);
@@ -46,6 +50,10 @@ class PcashSettingsController extends Controller
 
     public function update(Request $request)
     {
+        if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard')->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! এই সেটিং পরিবর্তন করার অনুমতি নেই।');
+        }
+
         $request->validate([
             'api_user' => 'required',
             'api_key' => 'required',
