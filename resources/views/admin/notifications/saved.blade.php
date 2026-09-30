@@ -249,7 +249,7 @@
     function openSendModal(id, title) {
         const modal = new bootstrap.Modal(document.getElementById('sendModal'));
         document.getElementById('sendTemplateTitle').innerText = title;
-        document.getElementById('sendForm').action = `/admin/services/notifications/saved/${id}/send`;
+        document.getElementById('sendForm').action = `/admin/notifications/saved/${id}/send`;
         
         // Reset form to default
         document.getElementById('targetAll').checked = true;

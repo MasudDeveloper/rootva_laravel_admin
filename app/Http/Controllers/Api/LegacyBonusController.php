@@ -185,4 +185,147 @@ class LegacyBonusController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Daily Target Status (get_daily_target_status.php)
+     */
+    public function getDailyTargetStatus(Request $request)
+    {
+        $userId = $request->input('user_id');
+        if (!$userId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User ID is required'
+            ]);
+        }
+
+        $user = SignUp::find($userId);
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ]);
+        }
+
+        $today = Carbon::today()->toDateString();
+        $start = $today . ' 00:00:00';
+        $end = $today . ' 23:59:59';
+
+        // Count verifications for today
+        $verificationsToday = DB::table('verification_requests as vr')
+            ->join('sign_up as s', 'vr.user_id', '=', 's.id')
+            ->where('s.referredBy', $user->referCode)
+            ->where('vr.status', 'Approved')
+            ->whereBetween('vr.verified_raw_time', [$start, $end])
+            ->count();
+
+        // Get history of daily bonus for this user
+        $history = Transaction::where('user_id', $userId)
+            ->where('payment_gateway', 'Daily Bonus')
+            ->orderBy('id', 'desc')
+            ->get(['amount', 'description', 'created_at']);
+            
+        $totalEarned = 0;
+        $tierCounts = [
+            '20' => 0,
+            '30' => 0,
+            '40' => 0,
+            '60' => 0
+        ];
+
+        foreach($history as $item) {
+            $totalEarned += (float) $item->amount;
+            $amtStr = (string) intval($item->amount);
+            if (isset($tierCounts[$amtStr])) {
+                $tierCounts[$amtStr]++;
+            }
+        }
+
+        // Expected reward structure
+        $structure = [
+            ['verifications' => 2, 'reward' => 20],
+            ['verifications' => 3, 'reward' => 30],
+            ['verifications' => 4, 'reward' => 40],
+            ['verifications' => '5+', 'reward' => 60],
+        ];
+
+        return response()->json([
+            'status' => true,
+            'today_verifications' => $verificationsToday,
+            'total_earned' => $totalEarned,
+            'tier_counts' => $tierCounts,
+            'reward_structure' => $structure,
+            'history' => $history
+        ]);
+    }
+
+    public function getWeeklyTargetStatus(Request $request)
+    {
+        $userId = $request->input('user_id');
+        if (!$userId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User ID is required'
+            ]);
+        }
+
+        $user = SignUp::find($userId);
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ]);
+        }
+
+        // Current week (Saturday to Friday)
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+        $endOfWeek = $startOfWeek->copy()->addDays(6)->endOfDay();
+
+        // Count verifications for this week
+        $verificationsWeek = DB::table('verification_requests as vr')
+            ->join('sign_up as s', 'vr.user_id', '=', 's.id')
+            ->where('s.referredBy', $user->referCode)
+            ->where('vr.status', 'Approved')
+            ->whereBetween('vr.verified_raw_time', [$startOfWeek->toDateTimeString(), $endOfWeek->toDateTimeString()])
+            ->count();
+
+        // Get history of weekly bonus for this user
+        $history = Transaction::where('user_id', $userId)
+            ->where('payment_gateway', 'Weekly Bonus')
+            ->orderBy('id', 'desc')
+            ->get(['amount', 'description', 'created_at']);
+            
+        $totalEarned = 0;
+        $tierCounts = [
+            '100' => 0,
+            '150' => 0,
+            '200' => 0,
+            '400' => 0
+        ];
+
+        foreach($history as $item) {
+            $totalEarned += (float) $item->amount;
+            $amtStr = (string) intval($item->amount);
+            if (isset($tierCounts[$amtStr])) {
+                $tierCounts[$amtStr]++;
+            }
+        }
+
+        // Expected reward structure
+        $structure = [
+            ['verifications' => '10', 'reward' => 100],
+            ['verifications' => '15', 'reward' => 150],
+            ['verifications' => '20', 'reward' => 200],
+            ['verifications' => '30+', 'reward' => 400],
+        ];
+
+        return response()->json([
+            'status' => true,
+            'week_verifications' => $verificationsWeek,
+            'total_earned' => $totalEarned,
+            'tier_counts' => $tierCounts,
+            'reward_structure' => $structure,
+            'history' => $history
+        ]);
+    }
 }

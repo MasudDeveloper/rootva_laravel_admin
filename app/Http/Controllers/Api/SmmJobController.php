@@ -58,8 +58,8 @@ class SmmJobController extends Controller
 
         $analytics = [];
         $totalEarnings = 0;
-        $taskTypes = ['gmail', 'facebook_cookies', 'facebook_zero_friend', 'facebook_number_id', 'hotmail_30_friends', 'hotmail_0_friends', 'instagram_2fa', 'instagram_cookies', 'whatsapp', 'telegram'];
-        foreach ($taskTypes as $type) {
+        $allTaskTypes = array_unique(array_merge($dbConfigs->keys()->toArray(), $submissionsCount->keys()->toArray()));
+        foreach ($allTaskTypes as $type) {
             $count = isset($submissionsCount[$type]) ? $submissionsCount[$type]->total : 0;
             $income = isset($submissionsCount[$type]) ? (double) $submissionsCount[$type]->income : 0.0;
             $analytics[$type] = [

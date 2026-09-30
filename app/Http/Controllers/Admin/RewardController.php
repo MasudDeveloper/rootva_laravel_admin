@@ -32,61 +32,82 @@ class RewardController extends Controller
         $start = $yesterday->startOfDay()->toDateTimeString();
         $end = $yesterday->endOfDay()->toDateTimeString();
 
-        // Find the top referrer with >= 4 approved verifications yesterday
-        $topReferrer = DB::table('verification_requests as vr')
+        // Find all referrers with >= 2 approved verifications yesterday
+        $referrers = DB::table('verification_requests as vr')
             ->join('sign_up as s', 'vr.user_id', '=', 's.id')
             ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
             ->select('r.id as user_id', 'r.referCode', 'r.name', DB::raw('COUNT(*) as total'))
             ->where('vr.status', 'Approved')
             ->whereBetween('vr.verified_raw_time', [$start, $end])
             ->groupBy('s.referredBy', 'r.id', 'r.referCode', 'r.name')
-            ->having('total', '>=', 4)
-            ->orderByDesc('total')
-            ->first();
+            ->having('total', '>=', 2)
+            ->get();
 
-        if (!$topReferrer) {
-            return back()->with('error', 'No user qualified for the daily bonus yesterday (minimum 4 verifications required).');
+        if ($referrers->isEmpty()) {
+            return back()->with('error', 'No user qualified for the daily bonus yesterday (minimum 2 verifications required).');
         }
 
-        // Check if already given
-        $exists = Transaction::where('user_id', $topReferrer->user_id)
-            ->where('payment_gateway', 'Daily Bonus')
-            ->whereDate('created_at', Carbon::today())
-            ->exists();
+        $count = 0;
+        $totalAmount = 0;
 
-        if ($exists) {
-            return back()->with('error', "Winner ({$topReferrer->name}) has already received today's daily bonus.");
-        }
+        DB::transaction(function () use ($referrers, $yesterday, &$count, &$totalAmount) {
+            foreach ($referrers as $referrer) {
+                // Determine bonus amount based on the new rules
+                $total = $referrer->total;
+                $amount = 0;
+                if ($total == 2) $amount = 20.00;
+                elseif ($total == 3) $amount = 30.00;
+                elseif ($total == 4) $amount = 40.00;
+                elseif ($total >= 5) $amount = 60.00;
 
-        DB::transaction(function () use ($topReferrer, $yesterday) {
-            $user = SignUp::find($topReferrer->user_id);
-            $amount = 100.00;
+                if ($amount == 0) continue;
 
-            // 1. Update Balance
-            $user->increment('wallet_balance', $amount);
+                // Check if already given for yesterday's work
+                $exists = Transaction::where('user_id', $referrer->user_id)
+                    ->where('payment_gateway', 'Daily Bonus')
+                    ->whereDate('created_at', Carbon::today())
+                    ->exists();
 
-            // 2. Log Transaction
-            Transaction::create([
-                'user_id' => $user->id,
-                'refer_id' => $user->referCode, // Legacy logic uses winner's own referCode here sometimes
-                'amount' => $amount,
-                'type' => 'income',
-                'payment_gateway' => 'Daily Bonus',
-                'description' => "🎉 Daily Winner Bonus for {$topReferrer->total} verifications on " . $yesterday->format('Y-m-d'),
-                'update_at' => now()->format('d-m-Y h:i A'),
-                'created_at' => now()->format('d-m-Y h:i A'),
-                'date' => now()
-            ]);
+                if ($exists) {
+                    continue;
+                }
 
-            \App\Models\Notification::create([
-                'user_id' => $user->id,
-                'message' => "অভিনন্দন! আপনি ডেইলি বোনাস হিসেবে ৳{$amount} পেয়েছেন।",
-                'is_read' => 0,
-                'created_at' => now()->format('d-m-Y h:i A')
-            ]);
+                $user = SignUp::find($referrer->user_id);
+                if (!$user) continue;
+
+                // 1. Update Balance
+                $user->increment('wallet_balance', $amount);
+
+                // 2. Log Transaction
+                Transaction::create([
+                    'user_id' => $user->id,
+                    'refer_id' => $user->referCode,
+                    'amount' => $amount,
+                    'type' => 'income',
+                    'payment_gateway' => 'Daily Bonus',
+                    'description' => "🎉 Daily Target Bonus for {$referrer->total} verifications on " . $yesterday->format('Y-m-d'),
+                    'update_at' => now()->format('d-m-Y h:i A'),
+                    'created_at' => now()->format('d-m-Y h:i A'),
+                    'date' => now()
+                ]);
+
+                \App\Models\Notification::create([
+                    'user_id' => $user->id,
+                    'message' => "অভিনন্দন! গতকালের ডেইলি টার্গেট পূরণের জন্য আপনি ৳{$amount} বোনাস পেয়েছেন।",
+                    'is_read' => 0,
+                    'created_at' => now()->format('d-m-Y h:i A')
+                ]);
+
+                $count++;
+                $totalAmount += $amount;
+            }
         });
 
-        return back()->with('success', "Daily bonus of ৳100 successfully awarded to {$topReferrer->name}!");
+        if ($count == 0) {
+            return back()->with('error', 'Qualified users have already received their daily bonus today.');
+        }
+
+        return back()->with('success', "Daily target bonus successfully awarded to {$count} users. Total amount: ৳{$totalAmount}!");
     }
 
     /**
@@ -108,57 +129,80 @@ class RewardController extends Controller
         $start = $lastWeek->startOfDay()->toDateTimeString();
         $end = Carbon::now()->endOfDay()->toDateTimeString();
 
-        // Logic: Top referrer of the last 7 days with >= 15 verifications
-        $topReferrer = DB::table('verification_requests as vr')
-            ->join('sign_up as s', 'vr.user_id', '=', 's.id')
-            ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
-            ->select('r.id as user_id', 'r.referCode', 'r.name', DB::raw('COUNT(*) as total'))
-            ->where('vr.status', 'Approved')
-            ->whereBetween('vr.verified_raw_time', [$start, $end])
-            ->groupBy('s.referredBy', 'r.id', 'r.referCode', 'r.name')
-            ->having('total', '>=', 15)
-            ->orderByDesc('total')
-            ->first();
-
-        if (!$topReferrer) {
-            return back()->with('error', 'No user qualified for the weekly bonus (minimum 15 verifications required).');
-        }
-
-        // Check if weekly bonus already distributed in the last 7 days
+        // Check if weekly bonus already distributed recently
         $exists = Transaction::where('payment_gateway', 'Weekly Bonus')
-            ->where('date', '>=', Carbon::now()->subDays(7))
+            ->where('date', '>=', Carbon::now()->subDays(6))
             ->exists();
 
         if ($exists) {
             return back()->with('error', 'Weekly bonus has already been distributed for this week.');
         }
 
-        DB::transaction(function () use ($topReferrer) {
-            $user = SignUp::find($topReferrer->user_id);
-            $amount = 1000.00; // Reward for weekly top performer
-            $user->increment('wallet_balance', $amount);
+        // Logic: All referrers of the last 7 days with >= 10 verifications
+        $referrers = DB::table('verification_requests as vr')
+            ->join('sign_up as s', 'vr.user_id', '=', 's.id')
+            ->join('sign_up as r', 's.referredBy', '=', 'r.referCode')
+            ->select('r.id as user_id', 'r.referCode', 'r.name', DB::raw('COUNT(*) as total'))
+            ->where('vr.status', 'Approved')
+            ->whereBetween('vr.verified_raw_time', [$start, $end])
+            ->groupBy('s.referredBy', 'r.id', 'r.referCode', 'r.name')
+            ->having('total', '>=', 10)
+            ->get();
 
-            Transaction::create([
-                'user_id' => $user->id,
-                'refer_id' => $user->referCode,
-                'amount' => $amount,
-                'type' => 'income',
-                'payment_gateway' => 'Weekly Bonus',
-                'description' => "🏆 Weekly Top Referrer Bonus for {$topReferrer->total} verifications in 7 days",
-                'update_at' => now()->format('d-m-Y h:i A'),
-                'created_at' => now()->format('d-m-Y h:i A'),
-                'date' => now()
-            ]);
+        if ($referrers->isEmpty()) {
+            return back()->with('error', 'No user qualified for the weekly bonus (minimum 10 verifications required).');
+        }
 
-            \App\Models\Notification::create([
-                'user_id' => $user->id,
-                'message' => "অভিনন্দন! আপনি উইকলি টপ রেফারার হিসেবে ৳{$amount} বোনাস পেয়েছেন।",
-                'is_read' => 0,
-                'created_at' => now()->format('d-m-Y h:i A')
-            ]);
+        $count = 0;
+        $totalAmount = 0;
+
+        DB::transaction(function () use ($referrers, &$count, &$totalAmount) {
+            foreach ($referrers as $referrer) {
+                $total = $referrer->total;
+                $amount = 0;
+
+                if ($total >= 30) {
+                    $amount = 400;
+                } elseif ($total >= 20) {
+                    $amount = 200;
+                } elseif ($total >= 15) {
+                    $amount = 150;
+                } elseif ($total >= 10) {
+                    $amount = 100;
+                }
+
+                if ($amount > 0) {
+                    $user = SignUp::find($referrer->user_id);
+                    if ($user) {
+                        $user->increment('wallet_balance', $amount);
+
+                        Transaction::create([
+                            'user_id' => $user->id,
+                            'refer_id' => $user->referCode,
+                            'amount' => $amount,
+                            'type' => 'income',
+                            'payment_gateway' => 'Weekly Bonus',
+                            'description' => "🎉 Weekly Target Bonus for {$total} verifications in 7 days",
+                            'update_at' => now()->format('d-m-Y h:i A'),
+                            'created_at' => now()->format('d-m-Y h:i A'),
+                            'date' => now()
+                        ]);
+
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'message' => "অভিনন্দন! আপনি উইকলি টার্গেট বোনাস হিসেবে ৳{$amount} পেয়েছেন।",
+                            'is_read' => 0,
+                            'created_at' => now()->format('d-m-Y h:i A')
+                        ]);
+
+                        $count++;
+                        $totalAmount += $amount;
+                    }
+                }
+            }
         });
 
-        return back()->with('success', "Weekly bonus of ৳1000 successfully awarded to {$topReferrer->name}!");
+        return back()->with('success', "Weekly bonus of ৳{$totalAmount} successfully distributed to {$count} users!");
     }
 
     /**

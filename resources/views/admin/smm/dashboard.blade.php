@@ -86,7 +86,13 @@
                     </form>
                 </div>
 
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">SMM Service Settings</h3>
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">SMM Service Settings</h3>
+                    <button type="button" onclick="openCreateTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold transition-all active:scale-95 flex items-center space-x-1.5 shadow shadow-indigo-600/30">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add New Project</span>
+                    </button>
+                </div>
                 <div class="space-y-4">
                     @foreach($configs as $conf)
                     <div class="dark-card rounded-2xl p-5 space-y-4">
@@ -95,12 +101,21 @@
                                 <span class="w-2.5 h-2.5 rounded-full {{ $conf->status === 'active' ? 'bg-emerald-500 shadow shadow-emerald-500/50' : 'bg-red-500 shadow shadow-red-500/50' }}"></span>
                                 <span>{{ $conf->name }}</span>
                             </h4>
-                            <span class="text-[10px] text-slate-400">Type: {{ $conf->task_type }}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] text-slate-400">Type: {{ $conf->task_type }}</span>
+                                <button type="button" onclick="confirmDeleteProject('{{ $conf->task_type }}')" class="text-red-400 hover:text-red-300 text-xs p-1" title="Delete Project">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Dynamic configuration modification form -->
                         <form action="{{ route('admin.smm.config.update', $conf->task_type) }}" method="POST" class="space-y-3">
                             @csrf
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">Project Name</label>
+                                <input type="text" name="name" value="{{ $conf->name }}" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                            </div>
                              <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 block mb-1">Today's Price (৳)</label>
@@ -119,7 +134,32 @@
                                 <label class="text-[10px] font-bold text-slate-400 block mb-1">Service Notice Guidelines</label>
                                 <textarea name="notice" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500" rows="2">{{ $conf->notice }}</textarea>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+
+                            <!-- Custom Required Input Fields -->
+                            <div class="border-t border-slate-800/80 pt-2.5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-[10px] font-bold text-slate-400">User Input Fields Required</label>
+                                    <button type="button" onclick="addFieldRow('fields-container-{{ $conf->task_type }}')" class="text-[10px] text-indigo-400 font-bold hover:underline">+ Add Field</button>
+                                </div>
+                                <div id="fields-container-{{ $conf->task_type }}" class="space-y-2">
+                                    @if(!empty($conf->required_fields) && is_array($conf->required_fields))
+                                        @foreach($conf->required_fields as $idx => $f)
+                                            <div class="flex items-center space-x-2 text-xs">
+                                                <input type="text" name="field_labels[]" value="{{ is_array($f) ? ($f['label'] ?? '') : $f }}" placeholder="Field Label (e.g. Channel Link)" class="flex-1 bg-slate-900 border border-slate-800 text-[11px] px-2 py-1.5 rounded-lg text-white focus:outline-none">
+                                                <select name="field_types[]" class="bg-slate-900 border border-slate-800 text-[11px] px-2 py-1.5 rounded-lg text-white">
+                                                    <option value="text" {{ (is_array($f) && ($f['type'] ?? '') === 'text') ? 'selected' : '' }}>Text</option>
+                                                    <option value="url" {{ (is_array($f) && ($f['type'] ?? '') === 'url') ? 'selected' : '' }}>URL</option>
+                                                    <option value="number" {{ (is_array($f) && ($f['type'] ?? '') === 'number') ? 'selected' : '' }}>Number</option>
+                                                </select>
+                                                <input type="hidden" name="field_required[{{ $loop->index }}]" value="1">
+                                                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 pt-2">
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 block mb-1">Status</label>
                                     <select name="status" class="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-2 rounded-lg text-white focus:outline-none focus:border-indigo-500">
@@ -128,7 +168,7 @@
                                     </select>
                                 </div>
                                 <div class="flex items-end">
-                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">Update</button>
+                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs transition-all active:scale-95">Update Project</button>
                                 </div>
                             </div>
                         </form>
@@ -213,6 +253,73 @@
 
     </div>
 
+    <!-- Create New SMM Project Modal -->
+    <div id="create-task-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex justify-center items-center p-4">
+        <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white space-y-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h4 class="font-bold text-md text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-folder-plus text-indigo-500"></i>
+                    <span>Add New SMM Project</span>
+                </h4>
+                <button type="button" onclick="closeCreateTaskModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form action="{{ Route::has('admin.smm.task.store') ? route('admin.smm.task.store') : url('/admin/smm-panel/task/store') }}" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-1">Project Name <span class="text-red-400">*</span></label>
+                    <input type="text" name="name" required placeholder="e.g. Telegram Channel Join" class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-1">Task Type Identifier / Slug (Optional)</label>
+                    <input type="text" name="task_type_input" placeholder="e.g. telegram_channel_join (blank for auto)" class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Payout Rate (৳) <span class="text-red-400">*</span></label>
+                        <input type="number" step="0.01" name="rate" required value="1.00" class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Daily PW (Optional)</label>
+                        <input type="text" name="daily_password" placeholder="Code required to submit" class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-1">YouTube Tutorial Video URL (Optional)</label>
+                    <input type="url" name="video_url" placeholder="https://youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 block mb-1">Project Rules / Guidelines Notice</label>
+                    <textarea name="notice" rows="2" placeholder="প্রজেক্টের নিয়মাবলী লিখুন..." class="w-full bg-slate-950 border border-slate-800 text-xs px-3 py-2.5 rounded-xl text-white focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+                
+                <!-- Dynamic Input Fields Setup -->
+                <div class="border-t border-slate-800 pt-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-bold text-slate-300">User Input Fields Required</label>
+                        <button type="button" onclick="addFieldRow('new-project-fields-container')" class="text-xs text-indigo-400 font-bold hover:underline">+ Add Input Field</button>
+                    </div>
+                    <div id="new-project-fields-container" class="space-y-2">
+                        <div class="flex items-center space-x-2 text-xs">
+                            <input type="text" name="field_labels[]" value="Work Proof / Username" placeholder="Field Label (e.g. Channel Link)" class="flex-1 bg-slate-950 border border-slate-800 text-xs px-3 py-2 rounded-xl text-white focus:outline-none">
+                            <select name="field_types[]" class="bg-slate-950 border border-slate-800 text-xs px-3 py-2 rounded-xl text-white">
+                                <option value="text">Text</option>
+                                <option value="url">URL</option>
+                                <option value="number">Number</option>
+                            </select>
+                            <input type="hidden" name="field_required[]" value="1">
+                            <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeCreateTaskModal()" class="bg-slate-800 text-xs px-4 py-2.5 rounded-xl font-bold">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-xs px-5 py-2.5 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/20">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Standalone Reject Feedback Form Modal -->
     <div id="reject-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex justify-center items-center p-4">
         <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white space-y-5">
@@ -237,6 +344,63 @@
     </div>
 
     <script>
+        function openCreateTaskModal() {
+            document.getElementById('create-task-modal').classList.remove('hidden');
+        }
+
+        function closeCreateTaskModal() {
+            document.getElementById('create-task-modal').classList.add('hidden');
+        }
+
+        function addFieldRow(containerId) {
+            const container = document.getElementById(containerId);
+            const count = container.children.length;
+            if (count >= 4) {
+                alert('সর্বোচ্চ ৪টি ইনপুট ফিল্ড যোগ করতে পারবেন।');
+                return;
+            }
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2 text-xs';
+            div.innerHTML = `
+                <input type="text" name="field_labels[]" placeholder="Field Label (e.g. Account Link)" class="flex-1 bg-slate-900 border border-slate-800 text-xs px-2.5 py-1.5 rounded-lg text-white focus:outline-none">
+                <select name="field_types[]" class="bg-slate-900 border border-slate-800 text-xs px-2 py-1.5 rounded-lg text-white">
+                    <option value="text">Text</option>
+                    <option value="url">URL</option>
+                    <option value="number">Number</option>
+                </select>
+                <input type="hidden" name="field_required[${count}]" value="1">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
+        function confirmDeleteProject(taskType) {
+            if (confirm('আপনি কি নিশ্চিত যে এই প্রজেক্টটি মুছে ফেলতে চান?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                let actionUrl = '/admin/smm/task/' + taskType;
+                if (window.location.pathname.includes('smm-panel')) {
+                    actionUrl = '/admin/smm-panel/task/' + taskType;
+                }
+                form.action = actionUrl;
+                
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = '{{ csrf_token() }}';
+                form.appendChild(csrf);
+
+                const method = document.createElement('input');
+                method.type = 'hidden';
+                method.name = '_method';
+                method.value = 'DELETE';
+                form.appendChild(method);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
         function openRejectModal(id) {
             document.getElementById('reject-form').action = '/admin/smm/submissions/' + id + '/reject';
             document.getElementById('reject-modal').classList.remove('hidden');

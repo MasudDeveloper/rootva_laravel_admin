@@ -1473,10 +1473,9 @@
 
             if (task.required_fields && task.required_fields.length > 0) {
                 task.required_fields.forEach((field, index) => {
-                    // Make labels human readable
-                    let labelName = field.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    let inputType = field.includes('password') ? 'text' : 'text';
-                    let placeholder = `Enter your ${labelName.toLowerCase()}...`;
+                    let labelName = typeof field === 'object' && field !== null && field.label ? field.label : (typeof field === 'string' ? field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : `Field ${index+1}`);
+                    let inputType = (typeof field === 'object' && field !== null && field.type) ? field.type : 'text';
+                    let placeholder = `Enter ${labelName.toLowerCase()}...`;
 
                     inputsHtml += `
                         <div>

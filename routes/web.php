@@ -61,6 +61,8 @@ if (config('app.domain')) {
         Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
         Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
         Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
+        Route::post('/task/store', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'storeTask'])->name('task.store');
+        Route::delete('/task/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'deleteTask'])->name('task.delete');
         Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
     });
 }
@@ -75,6 +77,8 @@ Route::prefix('admin/smm-panel')->name('admin.smm.fallback.')->group(function ()
     Route::post('/login', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'login'])->name('login.submit');
     Route::get('/dashboard', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'dashboard'])->name('dashboard');
     Route::post('/config/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'updateConfig'])->name('config.update');
+    Route::post('/task/store', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'storeTask'])->name('task.store');
+    Route::delete('/task/{taskType}', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'deleteTask'])->name('task.delete');
     Route::get('/logout', [\App\Http\Controllers\Admin\SmmPortalAdminController::class, 'logout'])->name('logout');
 });
 

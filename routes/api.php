@@ -73,6 +73,8 @@ Route::middleware('legacy.auth')->group(function () {
     Route::get('get_weekly_winners_by_date.php', [LegacyBonusController::class, 'getWeeklyWinnersByDate']);
     Route::get('get_daily_winners_by_date.php', [LegacyBonusController::class, 'getWinnersByDate']);
     Route::get('get_daily_live_ranking.php', [LegacyBonusController::class, 'getTodayLiveRanking']);
+    Route::post('get_daily_target_status.php', [LegacyBonusController::class, 'getDailyTargetStatus']);
+    Route::post('get_weekly_target_status.php', [LegacyBonusController::class, 'getWeeklyTargetStatus']);
 
     Route::post('get_Data.php', [LegacyUserController::class, 'getUserData']);
     Route::post('update_active_status.php', [LegacyUserController::class, 'updateActiveStatus']);
