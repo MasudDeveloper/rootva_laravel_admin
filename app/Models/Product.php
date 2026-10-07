@@ -18,6 +18,14 @@ class Product extends Model
     {
         if (empty($value)) return null;
 
+        if (str_starts_with($value, 'https://') && !str_contains($value, '127.0.0.1') && !str_contains($value, 'localhost')) {
+            return $value;
+        }
+
+        if (str_starts_with($value, 'http://') && !str_contains($value, '127.0.0.1') && !str_contains($value, 'localhost')) {
+            return str_replace('http://', 'https://', $value);
+        }
+
         if (preg_match('#/(uploads/.*)$#i', $value, $matches)) {
             return '/' . $matches[1];
         }
@@ -26,12 +34,7 @@ class Product extends Model
             return $value;
         }
 
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
-            $path = parse_url($value, PHP_URL_PATH);
-            return $path ? preg_replace('#^/public/#', '/', $path) : $value;
-        }
-
-        return '/uploads/products/' . $value;
+        return '/uploads/products/' . ltrim($value, '/');
     }
 
     public function category()
