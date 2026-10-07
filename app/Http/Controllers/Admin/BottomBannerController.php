@@ -33,7 +33,7 @@ class BottomBannerController extends Controller
             }
             
             $image->move($destinationPath, $name);
-            $url = asset('uploads/bottom_banners/' . $name);
+            $url = '/uploads/bottom_banners/' . $name;
 
             BottomBanner::create([
                 'image_url' => $url,

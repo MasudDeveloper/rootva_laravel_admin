@@ -33,7 +33,7 @@ class BannerController extends Controller
             }
             
             $image->move($destinationPath, $name);
-            $url = asset('uploads/banners/' . $name);
+            $url = '/uploads/banners/' . $name;
 
             Banner::create([
                 'image_url' => $url,

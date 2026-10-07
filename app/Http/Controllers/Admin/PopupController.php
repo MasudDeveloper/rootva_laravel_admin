@@ -26,7 +26,7 @@ class PopupController extends Controller
             $image = $request->file('image');
             $imageName = time() . '_' . $image->getClientOriginalName();
             $image->move(public_path('uploads/popups'), $imageName);
-            $imageUrl = url('uploads/popups/' . $imageName);
+            $imageUrl = '/uploads/popups/' . $imageName;
 
             PopupBanner::create([
                 'image_url' => $imageUrl,

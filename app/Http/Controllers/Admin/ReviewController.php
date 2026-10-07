@@ -32,7 +32,7 @@ class ReviewController extends Controller
             }
             
             $image->move($destinationPath, $name);
-            $url = asset('uploads/reviews/' . $name);
+            $url = '/uploads/reviews/' . $name;
 
             Review::create([
                 'image_url' => $url,
