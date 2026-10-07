@@ -1,5 +1,10 @@
 <IfModule mod_rewrite.c>
    RewriteEngine On
+
+   # Legacy image URL backward compatibility rules
+   RewriteRule ^public/uploads/(.*)$ public/uploads/$1 [L,NC]
+   RewriteRule ^products/uploads/(.*)$ public/uploads/products/$1 [L,NC]
+
    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 

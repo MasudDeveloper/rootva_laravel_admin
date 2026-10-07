@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Legacy image URL backward compatibility rules
+    RewriteRule ^public/uploads/(.*)$ uploads/$1 [L,NC]
+    RewriteRule ^products/uploads/(.*)$ uploads/products/$1 [L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
