@@ -214,4 +214,40 @@ class LeaderboardController extends Controller
             'winner' => $winners // Android expects "winner"
         ]);
     }
+
+    /**
+     * Get Top 100 Success Stories (Top Members by Total Income)
+     */
+    public function getSuccessStories(Request $request)
+    {
+        $users = SignUp::select('id', 'name', 'number', 'profile_pic_url', 'referCode', 'wallet_balance')
+            ->where('is_verified', '!=', 3)
+            ->orderBy('wallet_balance', 'desc')
+            ->limit(100)
+            ->get();
+
+        $response = $users->map(function ($user, $index) {
+            $maskedNumber = '';
+            if ($user->number) {
+                $maskedNumber = strlen($user->number) >= 7 ? substr($user->number, 0, 7) . '****' : $user->number;
+            }
+
+            return [
+                'rank' => $index + 1,
+                'user_id' => (string)$user->id,
+                'name' => $user->name ?? 'User',
+                'number' => $maskedNumber,
+                'profile_pic_url' => $user->profile_pic_url,
+                'referCode' => $user->referCode ?? ('REF' . $user->id),
+                'total_income' => (double)($user->wallet_balance ?? 0),
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'success' => true,
+            'data' => $response
+        ]);
+    }
 }
+

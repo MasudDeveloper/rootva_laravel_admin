@@ -68,6 +68,7 @@ Route::get('get_sim_offer.php', [LegacySimOfferController::class, 'getSimOffers'
 Route::middleware('legacy.auth')->group(function () {
     // --- Protected Leaderboard APIs ---
     Route::get('get_leaderboard.php', [LeaderboardController::class, 'getRanking']);
+    Route::get('get_success_stories.php', [LeaderboardController::class, 'getSuccessStories']);
     Route::get('get_daily_winners.php', [LeaderboardController::class, 'getDailyWinners']);
     Route::get('get_weekly_ranking.php', [LegacyBonusController::class, 'getWeeklyRanking']);
     Route::get('get_weekly_winners_by_date.php', [LegacyBonusController::class, 'getWeeklyWinnersByDate']);
