@@ -216,13 +216,36 @@ class LeaderboardController extends Controller
     }
 
     /**
-     * Get Top 100 Success Stories (Top Members by Total Income)
+     * Get Top 100 Success Stories (Top Members by Total Income: Wallet Balance + Approved Withdrawals)
      */
     public function getSuccessStories(Request $request)
     {
-        $users = SignUp::select('id', 'name', 'number', 'profile_pic_url', 'referCode', 'wallet_balance')
-            ->where('is_verified', '!=', 3)
-            ->orderBy('wallet_balance', 'desc')
+        $users = SignUp::select(
+                'sign_up.id',
+                'sign_up.name',
+                'sign_up.number',
+                'sign_up.profile_pic_url',
+                'sign_up.referCode',
+                'sign_up.wallet_balance',
+                DB::raw("
+                    GREATEST(
+                        COALESCE(sign_up.wallet_balance, 0) + COALESCE((
+                            SELECT SUM(amount) FROM transactions 
+                            WHERE transactions.user_id = sign_up.id 
+                            AND transactions.type IN ('withdraw', 'voucher_withdraw', 'payment')
+                            AND (transactions.description = 'Withdraw Request Approved' OR transactions.description LIKE '%Approved%')
+                        ), 0),
+                        COALESCE((
+                            SELECT SUM(amount) FROM transactions 
+                            WHERE transactions.user_id = sign_up.id 
+                            AND LOWER(transactions.type) IN ('add', 'commission', 'income', 'course_bonus')
+                        ), 0),
+                        COALESCE(sign_up.wallet_balance, 0)
+                    ) as calculated_total_income
+                ")
+            )
+            ->where('sign_up.is_verified', '!=', 3)
+            ->orderBy('calculated_total_income', 'desc')
             ->limit(100)
             ->get();
 
@@ -239,7 +262,7 @@ class LeaderboardController extends Controller
                 'number' => $maskedNumber,
                 'profile_pic_url' => $user->profile_pic_url,
                 'referCode' => $user->referCode ?? ('REF' . $user->id),
-                'total_income' => (double)($user->wallet_balance ?? 0),
+                'total_income' => round((double)$user->calculated_total_income, 2),
             ];
         });
 
