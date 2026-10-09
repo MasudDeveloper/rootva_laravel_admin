@@ -159,14 +159,22 @@ class LegacyCourseController extends Controller
 
     private function durationToSeconds($duration)
     {
-        $parts = explode(':', $duration);
-        if (count($parts) === 3) {
-            return ($parts[0] * 3600) + ($parts[1] * 60) + $parts[2];
-        } elseif (count($parts) === 2) {
-            return ($parts[0] * 60) + $parts[1];
-        } else {
-            return intval($duration);
+        if (empty($duration)) {
+            return 180; // Default 3 minutes = 180 seconds
         }
+        if (str_contains($duration, ':')) {
+            $parts = explode(':', $duration);
+            if (count($parts) === 3) {
+                return ($parts[0] * 3600) + ($parts[1] * 60) + $parts[2];
+            } elseif (count($parts) === 2) {
+                return ($parts[0] * 60) + $parts[1];
+            }
+        }
+        $val = floatval($duration);
+        if ($val <= 0) {
+            return 180;
+        }
+        return (int)($val <= 30 ? round($val * 60) : round($val));
     }
 
     /**

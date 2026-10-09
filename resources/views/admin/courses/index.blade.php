@@ -88,11 +88,20 @@
                                 @endif
                             </td>
                             <td class="py-3">
-                                <span class="badge bg-light text-dark rounded-pill">{{ $course->duration }}s</span>
+                                @php
+                                    $durSec = (int)($course->duration ?? 180);
+                                    if ($durSec <= 0) $durSec = 180;
+                                    $durMin = round($durSec / 60, 1);
+                                @endphp
+                                <span class="badge bg-light text-dark rounded-pill"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ $durMin }} Min</span>
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button onclick="editCourse({{ $course->id }}, '{{ addslashes($course->title) }}', '{{ $course->youtube_url }}', '{{ $course->duration }}')" class="btn btn-light btn-sm rounded-circle text-primary shadow-sm">
+                                    <button type="button" class="btn btn-light btn-sm rounded-circle text-primary shadow-sm edit-course-btn" 
+                                            data-id="{{ $course->id }}" 
+                                            data-title="{{ e($course->title) }}" 
+                                            data-url="{{ $course->youtube_url }}" 
+                                            data-duration="{{ $durMin }}">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     <form action="{{ route('admin.courses.destroy', $course->id) }}" method="POST">
@@ -221,8 +230,9 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Duration (Seconds)</label>
-                        <input type="number" name="duration" class="form-control rounded-3 shadow-sm" placeholder="e.g. 600">
+                        <label class="form-label small fw-bold">Duration in Minutes (ডিফল্ট: ৩ মিনিট)</label>
+                        <input type="number" step="any" name="duration" class="form-control rounded-3 shadow-sm" placeholder="e.g. 3 (ফাঁকা রাখলে বাই ডিফল্ট ৩ মিনিট হবে)">
+                        <div class="form-text extra-small text-muted">মিনিটে সময় দিন (যেমন: 3)। ফাঁকা রাখলে বাই ডিফল্ট ৩ মিনিট হিসেবে সেভ হবে।</div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
@@ -257,8 +267,9 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Duration (Seconds)</label>
-                        <input type="number" name="duration" id="edit_duration" class="form-control rounded-3 shadow-sm">
+                        <label class="form-label small fw-bold">Duration in Minutes (ডিফল্ট: ৩ মিনিট)</label>
+                        <input type="number" step="any" name="duration" id="edit_duration" class="form-control rounded-3 shadow-sm" placeholder="e.g. 3">
+                        <div class="form-text extra-small text-muted">মিনিটে সময় দিন (যেমন: 3)। ফাঁকা রাখলে বাই ডিফল্ট ৩ মিনিট হিসেবে সেভ হবে।</div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
@@ -283,12 +294,21 @@
 
 @section('scripts')
 <script>
-    function editCourse(id, title, url, duration) {
-        document.getElementById('edit_title').value = title;
-        document.getElementById('edit_url').value = url;
-        document.getElementById('edit_duration').value = duration;
-        document.getElementById('editCourseForm').action = `{{ url('/services/courses') }}/${id}`;
-        new bootstrap.Modal(document.getElementById('editCourseModal')).show();
-    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.edit-course-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const id = this.dataset.id;
+                const title = this.dataset.title;
+                const url = this.dataset.url;
+                const duration = this.dataset.duration;
+                
+                document.getElementById('edit_title').value = title;
+                document.getElementById('edit_url').value = url;
+                document.getElementById('edit_duration').value = duration;
+                document.getElementById('editCourseForm').action = `{{ url('/services/courses') }}/${id}`;
+                new bootstrap.Modal(document.getElementById('editCourseModal')).show();
+            });
+        });
+    });
 </script>
 @endsection

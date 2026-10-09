@@ -66,10 +66,13 @@ class CourseController extends Controller
             'youtube_url' => 'required|url',
         ]);
 
+        $durationInput = trim($request->input('duration', ''));
+        $durationSeconds = $this->parseDurationToSeconds($durationInput);
+
         Course::create([
             'title' => $request->title,
             'youtube_url' => $request->youtube_url,
-            'duration' => $request->duration,
+            'duration' => $durationSeconds,
             'created_at' => now()->toDateTimeString(),
         ]);
 
@@ -85,10 +88,13 @@ class CourseController extends Controller
             'youtube_url' => 'required|url',
         ]);
 
+        $durationInput = trim($request->input('duration', ''));
+        $durationSeconds = $this->parseDurationToSeconds($durationInput);
+
         $course->update([
             'title' => $request->title,
             'youtube_url' => $request->youtube_url,
-            'duration' => $request->duration,
+            'duration' => $durationSeconds,
         ]);
 
         return back()->with('success', 'Course video updated!');
@@ -98,5 +104,30 @@ class CourseController extends Controller
     {
         Course::findOrFail($id)->delete();
         return back()->with('success', 'Course video removed!');
+    }
+
+    private function parseDurationToSeconds($input)
+    {
+        if ($input === '' || $input === null) {
+            return 180; // Default 3 minutes = 180 seconds
+        }
+        
+        if (str_contains($input, ':')) {
+            $parts = explode(':', $input);
+            if (count($parts) === 3) {
+                return (int)$parts[0] * 3600 + (int)$parts[1] * 60 + (int)$parts[2];
+            } elseif (count($parts) === 2) {
+                return (int)$parts[0] * 60 + (int)$parts[1];
+            }
+        }
+
+        $num = (float)$input;
+        if ($num <= 0) {
+            return 180; // Default 3 minutes
+        }
+
+        // If input is <= 30 (e.g. 3 for 3 minutes), treat as minutes -> 3 * 60 = 180
+        // If input is > 30 (e.g. 180 for 180 seconds), treat directly as seconds
+        return (int)($num <= 30 ? round($num * 60) : round($num));
     }
 }
