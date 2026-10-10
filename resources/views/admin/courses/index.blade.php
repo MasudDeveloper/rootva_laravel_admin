@@ -305,7 +305,7 @@
                 document.getElementById('edit_title').value = title;
                 document.getElementById('edit_url').value = url;
                 document.getElementById('edit_duration').value = duration;
-                document.getElementById('editCourseForm').action = `{{ url('/services/courses') }}/${id}`;
+                document.getElementById('editCourseForm').action = `{{ url('/admin/services/courses') }}/${id}`;
                 new bootstrap.Modal(document.getElementById('editCourseModal')).show();
             });
         });
