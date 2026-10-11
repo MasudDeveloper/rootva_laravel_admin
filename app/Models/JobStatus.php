@@ -13,7 +13,7 @@ class JobStatus extends Model
         'recharge', 'sim_offer', 'microjob', 'job_post', 'spin_bonus', 
         'math_game', 'leadership', 'daily_bonus', 'weekly_salary', 
         'monthly_salary', 'leaderboard', 'reselling_shop', 'course', 
-        'freelancing_course', 'online_service', 'buy_sale', 'vendor', 'guide'
+        'freelancing_course', 'online_service', 'buy_sale', 'vendor', 'guide', 'video_earning', 'coupon_bonus'
     ];
 
     protected $casts = [
@@ -42,5 +42,7 @@ class JobStatus extends Model
         'buy_sale' => 'integer',
         'vendor' => 'integer',
         'guide' => 'integer',
+        'video_earning' => 'integer',
+        'coupon_bonus' => 'integer',
     ];
 }

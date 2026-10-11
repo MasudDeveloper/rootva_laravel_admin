@@ -59,7 +59,9 @@
                                 'online_service' => 'Online Service',
                                 'buy_sale' => 'Buy Sale',
                                 'vendor' => 'Vendor',
-                                'guide' => 'Guide'
+                                'guide' => 'Guide',
+                                'video_earning' => 'Video Earning',
+                                'coupon_bonus' => 'Coupon Bonus'
                             ];
                         @endphp
 

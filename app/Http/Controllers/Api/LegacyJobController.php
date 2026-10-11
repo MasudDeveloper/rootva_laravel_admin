@@ -42,7 +42,9 @@ class LegacyJobController extends Controller
                 'online_service' => (int)$settings->online_service,
                 'buy_sale' => (int)$settings->buy_sale,
                 'vendor' => (int)$settings->vendor,
-                'guide' => (int)$settings->guide
+                'guide' => (int)$settings->guide,
+                'video_earning' => isset($settings->video_earning) ? (int)$settings->video_earning : 1,
+                'coupon_bonus' => isset($settings->coupon_bonus) ? (int)$settings->coupon_bonus : 1
             ]);
         }
         return response()->json([
@@ -70,7 +72,9 @@ class LegacyJobController extends Controller
             'online_service' => 0,
             'buy_sale' => 1,
             'vendor' => 1,
-            'guide' => 1
+            'guide' => 1,
+            'video_earning' => 1,
+            'coupon_bonus' => 1
         ]);
     }
 

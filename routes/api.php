@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\LegacyContentController;
 use App\Http\Controllers\Api\LegacyNotificationController;
 use App\Http\Controllers\Api\LegacyVerifyController;
 use App\Http\Controllers\Api\LegacyMathController;
+use App\Http\Controllers\Api\LegacyVideoEarningController;
+use App\Http\Controllers\Api\LegacyCouponController;
 use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\PcashApiController;
 use App\Http\Controllers\Api\ECommerceApiController;
@@ -128,6 +130,11 @@ Route::middleware('legacy.auth')->group(function () {
     // Missing Endpoints added for functional parity
 
     Route::post('get_math_income.php', [LegacyMathController::class, 'getMathIncome']);
+    Route::match(['get', 'post'], 'get_video_earning_data.php', [LegacyVideoEarningController::class, 'getVideoEarningData']);
+    Route::post('claim_video_earning.php', [LegacyVideoEarningController::class, 'claimReward']);
+    Route::match(['get', 'post'], 'get_video_income.php', [LegacyVideoEarningController::class, 'getVideoIncome']);
+    Route::match(['get', 'post'], 'get_coupon_data.php', [LegacyCouponController::class, 'getCouponData']);
+    Route::post('claim_coupon.php', [LegacyCouponController::class, 'claimCoupon']);
     Route::get('get_salary_progress.php', [LegacySalaryController::class, 'getSalaryProgress']);
     Route::get('get_spin_progress.php', [LegacySpinController::class, 'getSpinProgress']);
 

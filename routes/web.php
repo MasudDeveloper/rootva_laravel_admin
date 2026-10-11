@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\VideoEarningController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\OnlineServiceOrderController;
 use App\Http\Controllers\Admin\LeadershipController;
@@ -266,6 +268,20 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
             Route::get('/online-service-orders', [OnlineServiceOrderController::class, 'index'])->name('online-service-orders.index');
             Route::post('/online-service-orders/{id}/status', [OnlineServiceOrderController::class, 'updateStatus'])->name('online-service-orders.updateStatus');
+
+            // Video Earning Management
+            Route::get('/video-earnings', [VideoEarningController::class, 'index'])->name('video-earnings.index');
+            Route::post('/video-earnings', [VideoEarningController::class, 'store'])->name('video-earnings.store');
+            Route::post('/video-earnings/{id}/update', [VideoEarningController::class, 'update'])->name('video-earnings.update');
+            Route::delete('/video-earnings/{id}', [VideoEarningController::class, 'destroy'])->name('video-earnings.destroy');
+            Route::post('/video-earnings/{id}/toggle', [VideoEarningController::class, 'toggleStatus'])->name('video-earnings.toggle');
+
+            // Coupon Bonus Management
+            Route::get('/coupons', [CouponController::class, 'index'])->name('coupons.index');
+            Route::post('/coupons', [CouponController::class, 'store'])->name('coupons.store');
+            Route::post('/coupons/{id}/update', [CouponController::class, 'update'])->name('coupons.update');
+            Route::delete('/coupons/{id}', [CouponController::class, 'destroy'])->name('coupons.destroy');
+            Route::post('/coupons/{id}/toggle', [CouponController::class, 'toggleStatus'])->name('coupons.toggle');
         });
 
         // Leadership Rewards (permission: leadership)

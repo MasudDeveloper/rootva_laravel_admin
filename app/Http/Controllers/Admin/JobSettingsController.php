@@ -49,6 +49,8 @@ class JobSettingsController extends Controller
             'buy_sale' => $request->has('buy_sale') ? 1 : 0,
             'vendor' => $request->has('vendor') ? 1 : 0,
             'guide' => $request->has('guide') ? 1 : 0,
+            'video_earning' => $request->has('video_earning') ? 1 : 0,
+            'coupon_bonus' => $request->has('coupon_bonus') ? 1 : 0,
         ];
 
         $status->update($data);

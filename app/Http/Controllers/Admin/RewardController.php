@@ -405,6 +405,7 @@ class RewardController extends Controller
                     // 3. Extra Perk for Level 1
                     if ($currentLevel === 1) {
                         $upliner->increment('math_game', 4);
+                        $upliner->increment('video_earning', 4);
                     }
                     
                     $count++;

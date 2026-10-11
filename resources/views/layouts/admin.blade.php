@@ -111,6 +111,16 @@
                 <span>Courses</span>
             </a>
 
+            <a href="{{ route('admin.video-earnings.index') }}" class="nav-link {{ request()->is('admin/services/video-earnings*') ? 'active' : '' }}">
+                <i class="fa-solid fa-circle-play text-danger"></i>
+                <span>Video Earning</span>
+            </a>
+
+            <a href="{{ route('admin.coupons.index') }}" class="nav-link {{ request()->is('admin/services/coupons*') ? 'active' : '' }}">
+                <i class="fa-solid fa-ticket-simple text-warning"></i>
+                <span>Coupon Bonus</span>
+            </a>
+
             <a href="{{ route('admin.online-services.index') }}" class="nav-link {{ request()->is('admin/services/online-services*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gear"></i>
                 <span>Service List</span>

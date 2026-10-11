@@ -28,6 +28,7 @@ class SignUp extends Authenticatable
         'wallet_balance',
         'voucher_balance',
         'math_game',
+        'video_earning',
         'fcm_token',
         'api_token',
         'verified_at',
@@ -48,6 +49,7 @@ class SignUp extends Authenticatable
         'wallet_balance' => 'double',
         'voucher_balance' => 'double',
         'math_game' => 'integer',
+        'video_earning' => 'integer',
         'verification_popup_shown' => 'integer',
     ];
 

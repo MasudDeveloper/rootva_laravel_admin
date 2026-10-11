@@ -83,9 +83,10 @@ class VerificationRequestController extends Controller
             // 4. Distribute Referral Bonus
             $this->distributeReferralBonus($user, $current_time);
 
-            // 5. math_game + 4 for the direct referrer
+            // 5. math_game + 4 and video_earning + 4 for the direct referrer
             if ($user->referredBy) {
                 SignUp::where('referCode', $user->referredBy)->increment('math_game', 4);
+                SignUp::where('referCode', $user->referredBy)->increment('video_earning', 4);
             }
         });
 
