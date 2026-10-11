@@ -164,57 +164,6 @@
                             </div>
                         </td>
                     </tr>
-
-                    {{-- Edit Modal --}}
-                    <div class="modal fade" id="editCouponModal{{ $coupon->id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg rounded-4">
-                                <form action="{{ route('admin.coupons.update', $coupon->id) }}" method="POST">
-                                    @csrf
-                                    <div class="modal-header border-0 px-4 pt-4">
-                                        <h5 class="modal-title fw-bold">কুপন এডিট করুন</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body px-4 py-3">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">কুপন কোড</label>
-                                            <input type="text" name="code" class="form-control rounded-3 font-monospace text-uppercase" value="{{ $coupon->code }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">কুপন শিরোনাম (Title)</label>
-                                            <input type="text" name="title" class="form-control rounded-3" value="{{ $coupon->title }}">
-                                        </div>
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold small text-muted">টাকার পরিমাণ (৳)</label>
-                                                <input type="number" step="0.5" name="amount" class="form-control rounded-3" value="{{ $coupon->amount }}" required>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold small text-muted">সর্বোচ্চ ক্লেইম সংখ্যা</label>
-                                                <input type="number" name="max_uses" class="form-control rounded-3" value="{{ $coupon->max_uses }}" min="1" required>
-                                                <div class="form-text small">১ দিলে শুধুমাত্র প্রথমজন পাবে।</div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">মেয়াদ উত্তীর্ণের তারিখ (ঐচ্ছিক)</label>
-                                            <input type="datetime-local" name="expires_at" class="form-control rounded-3" value="{{ $coupon->expires_at ? $coupon->expires_at->format('Y-m-d\TH:i') : '' }}">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">স্ট্যাটাস</label>
-                                            <select name="status" class="form-select rounded-3">
-                                                <option value="1" {{ $coupon->status ? 'selected' : '' }}>সচল (Active)</option>
-                                                <option value="0" {{ !$coupon->status ? 'selected' : '' }}>নিষ্ক্রিয় (Inactive)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer border-0 px-4 pb-4">
-                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
-                                        <button type="submit" class="btn btn-primary rounded-pill px-4">আপডেট করুন</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
                     @empty
                     <tr>
                         <td colspan="7" class="text-center py-5">
@@ -286,6 +235,59 @@
         </div>
     </div>
 </div>
+
+{{-- Edit Coupon Modals --}}
+@foreach($coupons as $coupon)
+<div class="modal fade" id="editCouponModal{{ $coupon->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form action="{{ route('admin.coupons.update', $coupon->id) }}" method="POST">
+                @csrf
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold">কুপন এডিট করুন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">কুপন কোড</label>
+                        <input type="text" name="code" class="form-control rounded-3 font-monospace text-uppercase" value="{{ $coupon->code }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">কুপন শিরোনাম (Title)</label>
+                        <input type="text" name="title" class="form-control rounded-3" value="{{ $coupon->title }}">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">টাকার পরিমাণ (৳)</label>
+                            <input type="number" step="0.5" name="amount" class="form-control rounded-3" value="{{ $coupon->amount }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">সর্বোচ্চ ক্লেইম সংখ্যা</label>
+                            <input type="number" name="max_uses" class="form-control rounded-3" value="{{ $coupon->max_uses }}" min="1" required>
+                            <div class="form-text small">১ দিলে শুধুমাত্র প্রথমজন পাবে।</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">মেয়াদ উত্তীর্ণের তারিখ (ঐচ্ছিক)</label>
+                        <input type="datetime-local" name="expires_at" class="form-control rounded-3" value="{{ $coupon->expires_at ? $coupon->expires_at->format('Y-m-d\TH:i') : '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">স্ট্যাটাস</label>
+                        <select name="status" class="form-select rounded-3">
+                            <option value="1" {{ $coupon->status ? 'selected' : '' }}>সচল (Active)</option>
+                            <option value="0" {{ !$coupon->status ? 'selected' : '' }}>নিষ্ক্রিয় (Inactive)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">আপডেট করুন</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
 
 <script>
 function generateRandomCode() {

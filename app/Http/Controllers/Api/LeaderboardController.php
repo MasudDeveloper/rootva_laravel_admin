@@ -242,11 +242,26 @@ class LeaderboardController extends Controller
                         ), 0),
                         COALESCE(sign_up.wallet_balance, 0)
                     ) as calculated_total_income
+                "),
+                DB::raw("
+                    GREATEST(
+                        COALESCE((
+                            SELECT SUM(amount) FROM withdraw_requests 
+                            WHERE withdraw_requests.user_id = sign_up.id 
+                            AND withdraw_requests.status = 'Approved'
+                        ), 0),
+                        COALESCE((
+                            SELECT SUM(amount) FROM transactions 
+                            WHERE transactions.user_id = sign_up.id 
+                            AND transactions.type IN ('withdraw', 'voucher_withdraw', 'payment')
+                            AND (transactions.description = 'Withdraw Request Approved' OR transactions.description LIKE '%Approved%')
+                        ), 0)
+                    ) as total_withdraw
                 ")
             )
             ->where('sign_up.is_verified', '!=', 3)
             ->orderBy('calculated_total_income', 'desc')
-            ->limit(100)
+            ->limit(50)
             ->get();
 
         $response = $users->map(function ($user, $index) {
@@ -263,6 +278,7 @@ class LeaderboardController extends Controller
                 'profile_pic_url' => $user->profile_pic_url,
                 'referCode' => $user->referCode ?? ('REF' . $user->id),
                 'total_income' => round((double)$user->calculated_total_income, 2),
+                'total_withdraw' => round((double)$user->total_withdraw, 2),
             ];
         });
 

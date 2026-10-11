@@ -152,52 +152,6 @@
                             </div>
                         </td>
                     </tr>
-
-                    {{-- Edit Modal for each video --}}
-                    <div class="modal fade" id="editVideoModal{{ $video->id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg rounded-4">
-                                <form action="{{ route('admin.video-earnings.update', $video->id) }}" method="POST">
-                                    @csrf
-                                    <div class="modal-header border-0 px-4 pt-4">
-                                        <h5 class="modal-title fw-bold">ভিডিও এডিট করুন</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body px-4 py-3">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">ভিডিও টাইটেল</label>
-                                            <input type="text" name="title" class="form-control rounded-3" value="{{ $video->title }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">ইউটিউব লিংক (YouTube URL)</label>
-                                            <input type="text" name="youtube_url" class="form-control rounded-3" value="{{ $video->youtube_url }}" required>
-                                        </div>
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold small text-muted">ক্রম বিন্যাস (Serial)</label>
-                                                <input type="number" name="serial" class="form-control rounded-3" value="{{ $video->serial }}" min="1">
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-semibold small text-muted">সময়সীমা (সেকেন্ড)</label>
-                                                <input type="number" name="duration" class="form-control rounded-3" value="{{ $video->duration }}" min="10" required>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-muted">স্ট্যাটাস</label>
-                                            <select name="status" class="form-select rounded-3">
-                                                <option value="1" {{ $video->status ? 'selected' : '' }}>সচল (Active)</option>
-                                                <option value="0" {{ !$video->status ? 'selected' : '' }}>নিষ্ক্রিয় (Inactive)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer border-0 px-4 pb-4">
-                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
-                                        <button type="submit" class="btn btn-primary rounded-pill px-4">সংরক্ষণ করুন</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
                     @empty
                     <tr>
                         <td colspan="6" class="text-center py-5">
@@ -259,4 +213,52 @@
         </div>
     </div>
 </div>
+
+{{-- Edit Video Modals (Outside table and fade-in to prevent z-index backdrop overlay) --}}
+@foreach($videos as $video)
+<div class="modal fade" id="editVideoModal{{ $video->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form action="{{ route('admin.video-earnings.update', $video->id) }}" method="POST">
+                @csrf
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold">ভিডিও এডিট করুন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">ভিডিও টাইটেল</label>
+                        <input type="text" name="title" class="form-control rounded-3" value="{{ $video->title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">ইউটিউব লিংক (YouTube URL)</label>
+                        <input type="text" name="youtube_url" class="form-control rounded-3" value="{{ $video->youtube_url }}" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">ক্রম বিন্যাস (Serial)</label>
+                            <input type="number" name="serial" class="form-control rounded-3" value="{{ $video->serial }}" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-muted">সময়সীমা (সেকেন্ড)</label>
+                            <input type="number" name="duration" class="form-control rounded-3" value="{{ $video->duration }}" min="10" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">স্ট্যাটাস</label>
+                        <select name="status" class="form-select rounded-3">
+                            <option value="1" {{ $video->status ? 'selected' : '' }}>সচল (Active)</option>
+                            <option value="0" {{ !$video->status ? 'selected' : '' }}>নিষ্ক্রিয় (Inactive)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">সংরক্ষণ করুন</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
 @endsection

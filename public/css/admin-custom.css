@@ -203,3 +203,12 @@ body {
     border-color: #e2e8f0;
     color: #94a3b8;
 }
+
+/* Modal Stacking & Backdrop Fix */
+.modal {
+    z-index: 1065 !important;
+}
+.modal-backdrop {
+    z-index: 1055 !important;
+}
+

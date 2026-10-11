@@ -40,7 +40,18 @@ class LegacyVideoEarningController extends Controller
         $videos = VideoEarning::where('status', 1)
             ->orderBy('serial', 'asc')
             ->orderBy('id', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($video) {
+                return [
+                    'id' => (int)$video->id,
+                    'title' => (string)$video->title,
+                    'youtube_url' => (string)$video->youtube_url,
+                    'video_id' => (string)($video->video_id ?: VideoEarning::extractVideoId($video->youtube_url)),
+                    'duration' => (int)($video->duration ?: 60),
+                    'serial' => (int)($video->serial ?: 1),
+                    'status' => 1,
+                ];
+            });
 
         return response()->json([
             'status' => 'success',

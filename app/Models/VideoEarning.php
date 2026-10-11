@@ -20,7 +20,7 @@ class VideoEarning extends Model
     protected $casts = [
         'duration' => 'integer',
         'serial' => 'integer',
-        'status' => 'boolean',
+        'status' => 'integer',
     ];
 
     /**
