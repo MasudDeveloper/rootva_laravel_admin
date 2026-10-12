@@ -228,6 +228,7 @@ class LegacyAuthController extends Controller
                 'address' => '',
                 'profile_pic_url' => '',
                 'gender' => 'Male',
+                'video_earning' => 2,
                 'verified_at' => '',
                 'verified_raw_time' => date('Y-m-d H:i:s'),
             ]);

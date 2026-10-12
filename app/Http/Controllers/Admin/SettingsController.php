@@ -61,7 +61,7 @@ class SettingsController extends Controller
             if (!$payments) {
                 $payments = new PaymentNumber();
             }
-            $paymentFields = ['bkash', 'nagad', 'rocket', 'upay', 'verify_amount'];
+            $paymentFields = ['bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'verify_amount'];
             if ($request->hasAny($paymentFields)) {
                 $payments->fill($request->only($paymentFields));
                 $payments->save();

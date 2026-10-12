@@ -49,7 +49,7 @@ return new class extends Migration
 
         if (Schema::hasTable('sign_up') && !Schema::hasColumn('sign_up', 'video_earning')) {
             Schema::table('sign_up', function (Blueprint $table) {
-                $table->integer('video_earning')->default(0);
+                $table->integer('video_earning')->default(2);
             });
         }
 

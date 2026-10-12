@@ -94,6 +94,19 @@ class LegacyVideoEarningController extends Controller
             ]);
         }
 
+        // Check if unverified user has already enjoyed their 2 free videos
+        if ($user->is_verified != 1 && $user->is_verified != 3) {
+            $claimedCount = Transaction::where('user_id', $user->id)
+                ->where('payment_gateway', 'Video Earning')
+                ->count();
+            if ($claimedCount >= 2) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'আপনার ২ টি ফ্রি ভিডিও দেখার সুযোগ শেষ হয়েছে। আরও ভিডিও দেখতে অ্যাকাউন্ট ভেরিফাই করুন।'
+                ]);
+            }
+        }
+
         // Atomic decrement to prevent race conditions
         $updated = SignUp::where('id', $userId)
             ->where('video_earning', '>', 0)

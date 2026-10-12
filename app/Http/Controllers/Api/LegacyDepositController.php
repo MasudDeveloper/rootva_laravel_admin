@@ -126,6 +126,7 @@ class LegacyDepositController extends Controller
             'nagad' => $numbers->nagad,
             'rocket' => $numbers->rocket,
             'upay' => $numbers->upay,
+            'bangla_qr' => $numbers->bangla_qr ?? '01577095615',
             'verify_amount' => $numbers->verify_amount
         ]);
     }

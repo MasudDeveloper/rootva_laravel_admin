@@ -109,6 +109,10 @@
                         <label class="form-label small fw-bold">Upay Number</label>
                         <input type="text" name="upay" class="form-control rounded-3" value="{{ $payments->upay }}">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Bangla QR / Merchant Number</label>
+                        <input type="text" name="bangla_qr" class="form-control rounded-3" value="{{ $payments->bangla_qr ?? '01577095615' }}">
+                    </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-bold">Identity Verification Fee (৳)</label>
                         <input type="number" name="verify_amount" class="form-control rounded-3 shadow-sm border-primary" value="{{ $payments->verify_amount }}">
