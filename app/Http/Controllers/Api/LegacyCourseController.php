@@ -183,7 +183,7 @@ class LegacyCourseController extends Controller
     public function claimCourseBonus(Request $request)
     {
         $userId = $request->input('user_id');
-        $courseId = $request->input('course_id', 1); // Default to 1 if not provided
+        $courseId = $request->input('course_id', 1);
 
         $user = SignUp::find($userId);
         if (!$user) {
@@ -196,48 +196,86 @@ class LegacyCourseController extends Controller
             ->where('course_id', $courseId)
             ->first();
 
-        if (!$courseInfo) {
-            return response()->json(['success' => false, 'message' => 'কোর্স প্রগ্রেস পাওয়া যায়নি']);
+        // সম্পন্ন করা ভিডিওর সংখ্যা চেক করা (১০টি ভিডিও সম্পন্ন হওয়া আবশ্যক)
+        $completedVideos = DB::table('course_progress_videos')
+            ->where('user_id', $userId)
+            ->where('is_complete', 1)
+            ->count();
+
+        if ($completedVideos < 10 && (!$courseInfo || $courseInfo->completed == 0)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'কোর্স ব্যালেন্স মেইন ব্যালেন্সে নিতে হলে আগে ১০টি ভিডিও সম্পন্ন করুন (সম্পন্ন হয়েছে: ' . $completedVideos . '/১০)'
+            ]);
         }
 
-        if ($courseInfo->completed == 0) {
-            return response()->json(['success' => false, 'message' => 'আগে কোর্সটি সম্পূর্ণ করুন']);
+        if ($courseInfo && $courseInfo->claimed == 1) {
+            return response()->json(['success' => false, 'message' => 'আপনি ইতিমধ্যে কোর্স বোনাস মেইন ব্যালেন্সে গ্রহণ করেছেন']);
         }
 
-        if ($courseInfo->claimed == 1) {
-            return response()->json(['success' => false, 'message' => 'আপনি ইতিমধ্যে বোনাস গ্রহণ করেছেন']);
+        // লেভেল ১ এবং লেভেল ২ টার্গেট যাচাই (লেভেল ১ এ ১০ জন এবং লেভেল ২ এ ১০ জন ভেরিফাইড)
+        $referCode = $user->referCode;
+        $level1 = SignUp::where('referredBy', $referCode)->get(['id', 'referCode']);
+        $level1Ids = $level1->pluck('id')->toArray();
+        $level1ReferCodes = $level1->pluck('referCode')->filter()->toArray();
+
+        $level1_verified = 0;
+        if (!empty($level1Ids)) {
+            $level1_verified = \App\Models\VerificationRequest::where('status', 'Approved')
+                ->whereIn('user_id', $level1Ids)
+                ->count();
+        }
+
+        $level2_verified = 0;
+        if (!empty($level1ReferCodes)) {
+            $level2Ids = SignUp::whereIn('referredBy', $level1ReferCodes)
+                ->pluck('id')
+                ->toArray();
+            if (!empty($level2Ids)) {
+                $level2_verified = \App\Models\VerificationRequest::where('status', 'Approved')
+                    ->whereIn('user_id', $level2Ids)
+                    ->count();
+            }
+        }
+
+        if ($level1_verified < 10 || $level2_verified < 10) {
+            return response()->json([
+                'success' => false,
+                'message' => 'কোর্স বোনাস ৳২০০ মেইন ব্যালেন্সে নিতে লেভেল ১ এ ১০ জন এবং লেভেল ২ এ ১০ জন ভেরিফাইড রেফার প্রয়োজন। (লেভেল ১: ' . min($level1_verified, 10) . '/১০, লেভেল ২: ' . min($level2_verified, 10) . '/১০)'
+            ]);
         }
 
         try {
             return DB::transaction(function () use ($user, $courseId) {
-                // বোনাস যোগ করা (এখানে ৫০ টাকা উদাহরণ হিসেবে দেওয়া হয়েছে)
-                $user->increment('wallet_balance', 50);
+                // কোর্স বোনাস ২০০ টাকা মেইন ওয়ালেটে যোগ করা
+                $bonusAmount = 200;
+                $user->increment('wallet_balance', $bonusAmount);
 
                 // ট্রানজেকশন লগ তৈরি করা
                 DB::table('transactions')->insert([
                     'user_id' => $user->id,
-                    'amount' => 50,
+                    'amount' => $bonusAmount,
                     'type' => 'course_bonus',
                     'payment_gateway' => 'Course System',
-                    'description' => 'Course completion bonus',
+                    'description' => 'Course target completed bonus ৳200 credited to Main Balance',
                     'update_at' => date('d-m-Y h:i A'),
                     'created_at' => now(),
                     'date' => now()->toDateTimeString()
                 ]);
 
-                // Claimed আপডেট করা
-                DB::table('course_info')
-                    ->where('user_id', $user->id)
-                    ->where('course_id', $courseId)
-                    ->update(['claimed' => 1]);
+                // Claimed এবং completed আপডেট করা
+                DB::table('course_info')->updateOrInsert(
+                    ['user_id' => $user->id, 'course_id' => $courseId],
+                    ['completed' => 1, 'claimed' => 1]
+                );
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'বোনাস সফলভাবে আপনার ওয়ালেটে যোগ করা হয়েছে'
+                    'message' => '🎉 অভিনন্দন! আপনার কোর্স বোনাস ৳২০০ সফলভাবে মেইন ব্যালেন্সে যোগ করা হয়েছে।'
                 ]);
             });
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'বোনাস প্রদানে সমস্যা হয়েছে']);
+            return response()->json(['success' => false, 'message' => 'বোনাস প্রদানে সমস্যা হয়েছে: ' . $e->getMessage()]);
         }
     }
 

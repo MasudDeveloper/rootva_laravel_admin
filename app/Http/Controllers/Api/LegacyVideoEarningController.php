@@ -94,15 +94,17 @@ class LegacyVideoEarningController extends Controller
             ]);
         }
 
-        // Check if unverified user has already enjoyed their 2 free videos
-        if ($user->is_verified != 1 && $user->is_verified != 3) {
+        $isVerified = ($user->is_verified == 1 || $user->is_verified == 3);
+
+        // Check if unverified user has already enjoyed their 1 free video
+        if (!$isVerified) {
             $claimedCount = Transaction::where('user_id', $user->id)
                 ->where('payment_gateway', 'Video Earning')
                 ->count();
-            if ($claimedCount >= 2) {
+            if ($claimedCount >= 1) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'আপনার ২ টি ফ্রি ভিডিও দেখার সুযোগ শেষ হয়েছে। আরও ভিডিও দেখতে অ্যাকাউন্ট ভেরিফাই করুন।'
+                    'message' => 'আপনার ফ্রি ১ টি ভিডিও দেখার সুযোগ শেষ হয়েছে। আরও ভিডিও দেখতে অ্যাকাউন্ট ভেরিফাই করুন।'
                 ]);
             }
         }
@@ -113,7 +115,8 @@ class LegacyVideoEarningController extends Controller
             ->decrement('video_earning', 1);
 
         if ($updated) {
-            $rewardAmount = 1.00;
+            // Unverified users get 5 Tk for their 1 free video, verified users get 1 Tk per video
+            $rewardAmount = (!$isVerified) ? 5.00 : 1.00;
             $now = date("Y-m-d H:i:s");
             $now2 = date("d-m-Y h:i A");
 
@@ -139,9 +142,11 @@ class LegacyVideoEarningController extends Controller
 
             $freshUser = $user->fresh();
 
+            $rewardFormatted = ($rewardAmount == (int)$rewardAmount) ? (int)$rewardAmount : number_format($rewardAmount, 2);
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'অভিনন্দন! ভিডিও দেখে ১ টাকা সফলভাবে গ্রহণ করেছেন।',
+                'message' => "অভিনন্দন! ভিডিও দেখে {$rewardFormatted} টাকা সফলভাবে গ্রহণ করেছেন।",
                 'wallet_balance' => (float)$freshUser->wallet_balance,
                 'video_count' => (int)$freshUser->video_earning,
                 'video_income' => (float)$totalIncome

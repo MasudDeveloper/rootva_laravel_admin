@@ -50,11 +50,12 @@ class VerificationRequestController extends Controller
             $current_time = date("d-m-Y h:i A");
             $verified_raw_time = now()->toDateTimeString();
 
-            // 1. Update User status to verified
+            // 1. Update User status to verified and grant 3 video earning chances
             $user->update([
                 'is_verified' => 1,
                 'verified_at' => $current_time,
-                'verified_raw_time' => $verified_raw_time
+                'verified_raw_time' => $verified_raw_time,
+                'video_earning' => $user->video_earning + 3
             ]);
 
             // 2. Send Notification
@@ -83,10 +84,10 @@ class VerificationRequestController extends Controller
             // 4. Distribute Referral Bonus
             $this->distributeReferralBonus($user, $current_time);
 
-            // 5. math_game + 4 and video_earning + 4 for the direct referrer
+            // 5. math_game + 4 and video_earning + 3 for the direct referrer
             if ($user->referredBy) {
                 SignUp::where('referCode', $user->referredBy)->increment('math_game', 4);
-                SignUp::where('referCode', $user->referredBy)->increment('video_earning', 4);
+                SignUp::where('referCode', $user->referredBy)->increment('video_earning', 3);
             }
         });
 

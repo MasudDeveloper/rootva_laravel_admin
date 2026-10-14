@@ -216,7 +216,7 @@ class ReconcilePayments extends Command
 
                 if ($currentLevel === 1) {
                     SignUp::where('referCode', $uplineReferCode)->increment('math_game', 4);
-                    SignUp::where('referCode', $uplineReferCode)->increment('video_earning', 4);
+                    SignUp::where('referCode', $uplineReferCode)->increment('video_earning', 3);
                 }
 
                 $referredBy = $uplineReferredBy;

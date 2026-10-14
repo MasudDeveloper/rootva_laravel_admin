@@ -227,6 +227,7 @@ class UserController extends Controller
             if ($user->is_verified != 1 && $newStatus == 1) {
                 $updateData['verified_at'] = date("d-m-Y h:i A");
                 $updateData['verified_raw_time'] = now()->toDateTimeString();
+                $updateData['video_earning'] = $user->video_earning + 3;
             }
 
             $user->update($updateData);
@@ -252,6 +253,7 @@ class UserController extends Controller
         if ($user->is_verified != 1 && isset($data['is_verified']) && $data['is_verified'] == 1) {
             $data['verified_at'] = date("d-m-Y h:i A");
             $data['verified_raw_time'] = now()->toDateTimeString();
+            $data['video_earning'] = $user->video_earning + 3;
         }
 
         $user->update($data);
