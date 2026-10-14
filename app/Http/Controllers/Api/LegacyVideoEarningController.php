@@ -53,9 +53,27 @@ class LegacyVideoEarningController extends Controller
                 ];
             });
 
+        $isVerified = ($user->is_verified == 1 || $user->is_verified == 3);
+        $videoCount = (int)$user->video_earning;
+
+        // Unverified user free chance guarantee:
+        // If an unverified user hasn't claimed their 1 free video earning yet, ensure they have at least 1 chance
+        if (!$isVerified) {
+            $claimedCount = Transaction::where('user_id', $user->id)
+                ->where('payment_gateway', 'Video Earning')
+                ->count();
+            if ($claimedCount == 0 && $videoCount < 1) {
+                $videoCount = 1;
+                $user->video_earning = 1;
+                $user->save();
+            } elseif ($claimedCount >= 1) {
+                $videoCount = 0;
+            }
+        }
+
         return response()->json([
             'status' => 'success',
-            'video_count' => (int)$user->video_earning,
+            'video_count' => (int)$videoCount,
             'video_income' => (float)$totalIncome,
             'wallet_balance' => (float)$user->wallet_balance,
             'videos' => $videos

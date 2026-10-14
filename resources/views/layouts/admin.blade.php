@@ -185,6 +185,10 @@
                 <i class="fa-solid fa-code"></i>
                 <span>API Endpoints</span>
             </a>
+            <a href="{{ route('admin.crash-reports.index') }}" class="nav-link {{ request()->is('admin/crash-reports*') ? 'active' : '' }}">
+                <i class="fa-solid fa-bug text-danger"></i>
+                <span>App Crash Reports</span>
+            </a>
             @endif
 
             @if(auth()->user()->hasPermission('sim_offers'))

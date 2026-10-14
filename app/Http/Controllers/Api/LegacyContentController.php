@@ -105,4 +105,58 @@ class LegacyContentController extends Controller
             'services' => $services
         ]);
     }
+
+    /**
+     * Report App Crash (report_app_crash.php)
+     */
+    public function reportAppCrash(Request $request)
+    {
+        try {
+            $userId = $request->input('user_id');
+            $userPhone = $request->input('user_phone');
+
+            // If userId provided and no phone, attempt to fetch phone
+            if ($userId && !$userPhone) {
+                $user = DB::table('sign_up')->where('id', $userId)->first(['number']);
+                if ($user) {
+                    $userPhone = $user->number;
+                }
+            }
+
+            $exceptionMessage = $request->input('exception_message');
+            $stackTrace = $request->input('stack_trace');
+
+            // Extract location if not explicitly provided
+            $crashLocation = $request->input('crash_location');
+            if (empty($crashLocation) && !empty($stackTrace)) {
+                // Find first occurrence of com.mrdeveloper.rootva in stack trace
+                if (preg_match('/at\s+(com\.mrdeveloper\.rootva\.[a-zA-Z0-9_$.]+\([a-zA-Z0-9_]+\.java:\d+\))/', $stackTrace, $matches)) {
+                    $crashLocation = $matches[1];
+                }
+            }
+
+            \App\Models\AppCrashReport::create([
+                'user_id' => $userId ?: null,
+                'user_phone' => $userPhone ?: null,
+                'app_version' => $request->input('app_version'),
+                'device_model' => $request->input('device_model'),
+                'android_version' => $request->input('android_version'),
+                'exception_class' => $request->input('exception_class'),
+                'exception_message' => $exceptionMessage,
+                'crash_location' => $crashLocation,
+                'stack_trace' => $stackTrace,
+                'status' => 'Unresolved',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Crash report logged successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

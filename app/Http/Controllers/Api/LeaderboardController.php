@@ -220,66 +220,50 @@ class LeaderboardController extends Controller
      */
     public function getSuccessStories(Request $request)
     {
-        $users = SignUp::select(
-                'sign_up.id',
-                'sign_up.name',
-                'sign_up.number',
-                'sign_up.profile_pic_url',
-                'sign_up.referCode',
-                'sign_up.wallet_balance',
-                DB::raw("
-                    GREATEST(
-                        COALESCE(sign_up.wallet_balance, 0) + COALESCE((
-                            SELECT SUM(amount) FROM transactions 
-                            WHERE transactions.user_id = sign_up.id 
-                            AND transactions.type IN ('withdraw', 'voucher_withdraw', 'payment')
-                            AND (transactions.description = 'Withdraw Request Approved' OR transactions.description LIKE '%Approved%')
-                        ), 0),
-                        COALESCE((
-                            SELECT SUM(amount) FROM transactions 
-                            WHERE transactions.user_id = sign_up.id 
-                            AND LOWER(transactions.type) IN ('add', 'commission', 'income', 'course_bonus')
-                        ), 0),
-                        COALESCE(sign_up.wallet_balance, 0)
-                    ) as calculated_total_income
-                "),
-                DB::raw("
-                    GREATEST(
-                        COALESCE((
-                            SELECT SUM(amount) FROM withdraw_requests 
-                            WHERE withdraw_requests.user_id = sign_up.id 
-                            AND withdraw_requests.status = 'Approved'
-                        ), 0),
-                        COALESCE((
-                            SELECT SUM(amount) FROM transactions 
-                            WHERE transactions.user_id = sign_up.id 
-                            AND transactions.type IN ('withdraw', 'voucher_withdraw', 'payment')
-                            AND (transactions.description = 'Withdraw Request Approved' OR transactions.description LIKE '%Approved%')
-                        ), 0)
-                    ) as total_withdraw
-                ")
-            )
-            ->where('sign_up.is_verified', '!=', 3)
-            ->orderBy('calculated_total_income', 'desc')
-            ->limit(50)
-            ->get();
+        $response = \Illuminate\Support\Facades\Cache::remember('api_success_stories_top50', 600, function () {
+            // Step 1: Pre-aggregate approved withdrawals per user to avoid correlated subqueries per row
+            $withdrawals = DB::table('withdraw_requests')
+                ->select('user_id', DB::raw('SUM(amount) as total_approved_withdraw'))
+                ->where('status', 'Approved')
+                ->groupBy('user_id');
 
-        $response = $users->map(function ($user, $index) {
-            $maskedNumber = '';
-            if ($user->number) {
-                $maskedNumber = strlen($user->number) >= 7 ? substr($user->number, 0, 7) . '****' : $user->number;
-            }
+            // Step 2: Query top earning users joining pre-aggregated withdrawals
+            $users = DB::table('sign_up')
+                ->leftJoinSub($withdrawals, 'w', function ($join) {
+                    $join->on('sign_up.id', '=', 'w.user_id');
+                })
+                ->select(
+                    'sign_up.id',
+                    'sign_up.name',
+                    'sign_up.number',
+                    'sign_up.profile_pic_url',
+                    'sign_up.referCode',
+                    'sign_up.wallet_balance',
+                    DB::raw('COALESCE(w.total_approved_withdraw, 0) as total_withdraw'),
+                    DB::raw('(COALESCE(sign_up.wallet_balance, 0) + COALESCE(w.total_approved_withdraw, 0)) as calculated_total_income')
+                )
+                ->where('sign_up.is_verified', '!=', 3)
+                ->orderBy('calculated_total_income', 'desc')
+                ->limit(50)
+                ->get();
 
-            return [
-                'rank' => $index + 1,
-                'user_id' => (string)$user->id,
-                'name' => $user->name ?? 'User',
-                'number' => $maskedNumber,
-                'profile_pic_url' => $user->profile_pic_url,
-                'referCode' => $user->referCode ?? ('REF' . $user->id),
-                'total_income' => round((double)$user->calculated_total_income, 2),
-                'total_withdraw' => round((double)$user->total_withdraw, 2),
-            ];
+            return $users->map(function ($user, $index) {
+                $maskedNumber = '';
+                if ($user->number) {
+                    $maskedNumber = strlen($user->number) >= 7 ? substr($user->number, 0, 7) . '****' : $user->number;
+                }
+
+                return [
+                    'rank' => $index + 1,
+                    'user_id' => (string)$user->id,
+                    'name' => $user->name ?: 'User',
+                    'number' => $maskedNumber,
+                    'profile_pic_url' => $user->profile_pic_url,
+                    'referCode' => $user->referCode ?: ('REF' . $user->id),
+                    'total_income' => round((double)$user->calculated_total_income, 2),
+                    'total_withdraw' => round((double)$user->total_withdraw, 2),
+                ];
+            })->toArray();
         });
 
         return response()->json([
