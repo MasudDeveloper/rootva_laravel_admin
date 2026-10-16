@@ -59,6 +59,7 @@
                                         'category_id' => $product->category_id,
                                         'price' => $product->price,
                                         'reselling_price' => $product->reselling_price,
+                                        'sizes' => $product->sizes,
                                         'description' => $product->description,
                                         'images' => $product->images
                                     ]) }}">
@@ -80,6 +81,9 @@
                         <p class="mb-1 text-primary small"><i class="fa-solid fa-store me-1"></i>{{ $product->vendor->store_name ?? 'Vendor' }}</p>
                     @else
                         <p class="mb-1 text-muted small"><i class="fa-solid fa-user-tie me-1"></i>Admin Upload</p>
+                    @endif
+                    @if($product->sizes)
+                        <div class="mb-1"><span class="badge bg-light text-dark border extra-small"><i class="fa-solid fa-ruler me-1 text-primary"></i>{{ $product->sizes }}</span></div>
                     @endif
                     <p class="text-muted small mb-2" style="height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ $product->description }}</p>
                     <div class="d-flex justify-content-between align-items-center">
@@ -178,6 +182,11 @@
                                 </div>
                             </div>
                             <div class="mt-3">
+                                <label class="form-label small fw-bold">Available Sizes (Optional)</label>
+                                <input type="text" name="sizes" class="form-control rounded-3 shadow-sm" placeholder="e.g. M, L, XL, XXL or 38, 40, 42">
+                                <span class="extra-small text-muted">Separate multiple sizes with comma (,)</span>
+                            </div>
+                            <div class="mt-3">
                                 <label class="form-label small fw-bold">Description</label>
                                 <textarea name="description" class="form-control rounded-3 shadow-sm" rows="4" required></textarea>
                             </div>
@@ -236,6 +245,11 @@
                                     <label class="form-label small fw-bold">Resell Price (৳)</label>
                                     <input type="number" name="reselling_price" id="edit_p_resell" class="form-control rounded-3 shadow-sm" required>
                                 </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label small fw-bold">Available Sizes (Optional)</label>
+                                <input type="text" name="sizes" id="edit_p_sizes" class="form-control rounded-3 shadow-sm" placeholder="e.g. M, L, XL, XXL or 38, 40, 42">
+                                <span class="extra-small text-muted">Separate multiple sizes with comma (,)</span>
                             </div>
                             <div class="mt-3">
                                 <label class="form-label small fw-bold">Description</label>
@@ -329,6 +343,7 @@
             document.getElementById('edit_p_category').value = product.category_id;
             document.getElementById('edit_p_price').value = product.price;
             document.getElementById('edit_p_resell').value = product.reselling_price;
+            document.getElementById('edit_p_sizes').value = product.sizes || '';
             document.getElementById('edit_p_desc').value = product.description;
             
             const container = document.getElementById('editImgPreviewContainer');

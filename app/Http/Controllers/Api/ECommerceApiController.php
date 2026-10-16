@@ -191,6 +191,7 @@ class ECommerceApiController extends Controller
             'price' => $request->price,
             'reselling_price' => $request->reselling_price,
             'description' => $request->description,
+            'sizes' => $request->sizes,
             'image' => count($uploadedImages) > 0 ? $uploadedImages[0] : null,
             'images' => $uploadedImages,
             'is_approved' => 0, // Needs admin moderation

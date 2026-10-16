@@ -180,7 +180,7 @@
 @section('scripts')
 <script>
     function rejectOrder(id) {
-        document.getElementById('rejectForm').action = `{{ url('/services/online-service-orders') }}/${id}/status`;
+        document.getElementById('rejectForm').action = `{{ url('/admin/services/online-service-orders') }}/${id}/status`;
         new bootstrap.Modal(document.getElementById('rejectModal')).show();
     }
 </script>

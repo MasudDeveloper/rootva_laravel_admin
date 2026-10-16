@@ -11,12 +11,12 @@ class OnlineServiceOrderController extends Controller
     public function index()
     {
         $pendingOrders = OnlineServiceOrder::with(['user', 'service'])
-            ->where('status', 'Pending')
+            ->whereIn('status', ['Pending', 'pending'])
             ->orderBy('id', 'desc')
             ->get();
 
         $orderHistory = OnlineServiceOrder::with(['user', 'service'])
-            ->where('status', '!=', 'Pending')
+            ->whereNotIn('status', ['Pending', 'pending'])
             ->orderBy('id', 'desc')
             ->paginate(25);
 
@@ -26,18 +26,18 @@ class OnlineServiceOrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $order = OnlineServiceOrder::findOrFail($id);
-        $action = $request->input('action'); // 'Approved' or 'Rejected'
+        $action = strtolower($request->input('action')); // 'approved' or 'rejected'
         
-        if ($action == 'Approved') {
+        if ($action == 'approved') {
             $order->update([
-                'status' => 'Approved',
+                'status' => 'approved',
                 'updated_at' => now()->toDateTimeString()
             ]);
             return back()->with('success', 'Order approved successfully!');
-        } elseif ($action == 'Rejected') {
+        } elseif ($action == 'rejected') {
             $request->validate(['reject_reason' => 'required']);
             $order->update([
-                'status' => 'Rejected',
+                'status' => 'rejected',
                 'reject_reason' => $request->reject_reason,
                 'updated_at' => now()->toDateTimeString()
             ]);

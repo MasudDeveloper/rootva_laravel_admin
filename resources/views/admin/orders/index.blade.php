@@ -63,6 +63,9 @@
                         </td>
                         <td class="py-3">
                             <div class="fw-medium text-dark">{{ $order->product_name }}</div>
+                            @if($order->selected_size)
+                                <div><span class="badge bg-light text-primary border small py-0 px-2">Size: {{ $order->selected_size }}</span></div>
+                            @endif
                             <div class="text-muted small">Qty: {{ $order->quantity }} | Delivery: ৳{{ number_format($order->delivery_charge, 2) }}</div>
                         </td>
                         <td class="py-3">

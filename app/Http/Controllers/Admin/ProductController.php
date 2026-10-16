@@ -32,6 +32,7 @@ class ProductController extends Controller
             'category_id' => $request->category_id,
             'name' => $request->name,
             'description' => $request->description,
+            'sizes' => $request->sizes,
             'price' => $request->price,
             'reselling_price' => $request->reselling_price,
             'created_at' => now()->toDateTimeString(),
@@ -78,6 +79,7 @@ class ProductController extends Controller
         $product->category_id = $request->category_id;
         $product->name = $request->name;
         $product->description = $request->description;
+        $product->sizes = $request->sizes;
         $product->price = $request->price;
         $product->reselling_price = $request->reselling_price;
 

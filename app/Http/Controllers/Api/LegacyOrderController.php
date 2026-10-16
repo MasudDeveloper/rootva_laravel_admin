@@ -33,6 +33,7 @@ class LegacyOrderController extends Controller
         $transaction_id = intval($request->input('transaction_id', 0));
         $amount = floatval($request->input('amount', 0));
         $payment_gateway = trim($request->input('payment_gateway', ''));
+        $selected_size = trim($request->input('selected_size', ''));
 
         // Basic validation
         if (
@@ -65,6 +66,7 @@ class LegacyOrderController extends Controller
                 'user_id' => $user_id,
                 'product_id' => $product_id,
                 'product_name' => $product_name,
+                'selected_size' => !empty($selected_size) ? $selected_size : null,
                 'product_price' => $product_price,
                 'customer_name' => $customer_name,
                 'customer_number' => $customer_number,
@@ -141,7 +143,7 @@ class LegacyOrderController extends Controller
         }
 
         $orders = Order::where('user_id', $userId)
-            ->select('id', 'product_name', 'product_price', 'order_status', 'cancel_reason', 'created_at')
+            ->select('id', 'product_name', 'selected_size', 'product_price', 'order_status', 'cancel_reason', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get();
 

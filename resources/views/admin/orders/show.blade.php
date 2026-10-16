@@ -26,6 +26,11 @@
                         <div class="col-sm-6">
                             <label class="text-muted small text-uppercase fw-bold d-block mb-1">Product Name</label>
                             <div class="h6 fw-bold text-dark">{{ $order->product_name }}</div>
+                            @if($order->selected_size)
+                                <div class="mt-1">
+                                    <span class="badge bg-primary rounded-pill px-3 py-1">Size: {{ $order->selected_size }}</span>
+                                </div>
+                            @endif
                         </div>
                         <div class="col-sm-6 text-sm-end">
                             <label class="text-muted small text-uppercase fw-bold d-block mb-1">Ordered At</label>
