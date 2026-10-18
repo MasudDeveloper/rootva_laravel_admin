@@ -135,8 +135,8 @@ class LegacyCourseController extends Controller
         // Duration string থেকে seconds এ কনভার্ট করা
         $total_duration = $this->durationToSeconds($video->duration);
 
-        // ✅ চেক করা ভিডিও সম্পূর্ণ দেখা হয়েছে কিনা
-        $is_complete = ($watched_seconds >= $total_duration) ? 1 : 0;
+        // ✅ চেক করা ভিডিও সম্পূর্ণ দেখা হয়েছে কিনা (মিনিমাম ৬০ সেকেন্ড বা সম্পূর্ণ ডিউরেশন)
+        $is_complete = ($watched_seconds >= 60 || $watched_seconds >= $total_duration) ? 1 : 0;
 
         // ✅ Progress আপডেট বা ক্রিয়েট করা
         DB::table('course_progress_videos')->updateOrInsert(

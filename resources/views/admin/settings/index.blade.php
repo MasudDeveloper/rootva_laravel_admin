@@ -18,6 +18,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger border-0 shadow-sm rounded-pill px-4 mb-4">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ session('error') }}
+        </div>
+    @endif
+
     <form action="{{ route('admin.settings.update') }}" method="POST">
         @csrf
         
@@ -83,7 +89,19 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-bold"><i class="fa-brands fa-telegram text-info me-1"></i> Telegram Main Group</label>
                         <input type="text" name="telegram_group" class="form-control rounded-3" value="{{ $social->telegram_group }}" placeholder="https://t.me/...">
-                        <span class="text-muted extra-small">ভেরিফাইড মেম্বারদের মূল টেলিগ্রাম গ্রুপ লিংক।</span>
+                        <span class="text-muted extra-small">সাইডবারের মূল "টেলিগ্রাম গ্রুপ"-এ ব্যবহৃত লিংক।</span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold"><i class="fa-brands fa-telegram text-info me-1"></i> Telegram Customer Group</label>
+                        <input type="text" name="telegram_customer_group" class="form-control rounded-3" value="{{ $social->telegram_customer_group }}" placeholder="https://t.me/...">
+                        <span class="text-muted extra-small">সাইডবারের "টেলিগ্রাম কাস্টমার গ্রুপ"-এ ব্যবহৃত লিংক।</span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold"><i class="fa-brands fa-telegram text-info me-1"></i> Telegram Business Group</label>
+                        <input type="text" name="telegram_business_group" class="form-control rounded-3" value="{{ $social->telegram_business_group }}" placeholder="https://t.me/...">
+                        <span class="text-muted extra-small">লগইন বা অ্যাপ শুরু হওয়ার পর পপআপে "Telegram Business Group" হিসেবে ব্যবহৃত লিংক।</span>
                     </div>
 
                     <div class="col-md-6">

@@ -65,11 +65,14 @@ class LegacyDepositController extends Controller
             ]);
         }
 
-        if ($amountFloat == 250) {
+        $paymentInfo = PaymentNumber::first();
+        $verifyAmount = ($paymentInfo && is_numeric($paymentInfo->verify_amount)) ? (float)$paymentInfo->verify_amount : 300.0;
+        if ($amountFloat == 300 || ($verifyAmount > 0 && $amountFloat == $verifyAmount)) {
+            $restrictedDisplay = ($verifyAmount > 0) ? (int)$verifyAmount : 300;
             return response()->json([
                 'success' => false,
                 'status' => 'error',
-                'message' => "২৫০ টাকা যোগ করা যাবে না, কম বা বেশি পরিমাণ দিন।"
+                'message' => "{$restrictedDisplay} টাকা যোগ করা যাবে না, কম বা বেশি পরিমাণ দিন।"
             ]);
         }
 
