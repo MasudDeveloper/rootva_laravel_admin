@@ -263,18 +263,29 @@ class LegacySpinController extends Controller
         }
 
         $referCode = $user->referCode;
+        $targetStartDate = env('COURSE_TARGET_START_DATE', '2026-10-19 00:00:00');
 
         // Step 1: Get Level 1 referrals
         $level1 = SignUp::where('referredBy', $referCode)->get(['id', 'referCode']);
         $level1Ids = $level1->pluck('id')->toArray();
         $level1ReferCodes = $level1->pluck('referCode')->filter()->toArray();
 
-        // Step 2: Count verified Level 1
+        // Step 2: Count verified Level 1 (only members verified from target start date onwards)
         $level1_verified = 0;
         if (!empty($level1Ids)) {
             $level1_verified = VerificationRequest::where('status', 'Approved')
                 ->whereIn('user_id', $level1Ids)
-                ->count();
+                ->where(function ($q) use ($targetStartDate) {
+                    $q->where('verified_raw_time', '>=', $targetStartDate)
+                      ->orWhereExists(function ($sub) use ($targetStartDate) {
+                          $sub->select(DB::raw(1))
+                              ->from('sign_up')
+                              ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                              ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                      });
+                })
+                ->distinct()
+                ->count('user_id');
         }
 
         // Step 3: Get Level 2 referrals
@@ -285,12 +296,22 @@ class LegacySpinController extends Controller
                 ->toArray();
         }
 
-        // Step 4: Count verified Level 2
+        // Step 4: Count verified Level 2 (only members verified from target start date onwards)
         $level2_verified = 0;
         if (!empty($level2Ids)) {
             $level2_verified = VerificationRequest::where('status', 'Approved')
                 ->whereIn('user_id', $level2Ids)
-                ->count();
+                ->where(function ($q) use ($targetStartDate) {
+                    $q->where('verified_raw_time', '>=', $targetStartDate)
+                      ->orWhereExists(function ($sub) use ($targetStartDate) {
+                          $sub->select(DB::raw(1))
+                              ->from('sign_up')
+                              ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                              ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                      });
+                })
+                ->distinct()
+                ->count('user_id');
         }
 
         // Step 5: Check if bonus already given
@@ -318,6 +339,7 @@ class LegacySpinController extends Controller
 
         $bonus_type = 'spin_target';
         $bonus_amount = 500.00;
+        $targetStartDate = env('COURSE_TARGET_START_DATE', '2026-10-19 00:00:00');
 
         if (BonusTracker::where('user_id', $user_id)->where('bonus_type', $bonus_type)->exists()) {
             return response()->json(["status" => "already_given", "message" => "Bonus already given to this user."]);
@@ -330,7 +352,20 @@ class LegacySpinController extends Controller
             return response()->json(["status" => "incomplete", "message" => "Not enough Level 1 referrals.", "level1" => $level1->count()]);
         }
 
-        $level1_verified = VerificationRequest::whereIn('user_id', $level1->pluck('id'))->where('status', 'Approved')->count();
+        $level1_verified = VerificationRequest::whereIn('user_id', $level1->pluck('id'))
+            ->where('status', 'Approved')
+            ->where(function ($q) use ($targetStartDate) {
+                $q->where('verified_raw_time', '>=', $targetStartDate)
+                  ->orWhereExists(function ($sub) use ($targetStartDate) {
+                      $sub->select(DB::raw(1))
+                          ->from('sign_up')
+                          ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                          ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                  });
+            })
+            ->distinct()
+            ->count('user_id');
+
         if ($level1_verified < 10) {
             return response()->json(["status" => "incomplete", "message" => "Not enough verified users in Level 1.", "level1_verified" => $level1_verified]);
         }
@@ -340,7 +375,19 @@ class LegacySpinController extends Controller
             return response()->json(["status" => "incomplete", "message" => "Not enough Level 2 referrals.", "level2" => $level2->count()]);
         }
 
-        $level2_verified = VerificationRequest::whereIn('user_id', $level2->pluck('id'))->where('status', 'Approved')->count();
+        $level2_verified = VerificationRequest::whereIn('user_id', $level2->pluck('id'))
+            ->where('status', 'Approved')
+            ->where(function ($q) use ($targetStartDate) {
+                $q->where('verified_raw_time', '>=', $targetStartDate)
+                  ->orWhereExists(function ($sub) use ($targetStartDate) {
+                      $sub->select(DB::raw(1))
+                          ->from('sign_up')
+                          ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                          ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                  });
+            })
+            ->distinct()
+            ->count('user_id');
         if ($level2_verified < 10) {
             return response()->json(["status" => "incomplete", "message" => "Not enough verified users in Level 2.", "level2_verified" => $level2_verified]);
         }

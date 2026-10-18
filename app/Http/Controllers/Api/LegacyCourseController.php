@@ -213,7 +213,9 @@ class LegacyCourseController extends Controller
             return response()->json(['success' => false, 'message' => 'আপনি ইতিমধ্যে কোর্স বোনাস মেইন ব্যালেন্সে গ্রহণ করেছেন']);
         }
 
-        // লেভেল ১ এবং লেভেল ২ টার্গেট যাচাই (লেভেল ১ এ ১০ জন এবং লেভেল ২ এ ১০ জন ভেরিফাইড)
+        // লেভেল ১ এবং লেভেল ২ টার্গেট যাচাই (লেভেল ১ এ ১০ জন এবং লেভেল ২ এ ১০ জন ভেরিফাইড - শুধুমাত্র আজকের নতুন ভেরিফাইড মেম্বার কাউন্ট হবে)
+        $targetStartDate = env('COURSE_TARGET_START_DATE', '2026-10-19 00:00:00');
+
         $referCode = $user->referCode;
         $level1 = SignUp::where('referredBy', $referCode)->get(['id', 'referCode']);
         $level1Ids = $level1->pluck('id')->toArray();
@@ -223,7 +225,17 @@ class LegacyCourseController extends Controller
         if (!empty($level1Ids)) {
             $level1_verified = \App\Models\VerificationRequest::where('status', 'Approved')
                 ->whereIn('user_id', $level1Ids)
-                ->count();
+                ->where(function ($q) use ($targetStartDate) {
+                    $q->where('verified_raw_time', '>=', $targetStartDate)
+                      ->orWhereExists(function ($sub) use ($targetStartDate) {
+                          $sub->select(DB::raw(1))
+                              ->from('sign_up')
+                              ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                              ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                      });
+                })
+                ->distinct()
+                ->count('user_id');
         }
 
         $level2_verified = 0;
@@ -234,7 +246,17 @@ class LegacyCourseController extends Controller
             if (!empty($level2Ids)) {
                 $level2_verified = \App\Models\VerificationRequest::where('status', 'Approved')
                     ->whereIn('user_id', $level2Ids)
-                    ->count();
+                    ->where(function ($q) use ($targetStartDate) {
+                        $q->where('verified_raw_time', '>=', $targetStartDate)
+                          ->orWhereExists(function ($sub) use ($targetStartDate) {
+                              $sub->select(DB::raw(1))
+                                  ->from('sign_up')
+                                  ->whereColumn('sign_up.id', 'verification_requests.user_id')
+                                  ->where('sign_up.verified_raw_time', '>=', $targetStartDate);
+                          });
+                    })
+                    ->distinct()
+                    ->count('user_id');
             }
         }
 
