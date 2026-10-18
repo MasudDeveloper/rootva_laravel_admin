@@ -40,7 +40,7 @@
                 <div class="mb-4">
                     <label class="form-label fw-bold text-muted small text-uppercase">Select Levels to Award</label>
                     <div class="row g-3">
-                        @php $levels = [76, 35, 15, 10, 6, 5, 4, 3, 2, 2]; @endphp
+                        @php $levels = [90, 40, 15, 10, 5, 2, 2, 2, 2, 2]; @endphp
                         @foreach($levels as $index => $amount)
                             <div class="col-6 col-md-4 col-lg-3">
                                 <div class="form-check card-modern-select p-3 rounded-4 border">

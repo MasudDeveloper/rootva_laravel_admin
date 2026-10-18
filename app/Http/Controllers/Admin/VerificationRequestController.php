@@ -140,7 +140,7 @@ class VerificationRequestController extends Controller
 
     private function distributeReferralBonus($user, $current_time)
     {
-        $levels = [76, 35, 15, 10, 6, 5, 4, 3, 2, 2]; // 10 Levels
+        $levels = [90, 40, 15, 10, 5, 2, 2, 2, 2, 2]; // 10 Levels
         $current_level = 1;
         $referredByCode = $user->referredBy;
 

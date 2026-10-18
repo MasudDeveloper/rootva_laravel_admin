@@ -8,6 +8,7 @@ use App\Models\IncomingPaymentSms;
 use App\Models\SignUp;
 use App\Models\Notification;
 use App\Models\Transaction;
+use App\Models\PaymentNumber;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Throwable;
@@ -20,7 +21,9 @@ class ReconcilePayments extends Command
     public function handle()
     {
         $BATCH_LIMIT = 200;
-        $MIN_AUTO_APPROVE_BDT = 250.00;
+        $paymentInfo = PaymentNumber::first();
+        $verifyAmount = ($paymentInfo && is_numeric($paymentInfo->verify_amount)) ? (float) $paymentInfo->verify_amount : 300.00;
+        $MIN_AUTO_APPROVE_BDT = $verifyAmount > 0 ? $verifyAmount : 300.00;
         $AMT_TOLERANCE = 0.50;
         
         $now = Carbon::now('Asia/Dhaka');
@@ -183,7 +186,7 @@ class ReconcilePayments extends Command
 
     private function distributeReferralBonus($userRefer, $referredBy, $currentTime)
     {
-        $levels = [76, 35, 15, 10, 6, 5, 4, 3, 2, 2];
+        $levels = [90, 40, 15, 10, 5, 2, 2, 2, 2, 2];
         $currentLevel = 1;
 
         while ($currentLevel <= count($levels)) {

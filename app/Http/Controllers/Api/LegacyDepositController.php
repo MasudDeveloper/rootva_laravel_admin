@@ -139,7 +139,7 @@ class LegacyDepositController extends Controller
             'upay' => $numbers->upay,
             'bangla_qr' => $numbers->bangla_qr ?? '01577095615',
             'bangla_qr_support_link' => $banglaQrSupportLink,
-            'verify_amount' => $numbers->verify_amount
+            'verify_amount' => $numbers->verify_amount ?: '300'
         ]);
     }
 }

@@ -148,6 +148,23 @@ class LegacyMicrojobController extends Controller
             ->select('s.*', 'u.name', 'u.number')
             ->orderBy('s.created_at', 'desc')
             ->get();
+
+        $submissions->transform(function ($sub) {
+            if (!empty($sub->proof_image_url)) {
+                $url = $sub->proof_image_url;
+                if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                    $url = ltrim($url, '/');
+                    if (str_starts_with($url, 'public/')) {
+                        $sub->proof_image_url = 'https://rootvaadmin.rootvabd.com/' . $url;
+                    } elseif (str_starts_with($url, 'uploads/')) {
+                        $sub->proof_image_url = 'https://rootvaadmin.rootvabd.com/public/' . $url;
+                    } else {
+                        $sub->proof_image_url = 'https://rootvaadmin.rootvabd.com/public/uploads/proofs/' . $url;
+                    }
+                }
+            }
+            return $sub;
+        });
             
         return response()->json($submissions);
     }

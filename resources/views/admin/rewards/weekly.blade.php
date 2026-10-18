@@ -12,8 +12,8 @@
         <div class="col-auto">
             <form action="{{ route('admin.rewards.weekly.run') }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-warning rounded-pill shadow-sm" onclick="return confirm('Award ৳500 to the past 7 days\' top referrer?')">
-                    <i class="fa-solid fa-trophy me-2"></i>Run Weekly Reward
+                <button type="submit" class="btn btn-warning rounded-pill shadow-sm" onclick="return confirm('Distribute tiered weekly bonus to all qualified referrers for this week?')">
+                    <i class="fa-solid fa-trophy me-2"></i>Distribute Weekly Bonus
                 </button>
             </form>
         </div>

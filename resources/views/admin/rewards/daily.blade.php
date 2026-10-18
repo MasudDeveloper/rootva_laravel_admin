@@ -12,8 +12,8 @@
         <div class="col-auto">
             <form action="{{ route('admin.rewards.daily.run') }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-primary rounded-pill shadow-sm" onclick="return confirm('Award ৳100 to yesterday\'s top referrer?')">
-                    <i class="fa-solid fa-bolt-lightning me-2"></i>Distribute Yesterday's Bonus
+                <button type="submit" class="btn btn-primary rounded-pill shadow-sm" onclick="return confirm('Distribute tiered daily bonus to all qualified referrers for yesterday?')">
+                    <i class="fa-solid fa-bolt-lightning me-2"></i>Distribute Daily Bonus
                 </button>
             </form>
         </div>

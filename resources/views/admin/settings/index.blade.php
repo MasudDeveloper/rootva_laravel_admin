@@ -305,7 +305,7 @@
                     </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-bold">Identity Verification Fee (৳)</label>
-                        <input type="number" name="verify_amount" class="form-control rounded-3 shadow-sm border-primary" value="{{ $payments->verify_amount }}">
+                        <input type="number" name="verify_amount" class="form-control rounded-3 shadow-sm border-primary" value="{{ $payments->verify_amount ?? 300 }}">
                         <p class="text-muted extra-small mt-1">Users will be charged this amount for account verification.</p>
                     </div>
                 </div>

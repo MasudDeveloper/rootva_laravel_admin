@@ -23,3 +23,17 @@ Artisan::command('pcash:check-pending', function () {
 \Illuminate\Support\Facades\Schedule::command('microjob:auto-approve')
     ->everyMinute()
     ->appendOutputTo(storage_path('logs/cron_microjobs.log'));
+
+// Daily Bonus Distribution (Runs every night at 00:05 AM Asia/Dhaka after day ends)
+\Illuminate\Support\Facades\Schedule::command('bonus:distribute-daily')
+    ->dailyAt('00:05')
+    ->timezone('Asia/Dhaka')
+    ->appendOutputTo(storage_path('logs/cron_daily_bonus.log'));
+
+// Weekly Bonus Distribution (Runs every Saturday at 00:10 AM Asia/Dhaka after week ends on Friday midnight)
+\Illuminate\Support\Facades\Schedule::command('bonus:distribute-weekly')
+    ->saturdays()
+    ->at('00:10')
+    ->timezone('Asia/Dhaka')
+    ->appendOutputTo(storage_path('logs/cron_weekly_bonus.log'));
+

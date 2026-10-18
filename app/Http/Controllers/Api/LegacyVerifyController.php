@@ -129,7 +129,7 @@ class LegacyVerifyController extends Controller
     //         ->where('amount', $amount)
     //         ->first();
 
-    //     if ($match && $amount >= 250) {
+    //     if ($match && $amount >= 300) {
     //         DB::transaction(function () use ($match, $txnId, $gateway) {
     //             $user = SignUp::find($match->user_id);
     //             $time = date("d-m-Y h:i A");
