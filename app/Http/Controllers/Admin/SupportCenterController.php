@@ -6,7 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SupportMember;
 use App\Models\SupportService;
+use App\Models\PaymentNumber;
+use App\Models\SocialLink;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Cache;
 
 class SupportCenterController extends Controller
 {
@@ -14,7 +19,43 @@ class SupportCenterController extends Controller
     {
         $members = SupportMember::orderBy('sort_order', 'asc')->get();
         $services = SupportService::orderBy('sort_order', 'asc')->get();
-        return view('admin.support_center.index', compact('members', 'services'));
+        $banglaQrSupportLink = PaymentNumber::value('bangla_qr_support_link') ?? DB::table('social_links')->value('bangla_qr_support_link') ?? '';
+        return view('admin.support_center.index', compact('members', 'services', 'banglaQrSupportLink'));
+    }
+
+    public function updateBanglaQrLink(Request $request)
+    {
+        $link = $request->input('bangla_qr_support_link');
+
+        if (Schema::hasTable('payment_number') && !Schema::hasColumn('payment_number', 'bangla_qr_support_link')) {
+            try {
+                Schema::table('payment_number', function ($table) {
+                    $table->string('bangla_qr_support_link', 255)->nullable()->after('bangla_qr');
+                });
+            } catch (\Throwable $ignored) {}
+        }
+
+        if (Schema::hasTable('social_links') && !Schema::hasColumn('social_links', 'bangla_qr_support_link')) {
+            try {
+                Schema::table('social_links', function ($table) {
+                    $table->string('bangla_qr_support_link', 255)->nullable()->after('support_verify');
+                });
+            } catch (\Throwable $ignored) {}
+        }
+
+        $payment = PaymentNumber::first();
+        if ($payment) {
+            $payment->update(['bangla_qr_support_link' => $link]);
+        }
+
+        $social = SocialLink::first();
+        if ($social) {
+            $social->update(['bangla_qr_support_link' => $link]);
+        }
+
+        Cache::forget('api_social_links');
+
+        return back()->with('success', 'বাংলা কিউআর সাপোর্ট সেন্টার লিঙ্ক সফলভাবে আপডেট করা হয়েছে।');
     }
 
     public function storeMember(Request $request)

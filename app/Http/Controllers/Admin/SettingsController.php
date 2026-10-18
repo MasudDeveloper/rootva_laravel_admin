@@ -39,16 +39,59 @@ class SettingsController extends Controller
     {
         try {
             DB::transaction(function () use ($request) {
-                // Auto ensure bangla_qr column exists in payment_number if possible
-                if (Schema::hasTable('payment_number') && !Schema::hasColumn('payment_number', 'bangla_qr')) {
-                    try {
-                        Schema::table('payment_number', function ($table) {
-                            $table->string('bangla_qr', 50)->nullable()->after('upay');
-                        });
-                    } catch (\Throwable $colEx) {
-                        Log::warning('Could not auto-add bangla_qr column: ' . $colEx->getMessage());
+                // Auto ensure bangla_qr and bangla_qr_support_link columns exist
+                if (Schema::hasTable('payment_number')) {
+                    if (!Schema::hasColumn('payment_number', 'bangla_qr')) {
+                        try {
+                            Schema::table('payment_number', function ($table) {
+                                $table->string('bangla_qr', 50)->nullable()->after('upay');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add bangla_qr column: ' . $colEx->getMessage());
+                        }
+                    }
+                    if (!Schema::hasColumn('payment_number', 'bangla_qr_support_link')) {
+                        try {
+                            Schema::table('payment_number', function ($table) {
+                                $table->string('bangla_qr_support_link', 255)->nullable()->after('bangla_qr');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add bangla_qr_support_link column: ' . $colEx->getMessage());
+                        }
                     }
                 }
+
+                if (Schema::hasTable('social_links')) {
+                    if (!Schema::hasColumn('social_links', 'telegram_customer_group')) {
+                        try {
+                            Schema::table('social_links', function ($table) {
+                                $table->string('telegram_customer_group', 255)->nullable()->after('telegram_group');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add telegram_customer_group column to social_links: ' . $colEx->getMessage());
+                        }
+                    }
+                    if (!Schema::hasColumn('social_links', 'telegram_business_group')) {
+                        try {
+                            Schema::table('social_links', function ($table) {
+                                $table->string('telegram_business_group', 255)->nullable()->after('telegram_customer_group');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add telegram_business_group column to social_links: ' . $colEx->getMessage());
+                        }
+                    }
+                    if (!Schema::hasColumn('social_links', 'bangla_qr_support_link')) {
+                        try {
+                            Schema::table('social_links', function ($table) {
+                                $table->string('bangla_qr_support_link', 255)->nullable()->after('support_verify');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add bangla_qr_support_link column to social_links: ' . $colEx->getMessage());
+                        }
+                    }
+                }
+
+                $banglaQrLink = $request->input('bangla_qr_support_link');
 
                 // 1. Update Social Links
                 $social = SocialLink::first();
@@ -63,7 +106,7 @@ class SettingsController extends Controller
                     'telegram_customer_group', 'telegram_business_group',
                     'telegram_reselling_group', 'telegram_sim_offer_group', 'telegram_bot', 
                     'youtube_channel', 'support_number', 'support_reselling', 'support_password', 
-                    'support_facebook', 'support_verify', 'instagram_work_submit', 'instagram_work_telegram', 
+                    'support_facebook', 'support_verify', 'bangla_qr_support_link', 'instagram_work_submit', 'instagram_work_telegram', 
                     'instagram_work_massenger', 'email_work_submit', 'email_work_telegram', 
                     'email_work_massenger', 'facebook_work_submit', 'facebook_work_telegram', 
                     'facebook_work_massenger', 'tiktok_work_submit', 'tiktok_work_telegram', 
@@ -71,7 +114,11 @@ class SettingsController extends Controller
                 ];
                 $validSocialFields = !empty($socialCols) ? array_intersect($socialFields, $socialCols) : $socialFields;
                 $social->fill($request->only($validSocialFields));
+                if ($banglaQrLink !== null && in_array('bangla_qr_support_link', $socialCols)) {
+                    $social->bangla_qr_support_link = $banglaQrLink;
+                }
                 $social->save();
+                Cache::forget('api_social_links');
 
                 // 2. Update Payment Numbers
                 $payments = PaymentNumber::first();
@@ -79,11 +126,14 @@ class SettingsController extends Controller
                     $payments = new PaymentNumber();
                 }
                 $paymentCols = Schema::hasTable('payment_number') ? Schema::getColumnListing('payment_number') : [];
-                $paymentFields = ['bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'verify_amount'];
+                $paymentFields = ['bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'bangla_qr_support_link', 'verify_amount'];
                 $validPaymentFields = !empty($paymentCols) ? array_intersect($paymentFields, $paymentCols) : $paymentFields;
 
                 if ($request->hasAny($validPaymentFields)) {
                     $payments->fill($request->only($validPaymentFields));
+                    if ($banglaQrLink !== null && in_array('bangla_qr_support_link', $paymentCols)) {
+                        $payments->bangla_qr_support_link = $banglaQrLink;
+                    }
                     $payments->save();
                 }
 

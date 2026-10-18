@@ -123,6 +123,14 @@ class LegacyDepositController extends Controller
             ]);
         }
         
+        $banglaQrSupportLink = $numbers->bangla_qr_support_link ?? null;
+        if (empty($banglaQrSupportLink)) {
+            $social = \Illuminate\Support\Facades\DB::table('social_links')->first();
+            if ($social) {
+                $banglaQrSupportLink = $social->bangla_qr_support_link ?? $social->support_verify ?? $social->support_number ?? null;
+            }
+        }
+
         return response()->json([
             'error' => false,
             'bkash' => $numbers->bkash,
@@ -130,6 +138,7 @@ class LegacyDepositController extends Controller
             'rocket' => $numbers->rocket,
             'upay' => $numbers->upay,
             'bangla_qr' => $numbers->bangla_qr ?? '01577095615',
+            'bangla_qr_support_link' => $banglaQrSupportLink,
             'verify_amount' => $numbers->verify_amount
         ]);
     }

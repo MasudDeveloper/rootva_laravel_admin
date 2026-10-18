@@ -164,6 +164,12 @@
                         <span class="text-muted extra-small">রিসেলিং সংক্রান্ত সাপোর্টের জন্য নির্ধারিত লিংক।</span>
                     </div>
 
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-success"><i class="fa-solid fa-qrcode text-success me-1"></i> বাংলা কিউআর সাপোর্ট সেন্টার লিঙ্ক (Bangla QR Support)</label>
+                        <input type="text" name="bangla_qr_support_link" class="form-control rounded-3 border-success-subtle shadow-sm" value="{{ $payments->bangla_qr_support_link ?? $social->bangla_qr_support_link }}" placeholder="https://t.me/... বা https://wa.me/... বা FB লিঙ্ক">
+                        <span class="text-muted extra-small">পেমেন্ট পেজে "সাপোর্ট সেন্টারে যোগাযোগ করুন" বাটনে ক্লিক করলে ইউজার এই লিংকে যাবে।</span>
+                    </div>
+
                     <!-- Meeting Links -->
                     <div class="col-12 mt-4 pt-3 border-top">
                         <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-video text-primary me-2"></i>অনলাইন মিটিং লিংক (Meeting Links)</h6>
@@ -292,6 +298,10 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-bold">Bangla QR / Merchant Number</label>
                         <input type="text" name="bangla_qr" class="form-control rounded-3" value="{{ $payments->bangla_qr ?? '01577095615' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-success"><i class="fa-solid fa-headset me-1"></i> Bangla QR Support Center Link</label>
+                        <input type="text" name="bangla_qr_support_link" class="form-control rounded-3" value="{{ $payments->bangla_qr_support_link ?? $social->bangla_qr_support_link }}" placeholder="https://t.me/... বা https://wa.me/...">
                     </div>
                     <div class="col-md-12">
                         <label class="form-label small fw-bold">Identity Verification Fee (৳)</label>

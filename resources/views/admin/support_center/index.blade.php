@@ -11,6 +11,38 @@
         </div>
     @endif
 
+    {{-- Bangla QR Support Center Link Card --}}
+    <div class="card-modern mb-4 p-4 border border-success-subtle shadow-sm bg-white rounded-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1 text-success">
+                    <i class="fa-solid fa-qrcode me-2"></i>বাংলা কিউআর সাপোর্ট সেন্টার লিঙ্ক (Bangla QR Support Center Link)
+                </h5>
+                <p class="text-muted small mb-0">পেমেন্ট স্ক্রিনে <strong>"সাপোর্ট সেন্টারে যোগাযোগ করুন"</strong> বাটনে ক্লিক করলে ইউজার সরাসরি এই লিংকে (Telegram / WhatsApp / Facebook Page / Website) চলে যাবে।</p>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill font-monospace">
+                <i class="fa-solid fa-link me-1"></i>Active QR Support
+            </span>
+        </div>
+        <form action="{{ route('admin.support-center.bangla-qr-link') }}" method="POST">
+            @csrf
+            <div class="row g-3 align-items-end">
+                <div class="col-md-9">
+                    <label class="form-label small fw-bold text-dark">
+                        <i class="fa-solid fa-headset text-success me-1"></i> সাপোর্ট লিঙ্ক (URL / Telegram / WhatsApp / Facebook Page)
+                    </label>
+                    <input type="text" name="bangla_qr_support_link" class="form-control rounded-3" value="{{ $banglaQrSupportLink ?? '' }}" placeholder="https://t.me/your_support বা https://wa.me/8801... বা https://facebook.com/..." required>
+                    <span class="text-muted extra-small">এখানে আপনার টেলিগ্রাম, হোয়াটসঅ্যাপ বা ফেসবুক পেজের ডিরেক্ট সাপোর্ট লিঙ্ক দিন।</span>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success w-100 rounded-pill shadow-sm">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>লিঙ্ক সেভ করুন
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div class="row g-4">
         <!-- Members Management -->
         <div class="col-md-6">

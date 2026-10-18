@@ -216,19 +216,31 @@ class LeaderboardController extends Controller
     }
 
     /**
-     * Get Top 100 Success Stories (Top Members by Total Income: Wallet Balance + Approved Withdrawals)
+     * Get Top 50 Success Stories (Top Members by All-Time Income: matching Income Report)
      */
     public function getSuccessStories(Request $request)
     {
-        $response = \Illuminate\Support\Facades\Cache::remember('api_success_stories_top50', 600, function () {
-            // Step 1: Pre-aggregate approved withdrawals per user to avoid correlated subqueries per row
+        \Illuminate\Support\Facades\Cache::forget('api_success_stories_top50');
+        \Illuminate\Support\Facades\Cache::forget('api_success_stories_top50_v2');
+
+        $response = \Illuminate\Support\Facades\Cache::remember('api_success_stories_top50_v3', 180, function () {
+            // Step 1: Pre-aggregate all-time income from transactions table (matching LegacyWalletController getIncomeReport)
+            $incomes = DB::table('transactions')
+                ->select('user_id', DB::raw('SUM(amount) as total_lifetime_income'))
+                ->whereIn(DB::raw('LOWER(type)'), ['income', 'commission'])
+                ->groupBy('user_id');
+
+            // Step 2: Pre-aggregate approved withdrawals per user
             $withdrawals = DB::table('withdraw_requests')
                 ->select('user_id', DB::raw('SUM(amount) as total_approved_withdraw'))
                 ->where('status', 'Approved')
                 ->groupBy('user_id');
 
-            // Step 2: Query top earning users joining pre-aggregated withdrawals
+            // Step 3: Query top earning users joining pre-aggregated incomes and withdrawals
             $users = DB::table('sign_up')
+                ->leftJoinSub($incomes, 'inc', function ($join) {
+                    $join->on('sign_up.id', '=', 'inc.user_id');
+                })
                 ->leftJoinSub($withdrawals, 'w', function ($join) {
                     $join->on('sign_up.id', '=', 'w.user_id');
                 })
@@ -240,7 +252,7 @@ class LeaderboardController extends Controller
                     'sign_up.referCode',
                     'sign_up.wallet_balance',
                     DB::raw('COALESCE(w.total_approved_withdraw, 0) as total_withdraw'),
-                    DB::raw('(COALESCE(sign_up.wallet_balance, 0) + COALESCE(w.total_approved_withdraw, 0)) as calculated_total_income')
+                    DB::raw('CASE WHEN inc.total_lifetime_income IS NOT NULL AND inc.total_lifetime_income > 0 THEN inc.total_lifetime_income ELSE (COALESCE(sign_up.wallet_balance, 0) + COALESCE(w.total_approved_withdraw, 0)) END as calculated_total_income')
                 )
                 ->where('sign_up.is_verified', '!=', 3)
                 ->orderBy('calculated_total_income', 'desc')

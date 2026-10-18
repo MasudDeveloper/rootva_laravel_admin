@@ -100,9 +100,11 @@ class LegacyContentController extends Controller
     {
         $members = SupportMember::orderBy('sort_order', 'asc')->get();
         $services = SupportService::orderBy('sort_order', 'asc')->get();
+        $banglaQrLink = \App\Models\PaymentNumber::value('bangla_qr_support_link') ?? DB::table('social_links')->value('bangla_qr_support_link');
         return response()->json([
             'members' => $members,
-            'services' => $services
+            'services' => $services,
+            'bangla_qr_support_link' => $banglaQrLink
         ]);
     }
 
@@ -123,7 +125,7 @@ class LegacyContentController extends Controller
                 }
             }
 
-            $exceptionMessage = $request->input('exception_message');
+            $exceptionMessage = $request->input('exception_message') ?: $request->input('message');
             $stackTrace = $request->input('stack_trace');
 
             // Extract location if not explicitly provided

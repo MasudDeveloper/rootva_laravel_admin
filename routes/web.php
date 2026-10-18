@@ -114,6 +114,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/support-center/services', [\App\Http\Controllers\Admin\SupportCenterController::class, 'storeService'])->name('support-center.services.store');
         Route::post('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateService'])->name('support-center.services.update');
         Route::delete('/support-center/services/{id}', [\App\Http\Controllers\Admin\SupportCenterController::class, 'destroyService'])->name('support-center.services.destroy');
+        Route::post('/support-center/bangla-qr-link', [\App\Http\Controllers\Admin\SupportCenterController::class, 'updateBanglaQrLink'])->name('support-center.bangla-qr-link');
 
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
