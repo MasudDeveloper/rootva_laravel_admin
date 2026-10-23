@@ -86,8 +86,10 @@ class CrashReportController extends Controller
         $report->status = 'Resolved';
         $report->save();
 
-        $similarUpdated = $report->getSimilarQuery(false)->update(['status' => 'Resolved']);
-        $total = $similarUpdated + 1;
+        $matchingQuery = $report->getSimilarQuery(false);
+        $totalSimilar = (clone $matchingQuery)->count();
+        $matchingQuery->update(['status' => 'Resolved']);
+        $total = $totalSimilar + 1;
 
         return back()->with('success', "এই ক্র্যাশ এবং একই ধরনের মোট {$total} টি ক্র্যাশ রিপোর্ট সফলভাবে Resolved হিসেবে চিহ্নিত করা হয়েছে।");
     }

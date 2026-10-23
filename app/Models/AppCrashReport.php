@@ -32,6 +32,53 @@ class AppCrashReport extends Model
     }
 
     /**
+     * Extract significant root keywords from error message or stack trace,
+     * stripping dynamic memory addresses (0x...), object hash codes (a{...}),
+     * UUIDs, and numbers (e.g. 485 vs 53 vs 39).
+     */
+    public function getSignificantKeywords()
+    {
+        $text = $this->exception_message;
+        if (empty($text) && !empty($this->stack_trace)) {
+            $text = trim(strtok($this->stack_trace, "\r\n"));
+        }
+
+        if (empty($text)) {
+            return [];
+        }
+
+        // 1. Remove UUIDs
+        $text = preg_replace('/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i', '', $text);
+        // 2. Remove 0x... hex addresses
+        $text = preg_replace('/0x[a-f0-9]+/i', '', $text);
+        // 3. Remove object hash references like a{2e9571a} or a{b2fb126}
+        $text = preg_replace('/[a-zA-Z0-9_$.]+\{[a-f0-9]+\}/i', '', $text);
+        // 4. Remove all digits/numbers (e.g. 485, 53, 39, 20)
+        $text = preg_replace('/\d+/', '', $text);
+
+        // Extract words of length >= 3
+        preg_match_all('/[a-zA-Z]{3,}/', $text, $matches);
+        $words = $matches[0] ?? [];
+
+        // Exclude generic stop words
+        $stopWords = [
+            'java', 'lang', 'android', 'com', 'mrdeveloper', 'rootva',
+            'error', 'exception', 'caused', 'the', 'and', 'for', 'with',
+            'from', 'ends', 'null', 'true', 'false', 'sourcefile', 'view'
+        ];
+
+        $filtered = [];
+        foreach ($words as $w) {
+            $lower = strtolower($w);
+            if (!in_array($lower, $stopWords) && strlen($w) >= 3) {
+                $filtered[] = $w;
+            }
+        }
+
+        return array_slice(array_values(array_unique($filtered)), 0, 3);
+    }
+
+    /**
      * Query crashes that are identical or similar in origin
      */
     public function getSimilarQuery($includeSelf = false)
@@ -41,23 +88,30 @@ class AppCrashReport extends Model
             $query->where('id', '!=', $this->id);
         }
 
+        if (!empty($this->exception_class)) {
+            $query->where('exception_class', $this->exception_class);
+        }
+
         if (!empty($this->crash_location)) {
             $query->where('crash_location', $this->crash_location);
-            if (!empty($this->exception_class)) {
-                $query->where('exception_class', $this->exception_class);
-            }
-        } elseif (!empty($this->exception_class)) {
-            $query->where('exception_class', $this->exception_class);
-            if (!empty($this->exception_message)) {
-                $query->where('exception_message', $this->exception_message);
-            } elseif (!empty($this->stack_trace)) {
-                $firstLine = trim(strtok($this->stack_trace, "\r\n"));
-                if (preg_match('/([A-Za-z]+Exception[^\r\n]{0,50})/', $firstLine, $m)) {
-                    $cleanPattern = preg_replace('/\d+|0x[a-fA-F0-9]+/', '', trim($m[1]));
-                    if (strlen($cleanPattern) >= 10) {
-                        $query->where('stack_trace', 'like', '%' . substr($cleanPattern, 0, 25) . '%');
-                    }
+            return $query;
+        }
+
+        $keywords = $this->getSignificantKeywords();
+        if (!empty($keywords)) {
+            $query->where(function ($q) use ($keywords) {
+                foreach ($keywords as $word) {
+                    $q->where(function ($sub) use ($word) {
+                        $sub->where('exception_message', 'like', "%{$word}%")
+                            ->orWhere('stack_trace', 'like', "%{$word}%");
+                    });
                 }
+            });
+        } elseif (!empty($this->stack_trace)) {
+            // If no message keywords, match by top frame of stack trace
+            if (preg_match('/at\s+([a-zA-Z0-9_$.]+)/', $this->stack_trace, $frameMatch)) {
+                $frame = $frameMatch[1];
+                $query->where('stack_trace', 'like', "%{$frame}%");
             }
         }
 
