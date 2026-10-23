@@ -135,6 +135,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('/crash-reports', [\App\Http\Controllers\Admin\CrashReportController::class, 'index'])->name('crash-reports.index');
         Route::get('/crash-reports/{id}', [\App\Http\Controllers\Admin\CrashReportController::class, 'show'])->name('crash-reports.show');
         Route::post('/crash-reports/{id}/status', [\App\Http\Controllers\Admin\CrashReportController::class, 'updateStatus'])->name('crash-reports.updateStatus');
+        Route::post('/crash-reports/{id}/resolve-similar', [\App\Http\Controllers\Admin\CrashReportController::class, 'resolveSimilar'])->name('crash-reports.resolveSimilar');
+        Route::post('/crash-reports/bulk-action', [\App\Http\Controllers\Admin\CrashReportController::class, 'bulkAction'])->name('crash-reports.bulkAction');
         Route::delete('/crash-reports/clear-resolved', [\App\Http\Controllers\Admin\CrashReportController::class, 'clearResolved'])->name('crash-reports.clearResolved');
         Route::delete('/crash-reports/{id}', [\App\Http\Controllers\Admin\CrashReportController::class, 'destroy'])->name('crash-reports.destroy');
     });

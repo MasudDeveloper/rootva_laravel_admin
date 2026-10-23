@@ -3,197 +3,994 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rootva Business Meeting</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Rootva Business Meeting - রুটভা বিজনেস মিটিং</title>
     <link rel="icon" href="logo.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --primary: #0044b5;
-            --secondary: #ffcb05;
-            --dark: #0f172a;
-            --light: #f8fafc;
-            --success: #22c55e;
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.4);
+            --secondary: #fbbf24;
+            --secondary-glow: rgba(251, 191, 36, 0.3);
+            --accent-green: #10b981;
+            --accent-orange: #f97316;
+            --accent-purple: #a855f7;
+            --dark-bg: #0b1120;
+            --card-bg: rgba(17, 24, 39, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Noto Sans Bengali', sans-serif;
+            font-family: 'Hind Siliguri', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
+
         body {
-            background: linear-gradient(135deg, #0f172a, #1b1b3a);
-            color: #ffffff;
+            background-color: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.05) 0%, transparent 60%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px;
         }
-        .container {
-            background: #15152b;
-            max-width: 500px;
+
+        .main-wrapper {
             width: 100%;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            max-width: 600px;
+            margin: auto;
+            position: relative;
+        }
+
+        .meeting-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px -10px rgba(37, 99, 235, 0.2);
             overflow: hidden;
-            text-align: center;
-            border: 1px solid #2e2e54;
-            padding: 40px 30px;
-            animation: slideUp 0.6s ease-out;
+            padding: 30px 24px;
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
-        .meeting-icon {
-            font-size: 64px;
-            color: var(--secondary);
-            margin-bottom: 24px;
-            animation: float 3s ease-in-out infinite;
+
+        /* Top Brand Header */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10dp); }
+
+        .brand-logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        h1 {
-            font-size: 24px;
-            color: #ffffff;
-            margin-bottom: 12px;
+
+        .brand-logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-titles h2 {
+            font-size: 19px;
             font-weight: 700;
+            color: #ffffff;
+            line-height: 1.2;
+            letter-spacing: -0.2px;
         }
-        .badge {
-            display: inline-block;
-            background: rgba(34, 197, 94, 0.2);
-            color: var(--success);
-            padding: 6px 16px;
+
+        .brand-titles p {
+            font-size: 12px;
+            color: var(--secondary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .together-badge {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(251, 191, 36, 0.2));
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: #fef08a;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Outfit', sans-serif;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        /* Banner Container */
+        .banner-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            margin-bottom: 24px;
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+            background: #000;
+        }
+
+        .banner-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .banner-container:hover img {
+            transform: scale(1.02);
+        }
+
+        /* Time & Live Indicator Box */
+        .time-beacon-bar {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            border-radius: 18px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .time-beacon-bar::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #3b82f6, #fbbf24);
+        }
+
+        .time-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pulse-dot-wrap {
+            position: relative;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid #22c55e;
+            animation: ringPulse 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes ringPulse {
+            0% { transform: scale(0.6); opacity: 1; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        .time-text h4 {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .time-text p {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .time-text p span {
+            color: var(--secondary);
+            font-family: 'Outfit', 'Hind Siliguri', sans-serif;
+        }
+
+        .meeting-tag {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--secondary);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Schedule Section Header */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .section-header h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-header h3 i {
+            color: #60a5fa;
+            font-size: 16px;
+        }
+
+        /* 3 Day Schedule Cards */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .schedule-card {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 18px;
+            padding: 16px 12px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 165px;
+        }
+
+        .schedule-card:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Saturday Green */
+        .schedule-card.saturday {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%);
+        }
+        .schedule-card.saturday .card-pill {
+            background: #10b981;
+            color: #ffffff;
+        }
+        .schedule-card.saturday .card-icon {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        /* Monday Orange */
+        .schedule-card.monday {
+            border-color: rgba(249, 115, 22, 0.3);
+            background: linear-gradient(180deg, rgba(249, 115, 22, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%);
+        }
+        .schedule-card.monday .card-pill {
+            background: #f97316;
+            color: #ffffff;
+        }
+        .schedule-card.monday .card-icon {
+            color: #fb923c;
+            background: rgba(249, 115, 22, 0.15);
+        }
+
+        /* Thursday Purple */
+        .schedule-card.thursday {
+            border-color: rgba(168, 85, 247, 0.3);
+            background: linear-gradient(180deg, rgba(168, 85, 247, 0.12) 0%, rgba(15, 23, 42, 0.7) 100%);
+        }
+        .schedule-card.thursday .card-pill {
+            background: #a855f7;
+            color: #ffffff;
+        }
+        .schedule-card.thursday .card-icon {
+            color: #c084fc;
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        /* Highlight for Today */
+        .schedule-card.is-today {
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.3);
+            border-width: 2px;
+            animation: cardGlow 2s infinite alternate;
+        }
+
+        @keyframes cardGlow {
+            from { border-color: rgba(251, 191, 36, 0.4); }
+            to { border-color: rgba(251, 191, 36, 0.9); }
+        }
+
+        .today-floating-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.3px;
+        }
+
+        .card-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
             border-radius: 50px;
             font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            font-weight: 700;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            width: fit-content;
         }
-        p.desc {
-            color: #a5b4fc;
-            font-size: 14px;
-            margin-bottom: 30px;
-            line-height: 1.6;
+
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 10px;
         }
-        .btn-join {
-            display: inline-flex;
+
+        .card-topic-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+
+        .card-topic-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Coupon Bonus Ticket Card */
+        .bonus-ticket {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(234, 88, 12, 0.15) 50%, rgba(217, 119, 6, 0.15) 100%);
+            border: 1.5px dashed rgba(245, 158, 11, 0.5);
+            border-radius: 20px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 26px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 25px -5px rgba(234, 88, 12, 0.2);
+        }
+
+        .bonus-ticket::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--dark-bg);
+            border-radius: 50%;
+        }
+
+        .bonus-ticket::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--dark-bg);
+            border-radius: 50%;
+        }
+
+        .bonus-icon-box {
+            min-width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #ffffff;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+            animation: gentleBounce 2.5s infinite ease-in-out;
+        }
+
+        @keyframes gentleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .bonus-details h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fef08a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .bonus-details p {
+            font-size: 13px;
+            color: #fed7aa;
+            line-height: 1.4;
+        }
+
+        /* Action Buttons */
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary-join {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 16px 24px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            width: 100%;
-            background: linear-gradient(135deg, #4364f7, #6fb1fc);
-            color: white;
-            text-decoration: none;
-            padding: 16px 30px;
-            font-size: 18px;
-            font-weight: 700;
-            border-radius: 50px;
-            box-shadow: 0 10px 20px rgba(67, 100, 247, 0.3);
-            transition: all 0.3s ease;
             cursor: pointer;
-            border: none;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-join:hover {
+
+        .btn-primary-join::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-primary-join:hover {
             transform: translateY(-2px);
-            box-shadow: 0 15px 25px rgba(67, 100, 247, 0.4);
-            filter: brightness(1.1);
+            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.5);
+            filter: brightness(1.08);
         }
-        .btn-join:active {
+
+        .btn-primary-join:active {
             transform: translateY(1px);
         }
-        .instructions {
-            margin-top: 24px;
-            background: rgba(46, 46, 84, 0.4);
-            border: 1px solid #2e2e54;
-            padding: 15px;
-            border-radius: 14px;
-            font-size: 12px;
-            color: #a5b4fc;
-            text-align: left;
-            line-height: 1.6;
+
+        .btn-secondary-copy {
+            background: rgba(30, 41, 59, 0.7);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .instructions i {
+
+        .btn-secondary-copy:hover {
+            background: rgba(51, 65, 85, 0.8);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Instructions Accordion / Card */
+        .guidelines-card {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+        }
+
+        .guidelines-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .guidelines-header i {
             color: var(--secondary);
-            margin-right: 6px;
         }
+
+        .guidelines-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .guidelines-list li {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .guidelines-list li i {
+            font-size: 11px;
+            margin-top: 4px;
+            color: #38bdf8;
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-note p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .footer-note span {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        /* Toast Popup */
         .toast {
             position: fixed;
             bottom: 30px;
-            background: #ef4444;
-            color: white;
+            left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
             padding: 12px 24px;
             border-radius: 50px;
             font-size: 14px;
             font-weight: 600;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            display: none;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; } to { opacity: 1; }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast.success {
+            border-color: #22c55e;
+            color: #86efac;
+        }
+
+        .toast.error {
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 520px) {
+            body {
+                padding: 12px 10px;
+            }
+
+            .meeting-card {
+                padding: 20px 16px;
+                border-radius: 22px;
+            }
+
+            .brand-titles h2 {
+                font-size: 17px;
+            }
+
+            .schedule-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .schedule-card {
+                flex-direction: row;
+                text-align: left;
+                min-height: auto;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+
+            .schedule-card .card-pill {
+                margin-bottom: 0;
+            }
+
+            .card-icon {
+                margin-bottom: 0;
+                min-width: 44px;
+            }
+
+            .schedule-card-body {
+                flex: 1;
+            }
+
+            .bonus-ticket {
+                padding: 14px 14px;
+                gap: 12px;
+            }
+
+            .bonus-icon-box {
+                min-width: 42px;
+                height: 42px;
+                font-size: 20px;
+            }
+
+            .btn-primary-join {
+                font-size: 16px;
+                padding: 14px 20px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="meeting-icon">
-            <i class="fa-solid fa-handshake"></i>
-        </div>
-        <h1>রুটভা বিজনেস ও লিডারশিপ মিটিং</h1>
-        <div class="badge">
-            <i class="fa-solid fa-circle-play me-1"></i> বিজনেস মিটিং রুম
-        </div>
-        <p class="desc">
-            রুটভা অফিশিয়াল বিজনেস ও লিডারশিপ মিটিং রুমে আপনাকে স্বাগতম। এই মিটিংয়ে যুক্ত হয়ে আপনার বিজনেস টিম ম্যানেজমেন্ট, প্রজেক্ট আপডেট এবং টিম লিডারশিপের গাইডলাইন সম্পর্কে বিস্তারিত জানুন।
-        </p>
+    <div class="main-wrapper">
+        <div class="meeting-card">
 
-        <button id="join-btn" class="btn-join">
-            <i class="fa-solid fa-door-open"></i> মিটিংয়ে যুক্ত হোন
-        </button>
+            <!-- Brand Header -->
+            <div class="brand-header">
+                <div class="brand-logo-wrap">
+                    <img src="logo.png" alt="Rootva Logo" class="brand-logo-img" onerror="this.src='/assets/img/logo.png'; this.onerror=null;">
+                    <div class="brand-titles">
+                        <h2>ROOTVA</h2>
+                        <p>OFFICIAL BUSINESS MEETING</p>
+                    </div>
+                </div>
+                <div class="together-badge">
+                    <span>Together We Grow</span> 💙💛
+                </div>
+            </div>
 
-        <div class="instructions">
-            <p><i class="fa-solid fa-circle-info"></i> <strong>নির্দেশনা:</strong></p>
-            <p style="margin-top: 4px;">১. মিটিং শুরু হওয়ার নির্দিষ্ট সময়ে বাটনে ক্লিক করে সরাসরি গুগল মিট/জুমে যুক্ত হোন।</p>
-            <p>২. এটি রুটভা লিডার ও বিজনেস মেম্বারদের জন্য একটি অফিশিয়াল মিটিং রুম।</p>
+            <!-- Visual Banner -->
+            <div class="banner-container">
+                <img src="business-meeting-banner.jpg" alt="Rootva Business Meeting Banner" onerror="this.onerror=null; this.style.display='none';">
+            </div>
+
+            <!-- Time & Status Bar -->
+            <div class="time-beacon-bar">
+                <div class="time-left">
+                    <div class="pulse-dot-wrap">
+                        <div class="pulse-ring"></div>
+                        <div class="pulse-dot"></div>
+                    </div>
+                    <div class="time-text">
+                        <h4>মিটিংয়ের সময়</h4>
+                        <p><i class="fa-regular fa-clock" style="font-size: 15px; color: var(--secondary);"></i> <span>রাত ৯:০০ টা</span></p>
+                    </div>
+                </div>
+                <div class="meeting-tag">
+                    <i class="fa-solid fa-video"></i> গুগল মিট সেশন
+                </div>
+            </div>
+
+            <!-- Schedule Section -->
+            <div class="section-header">
+                <h3><i class="fa-solid fa-calendar-days"></i> মিটিং শিডিউল</h3>
+                <span id="current-day-label" style="font-size: 12px; color: #94a3b8; font-weight: 500;"></span>
+            </div>
+
+            <div class="schedule-grid">
+                <!-- Saturday -->
+                <div class="schedule-card saturday" id="day-card-saturday">
+                    <div class="card-pill">
+                        <i class="fa-regular fa-calendar-check"></i> শনিবার
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="schedule-card-body">
+                        <div class="card-topic-title">একটিভ ইনকাম</div>
+                        <div class="card-topic-subtitle">সম্পর্কে বিস্তারিত আলোচনা</div>
+                    </div>
+                </div>
+
+                <!-- Monday -->
+                <div class="schedule-card monday" id="day-card-monday">
+                    <div class="card-pill">
+                        <i class="fa-regular fa-calendar-check"></i> সোমবার
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                    </div>
+                    <div class="schedule-card-body">
+                        <div class="card-topic-title">রিসেলিং প্রোডাক্ট</div>
+                        <div class="card-topic-subtitle">সম্পর্কে বিস্তারিত আলোচনা</div>
+                    </div>
+                </div>
+
+                <!-- Thursday -->
+                <div class="schedule-card thursday" id="day-card-thursday">
+                    <div class="card-pill">
+                        <i class="fa-regular fa-calendar-check"></i> বৃহস্পতিবার
+                    </div>
+                    <div class="card-icon">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div class="schedule-card-body">
+                        <div class="card-topic-title">প্যাসিভ ইনকাম</div>
+                        <div class="card-topic-subtitle">সম্পর্কে বিস্তারিত আলোচনা</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Coupon Bonus Ticket -->
+            <div class="bonus-ticket">
+                <div class="bonus-icon-box">
+                    <i class="fa-solid fa-gift"></i>
+                </div>
+                <div class="bonus-details">
+                    <h4>স্পেশাল কুপন বোনাস! 🎁</h4>
+                    <p>প্রতিটি মিটিংয়ে অংশগ্রহণকারীদের জন্য থাকছে স্পেশাল কুপন বোনাস জেতার সুবর্ণ সুযোগ!</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-group">
+                <button id="join-btn" class="btn-primary-join" type="button">
+                    <i class="fa-solid fa-door-open"></i> মিটিংয়ে যুক্ত হোন
+                </button>
+                <button id="copy-btn" class="btn-secondary-copy" type="button">
+                    <i class="fa-regular fa-copy"></i> মিটিং লিঙ্ক কপি করুন
+                </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="guidelines-card">
+                <div class="guidelines-header">
+                    <i class="fa-solid fa-circle-info"></i> মিটিং সংক্রান্ত গুরুত্বপূর্ণ নির্দেশনা:
+                </div>
+                <ul class="guidelines-list">
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span>মিটিং শুরু হওয়ার নির্দিষ্ট সময় (রাত ৯:০০ টা) বাটনে ক্লিক করে সরাসরি গুগল মিটে যুক্ত হোন।</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span>মিটিং চলাকালীন নিজের মাইক্রোফোন মিউট রাখুন এবং গুরুত্বপূর্ণ আলোচনার নোট নিন।</span>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span>মিটিংয়ের শেষ পর্যন্ত যুক্ত থেকে আকর্ষণীয় কুপন বোনাস অফার বুঝে নিন।</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer-note">
+                <p>Rootva Official &bull; <span>Together We Grow</span> 💙💛</p>
+            </div>
+
         </div>
     </div>
 
-    <div id="toast" class="toast">মিটিং লিঙ্ক এখনও সেট করা হয়নি!</div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-info-circle"></i>
+        <span id="toast-text">বার্তা</span>
+    </div>
 
     <script>
-        let meetingUrl = "";
+        // Default Google Meet link provided by user
+        let meetingUrl = "https://meet.google.com/aus-pyvy-qkd";
 
-        // Fetch dynamic meeting link from API
-        fetch('/get_social_links.php') // Also handle direct endpoint without api prefix if legacy
+        // Dynamically fetch social links / meeting link from API if available
+        fetch('/api/get_social_links.php')
             .then(response => {
-                if(!response.ok) return fetch('/api/get_social_links.php');
+                if (!response.ok) return fetch('/get_social_links.php');
                 return response;
             })
-            .then(response => response.json())
+            .catch(() => fetch('/get_social_links.php'))
+            .then(response => response ? response.json() : null)
             .then(data => {
                 if (data && data.social_links && data.social_links.business_meeting) {
-                    meetingUrl = data.social_links.business_meeting.trim();
+                    const fetchedUrl = data.social_links.business_meeting.trim();
+                    if (fetchedUrl.length > 5 && fetchedUrl.startsWith('http')) {
+                        meetingUrl = fetchedUrl;
+                    }
                 }
             })
-            .catch(err => console.error("Error loading meeting link:", err));
+            .catch(err => {
+                console.log("Using default configured meeting link:", meetingUrl);
+            });
 
+        // Toast Helper
+        function showToast(message, type = 'normal') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            toastText.textContent = message;
+
+            toast.className = 'toast show ' + type;
+
+            const icon = toast.querySelector('i');
+            if (type === 'success') {
+                icon.className = 'fa-solid fa-circle-check';
+            } else if (type === 'error') {
+                icon.className = 'fa-solid fa-circle-exclamation';
+            } else {
+                icon.className = 'fa-solid fa-info-circle';
+            }
+
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Join Button Action
         document.getElementById('join-btn').addEventListener('click', function() {
             if (meetingUrl && meetingUrl.startsWith('http')) {
-                window.location.href = meetingUrl;
+                // Open meeting in new tab or direct window
+                window.open(meetingUrl, '_blank') || (window.location.href = meetingUrl);
             } else {
-                const toast = document.getElementById('toast');
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 3000);
+                showToast('মিটিং লিঙ্ক পাওয়া যায়নি!', 'error');
             }
         });
+
+        // Copy Link Action
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            if (meetingUrl && meetingUrl.startsWith('http')) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(meetingUrl).then(() => {
+                        showToast('মিটিং লিঙ্ক কপি করা হয়েছে!', 'success');
+                    }).catch(() => {
+                        fallbackCopy(meetingUrl);
+                    });
+                } else {
+                    fallbackCopy(meetingUrl);
+                }
+            } else {
+                showToast('কপি করার মতো লিঙ্ক নেই!', 'error');
+            }
+        });
+
+        function fallbackCopy(text) {
+            try {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                tempInput.style.position = 'fixed';
+                tempInput.style.opacity = '0';
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showToast('মিটিং লিঙ্ক কপি করা হয়েছে!', 'success');
+            } catch (e) {
+                showToast('লিঙ্ক কপি করা সম্ভব হয়নি', 'error');
+            }
+        }
+
+        // Highlight Today's Meeting Day (Saturday = 6, Monday = 1, Thursday = 4)
+        (function highlightToday() {
+            const today = new Date().getDay(); // 0: Sun, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
+            let targetCardId = null;
+            let dayName = "";
+
+            if (today === 6) {
+                targetCardId = "day-card-saturday";
+                dayName = "আজ শনিবার: একটিভ ইনকাম সেশন";
+            } else if (today === 1) {
+                targetCardId = "day-card-monday";
+                dayName = "আজ সোমবার: রিসেলিং প্রোডাক্ট সেশন";
+            } else if (today === 4) {
+                targetCardId = "day-card-thursday";
+                dayName = "আজ বৃহস্পতিবার: প্যাসিভ ইনকাম সেশন";
+            }
+
+            if (targetCardId) {
+                const card = document.getElementById(targetCardId);
+                if (card) {
+                    card.classList.add('is-today');
+                    const badge = document.createElement('div');
+                    badge.className = 'today-floating-badge';
+                    badge.innerHTML = '<i class="fa-solid fa-star"></i> আজকের সেশন';
+                    card.appendChild(badge);
+                }
+                const label = document.getElementById('current-day-label');
+                if (label && dayName) {
+                    label.textContent = dayName;
+                    label.style.color = '#fbbf24';
+                }
+            }
+        })();
     </script>
 </body>
 </html>
