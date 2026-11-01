@@ -64,6 +64,234 @@
         </div>
         @endif
 
+        <!-- Primary Stats Cards (Pending, Approved, Today's Payout, This Month, Last Month, Total Payout) -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-clock"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pending Task</h5>
+                    <p class="text-base font-black text-amber-400 mt-0.5">{{ number_format($statPending ?? 0) }}</p>
+                </div>
+            </div>
+
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-circle-check"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Approved Task</h5>
+                    <p class="text-base font-black text-emerald-400 mt-0.5">{{ number_format($statApproved ?? 0) }}</p>
+                </div>
+            </div>
+
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden border-cyan-500/20 bg-cyan-950/20">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-bolt"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-cyan-400 uppercase tracking-widest">আজকের পেমেন্ট</h5>
+                    <p class="text-base font-black text-white mt-0.5">৳{{ number_format($statTodayPayout ?? 0, 1) }}</p>
+                    <span class="text-[9px] text-slate-400 font-semibold">{{ $statTodayCount ?? 0 }} টি কাজ</span>
+                </div>
+            </div>
+
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden border-indigo-500/20 bg-indigo-950/20">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">চলতি মাস ({{ date('M') }})</h5>
+                    <p class="text-base font-black text-white mt-0.5">৳{{ number_format($statThisMonthPayout ?? 0, 1) }}</p>
+                    <span class="text-[9px] text-slate-400 font-semibold">{{ $statThisMonthCount ?? 0 }} টি কাজ</span>
+                </div>
+            </div>
+
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden border-purple-500/20 bg-purple-950/20">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-purple-400 uppercase tracking-widest">গত মাস ({{ date('M', strtotime('first day of -1 month')) }})</h5>
+                    <p class="text-base font-black text-white mt-0.5">৳{{ number_format($statLastMonthPayout ?? 0, 1) }}</p>
+                    <span class="text-[9px] text-slate-400 font-semibold">{{ $statLastMonthCount ?? 0 }} টি কাজ</span>
+                </div>
+            </div>
+
+            <div class="dark-card rounded-2xl p-4 flex items-center space-x-3 relative overflow-hidden">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-sm shadow-sm"><i class="fa-solid fa-wallet"></i></div>
+                <div>
+                    <h5 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">সর্বমোট পেআউট</h5>
+                    <p class="text-base font-black text-emerald-400 mt-0.5">৳{{ number_format($statTotalPayout ?? 0, 1) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dedicated Monthly Payout & Income Analysis Section -->
+        <div class="dark-card rounded-3xl p-5 sm:p-6 space-y-5 border border-indigo-500/20 bg-gradient-to-r from-slate-900/90 via-indigo-950/30 to-slate-900/90 shadow-2xl">
+            <!-- Header with Month Selector -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-black text-white flex items-center gap-2">
+                            <span>SMM পেমেন্ট ও ইনকাম হিসাব রিপোর্ট</span>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                                {{ date('F Y', strtotime(($selectedPayoutMonth ?? date('Y-m')) . '-01')) }}
+                            </span>
+                        </h4>
+                        <p class="text-xs text-slate-400 mt-0.5">মাস নির্বাচন করে অনুমোদিত কাজের পেমেন্ট ও ইনকামের সম্পূর্ণ বিস্তারিত হিসাব দেখুন</p>
+                    </div>
+                </div>
+
+                <!-- Month Filter Form & CSV Button -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <form action="{{ url()->current() }}" method="GET" class="flex items-center gap-2">
+                        @if(request('status'))
+                            <input type="hidden" name="status" value="{{ request('status') }}">
+                        @endif
+                        <div class="relative">
+                            <input type="month" name="payout_month" value="{{ $selectedPayoutMonth ?? date('Y-m') }}" class="bg-slate-900 border border-indigo-500/40 rounded-xl px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-400 shadow-sm cursor-pointer">
+                        </div>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow shadow-indigo-600/30 flex items-center gap-1.5">
+                            <i class="fa-solid fa-filter"></i>
+                            <span>হিসাব দেখুন</span>
+                        </button>
+                    </form>
+
+                    <!-- Export Monthly CSV -->
+                    <a href="{{ url()->current() }}?action=export_monthly_payout_csv&payout_month={{ urlencode($selectedPayoutMonth ?? date('Y-m')) }}" class="bg-emerald-600/90 hover:bg-emerald-600 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow shadow-emerald-600/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>CSV ডাউনলোড</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Month Switcher Pills -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-[11px] font-bold text-slate-400">দ্রুত নির্বাচন:</span>
+                @php
+                $quickMonths = [
+                    'current' => date('Y-m'),
+                    'last'    => date('Y-m', strtotime('first day of -1 month')),
+                    'prev2'   => date('Y-m', strtotime('first day of -2 months')),
+                    'prev3'   => date('Y-m', strtotime('first day of -3 months')),
+                ];
+                @endphp
+                @foreach ($quickMonths as $k => $mCode)
+                    @php
+                    $mLabel = date('M Y', strtotime($mCode . '-01'));
+                    $isActive = (($selectedPayoutMonth ?? date('Y-m')) === $mCode);
+                    @endphp
+                    <a href="{{ url()->current() }}?payout_month={{ $mCode }}{{ request('status') ? '&status=' . urlencode(request('status')) : '' }}" class="px-3 py-1 rounded-lg font-bold text-xs transition-all {{ $isActive ? 'bg-indigo-600 text-white shadow shadow-indigo-600/30' : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/5' }}">
+                        {{ $mLabel }}
+                    </a>
+                @endforeach
+            </div>
+
+            <!-- Selected Month Breakdown Highlights -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-3.5">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">নির্বাচিত মাসের মোট পেমেন্ট</span>
+                    <span class="text-xl font-black text-emerald-400 mt-1 block">৳{{ number_format($selectedMonthTotal ?? 0, 2) }}</span>
+                    <span class="text-[10px] text-slate-400">অনুমোদিত কাজের মোট মূল্য</span>
+                </div>
+
+                <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-3.5">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">ইউজার নেট পেআউট (৯০%)</span>
+                    <span class="text-xl font-black text-cyan-400 mt-1 block">৳{{ number_format(($selectedMonthTotal ?? 0) * 0.9, 2) }}</span>
+                    <span class="text-[10px] text-slate-400">সরাসরি ওয়ালেটে ক্রেডিট</span>
+                </div>
+
+                <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-3.5">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">রেফারেল কমিশন (১০%)</span>
+                    <span class="text-xl font-black text-purple-400 mt-1 block">৳{{ number_format(($selectedMonthTotal ?? 0) * 0.1, 2) }}</span>
+                    <span class="text-[10px] text-slate-400">৫ লেভেলে বণ্টিত</span>
+                </div>
+
+                <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-3.5">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">অনুমোদিত টাস্ক / ইউজার</span>
+                    <span class="text-xl font-black text-indigo-400 mt-1 block">{{ number_format($selectedMonthCount ?? 0) }} <span class="text-xs text-slate-400 font-normal">টি</span> / {{ number_format($selectedMonthUsers ?? 0) }} <span class="text-xs text-slate-400 font-normal">জন</span></span>
+                    <span class="text-[10px] text-slate-400">অনন্য সুবিধাভোগী ইউজার</span>
+                </div>
+            </div>
+
+            <!-- 2-Column: Task Type Distribution & Daily Timeline -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+                <!-- Project-wise Breakdown -->
+                <div class="lg:col-span-6 bg-slate-900/40 rounded-2xl p-4 border border-white/5 space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-white/5">
+                        <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group text-indigo-400"></i>
+                            <span>কাজের ধরন অনুযায়ী পেমেন্ট বণ্টন ({{ date('M Y', strtotime(($selectedPayoutMonth ?? date('Y-m')) . '-01')) }})</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400">{{ count($selectedMonthTaskBreakdown ?? []) }} টি সার্ভিস</span>
+                    </div>
+
+                    @if(empty($selectedMonthTaskBreakdown) || count($selectedMonthTaskBreakdown) === 0)
+                        <div class="py-8 text-center text-slate-500 text-xs">
+                            <i class="fa-solid fa-circle-info text-lg mb-1 block"></i>
+                            এই মাসে কোনো অনুমোদিত কাজের পেমেন্ট পাওয়া যায়নি।
+                        </div>
+                    @else
+                        <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                            @foreach ($selectedMonthTaskBreakdown as $tb)
+                                @php
+                                $tTotal = (double)$tb->total;
+                                $tCount = (int)$tb->count;
+                                $pct = ($selectedMonthTotal ?? 0) > 0 ? round(($tTotal / $selectedMonthTotal) * 100, 1) : 0;
+                                @endphp
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="font-bold text-slate-200">{{ strtoupper(str_replace('_', ' ', $tb->task_type)) }} <span class="text-[10px] text-slate-400 font-normal">({{ number_format($tCount) }} টি)</span></span>
+                                        <span class="font-black text-emerald-400">৳{{ number_format($tTotal, 2) }} <span class="text-[10px] text-slate-400 font-normal">({{ $pct }}%)</span></span>
+                                    </div>
+                                    <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-1.5 rounded-full" style="width: {{ min(100, $pct) }}%"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Daily Payout Timeline Breakdown -->
+                <div class="lg:col-span-6 bg-slate-900/40 rounded-2xl p-4 border border-white/5 space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-white/5">
+                        <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-days text-emerald-400"></i>
+                            <span>দৈনিক পেমেন্ট হিস্ট্রি ({{ date('M Y', strtotime(($selectedPayoutMonth ?? date('Y-m')) . '-01')) }})</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400">{{ count($selectedMonthDailyBreakdown ?? []) }} দিন রেকর্ড</span>
+                    </div>
+
+                    @if(empty($selectedMonthDailyBreakdown) || count($selectedMonthDailyBreakdown) === 0)
+                        <div class="py-8 text-center text-slate-500 text-xs">
+                            <i class="fa-solid fa-calendar-xmark text-lg mb-1 block"></i>
+                            এই মাসে কোনো দৈনিক পেমেন্ট রেকর্ড নেই।
+                        </div>
+                    @else
+                        <div class="max-h-60 overflow-y-auto pr-1">
+                            <table class="w-full text-[11px] text-left">
+                                <thead class="text-[9px] uppercase tracking-wider text-slate-400 border-b border-white/5 sticky top-0 bg-slate-900/95">
+                                    <tr>
+                                        <th class="py-1.5">তারিখ</th>
+                                        <th class="py-1.5 text-center">অনুমোদিত কাজ</th>
+                                        <th class="py-1.5 text-right">মোট প্রদান</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-slate-300">
+                                    @foreach ($selectedMonthDailyBreakdown as $db)
+                                        <tr class="hover:bg-white/5">
+                                            <td class="py-1.5 font-bold text-slate-200 flex items-center gap-1">
+                                                <i class="fa-regular fa-calendar text-[10px] text-indigo-400"></i>
+                                                <span>{{ date('d M, Y (D)', strtotime($db->day_date)) }}</span>
+                                            </td>
+                                            <td class="py-1.5 text-center font-semibold text-slate-400">{{ number_format($db->count) }} টি</td>
+                                            <td class="py-1.5 text-right font-black text-emerald-400">৳{{ number_format($db->total, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- left column: SMM Task Dynamic configuration controls -->

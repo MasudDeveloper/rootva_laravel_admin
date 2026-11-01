@@ -10,6 +10,11 @@
             <h4 class="fw-bold mb-0">Total Members: {{ $users->total() }}</h4>
             <p class="text-muted small mb-0">Manage and verify registered users</p>
         </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.users.daily-report') }}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                <i class="fa-solid fa-chart-line me-2"></i>দৈনিক রেজিস্ট্রেশন ও ভেরিফাই রিপোর্ট
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->

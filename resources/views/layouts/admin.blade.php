@@ -44,9 +44,15 @@
             </a>
             
             @if(auth()->user()->hasPermission('users'))
-            <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*'))) ? 'active' : '' }}">
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*') && !request()->is('admin/users/daily-report*'))) ? 'active' : '' }}">
                 <i class="fa-solid fa-users"></i>
                 <span>Users Management</span>
+            </a>
+
+            <a href="{{ route('admin.users.daily-report') }}" class="nav-link {{ request()->is('admin/users/daily-report*') ? 'active' : '' }}">
+                <i class="fa-solid fa-chart-line text-primary"></i>
+                <span>দৈনিক রেজিস্ট্রেশন ও ভেরিফাই</span>
+                <span class="badge bg-primary text-white ms-auto" style="font-size: 9px;">রিপোর্ট</span>
             </a>
             
             <a href="{{ route('admin.users.top-holders') }}" class="nav-link {{ request()->is('admin/users/top-holders*') ? 'active' : '' }}">
@@ -236,6 +242,12 @@
             @if(auth()->user()->isSuperAdmin())
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Rewards & Bonuses</div>
             
+            <a href="{{ route('admin.rewards.salary-bonus-report') }}" class="nav-link {{ request()->is('admin/rewards/salary-bonus-report*') ? 'active' : '' }}">
+                <i class="fa-solid fa-chart-pie text-success"></i>
+                <span>বেতন ও বোনাস রিপোর্ট</span>
+                <span class="badge bg-success text-white ms-auto" style="font-size: 9px;">মাসিক হিসাব</span>
+            </a>
+
             <a href="{{ route('admin.rewards.daily') }}" class="nav-link {{ request()->is('admin/rewards/daily*') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-day"></i>
                 <span>Daily Bonus</span>

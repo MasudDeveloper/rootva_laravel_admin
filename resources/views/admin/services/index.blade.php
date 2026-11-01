@@ -79,42 +79,56 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-0 pb-0">
-                <h5 class="fw-bold">Add New Service</h5>
+                <h5 class="fw-bold">নতুন অনলাইন সেবা যুক্ত করুন</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.online-services.store') }}" method="POST">
+            <form action="{{ route('admin.online-services.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Service Name</label>
-                        <input type="text" name="name" class="form-control rounded-3 shadow-sm" placeholder="e.g. Netflix Subscription" required>
+                        <label class="form-label small fw-bold">সার্ভিসের নাম <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control rounded-3 shadow-sm" placeholder="যেমন: Canva Pro, Netflix, ইত্যাদি" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Description</label>
-                        <textarea name="description" class="form-control rounded-3 shadow-sm" rows="3"></textarea>
+                        <label class="form-label small fw-bold">সার্ভিস বিবরণ (Description)</label>
+                        <textarea name="description" class="form-control rounded-3 shadow-sm" rows="3" placeholder="সার্ভিস সম্পর্কে সংক্ষিপ্ত বিবরণ লিখুন..."></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Image URL</label>
-                        <input type="url" name="image_url" class="form-control rounded-3 shadow-sm" placeholder="https://example.com/logo.png">
+                    
+                    {{-- Image Upload and Preview --}}
+                    <div class="card p-3 bg-light border-0 rounded-3 mb-3">
+                        <label class="form-label small fw-bold mb-2 d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-image me-1 text-primary"></i>সার্ভিসের ছবি আপলোড করুন</span>
+                            <span class="text-muted extra-small">JPG, PNG, WEBP (Max 5MB)</span>
+                        </label>
+                        <input type="file" name="image" id="add_service_image_file" class="form-control rounded-3 shadow-sm bg-white mb-2" accept="image/*" onchange="previewSelectedImage(this, 'add_image_preview', 'add_image_preview_box')">
+                        
+                        <div class="text-center my-1 text-muted small fw-semibold">— অথবা ছবি লিংক দিতে পারেন —</div>
+                        <input type="url" name="image_url" id="add_service_image_url" class="form-control rounded-3 shadow-sm bg-white" placeholder="https://example.com/logo.png" oninput="previewUrlImage(this.value, 'add_image_preview', 'add_image_preview_box')">
+                        
+                        <div id="add_image_preview_box" class="mt-2 text-center" style="display: none;">
+                            <img id="add_image_preview" src="" class="rounded-3 shadow-sm border" style="max-height: 90px; max-width: 140px; object-fit: contain;">
+                            <div class="extra-small text-success mt-1"><i class="fa-solid fa-circle-check me-1"></i>ছবির প্রিভিউ</div>
+                        </div>
                     </div>
+
                     <div class="row g-3">
                         <div class="col-6">
-                            <label class="form-label small fw-bold">Cost Price (৳)</label>
-                            <input type="number" name="price" class="form-control rounded-3 shadow-sm" required>
+                            <label class="form-label small fw-bold">ক্রয় মূল্য / Cost Price (৳) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="price" class="form-control rounded-3 shadow-sm" placeholder="0.00" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-bold">Resell Price (৳)</label>
-                            <input type="number" name="resell_price" class="form-control rounded-3 shadow-sm" required>
+                            <label class="form-label small fw-bold">বিক্রয় মূল্য / Resell Price (৳) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="resell_price" class="form-control rounded-3 shadow-sm" placeholder="0.00" required>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <label class="form-label small fw-bold">Buy Link / Info</label>
-                        <input type="text" name="buylink" class="form-control rounded-3 shadow-sm" placeholder="URL or WhatsApp link">
+                        <label class="form-label small fw-bold">বাই লিংক / ডেলিভারি ইনফো লিংক</label>
+                        <input type="text" name="buylink" class="form-control rounded-3 shadow-sm" placeholder="https://wa.me/... অথবা যেকোনো লিংক">
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Save Service</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm"><i class="fa-solid fa-save me-1"></i>সার্ভিস সেভ করুন</button>
                 </div>
             </form>
         </div>
@@ -126,42 +140,56 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-0 pb-0">
-                <h5 class="fw-bold">Edit Service</h5>
+                <h5 class="fw-bold">সার্ভিস এডিট করুন</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="editServiceForm" action="" method="POST">
+            <form id="editServiceForm" action="" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Service Name</label>
+                        <label class="form-label small fw-bold">সার্ভিসের নাম <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="edit_name" class="form-control rounded-3 shadow-sm" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Description</label>
+                        <label class="form-label small fw-bold">সার্ভিস বিবরণ</label>
                         <textarea name="description" id="edit_desc" class="form-control rounded-3 shadow-sm" rows="3"></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Image URL</label>
-                        <input type="url" name="image_url" id="edit_image" class="form-control rounded-3 shadow-sm">
+
+                    {{-- Image Upload and Preview for Edit --}}
+                    <div class="card p-3 bg-light border-0 rounded-3 mb-3">
+                        <label class="form-label small fw-bold mb-2 d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-image me-1 text-primary"></i>নতুন ছবি আপলোড করুন</span>
+                            <span class="text-muted extra-small">ছবি পরিবর্তন করতে চাইলে সিলেক্ট করুন</span>
+                        </label>
+                        <input type="file" name="image" id="edit_service_image_file" class="form-control rounded-3 shadow-sm bg-white mb-2" accept="image/*" onchange="previewSelectedImage(this, 'edit_image_preview', 'edit_image_preview_box')">
+                        
+                        <div class="text-center my-1 text-muted small fw-semibold">— অথবা ছবির নতুন লিংক —</div>
+                        <input type="text" name="image_url" id="edit_image" class="form-control rounded-3 shadow-sm bg-white" placeholder="https://example.com/logo.png" oninput="previewUrlImage(this.value, 'edit_image_preview', 'edit_image_preview_box')">
+                        
+                        <div id="edit_image_preview_box" class="mt-2 text-center">
+                            <img id="edit_image_preview" src="" class="rounded-3 shadow-sm border" style="max-height: 90px; max-width: 140px; object-fit: contain;">
+                            <div class="extra-small text-muted mt-1" id="edit_image_caption">বর্তমান ছবি</div>
+                        </div>
                     </div>
+
                     <div class="row g-3">
                         <div class="col-6">
-                            <label class="form-label small fw-bold">Cost Price (৳)</label>
-                            <input type="number" name="price" id="edit_price" class="form-control rounded-3 shadow-sm" required>
+                            <label class="form-label small fw-bold">ক্রয় মূল্য (৳) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="price" id="edit_price" class="form-control rounded-3 shadow-sm" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-bold">Resell Price (৳)</label>
-                            <input type="number" name="reselling_price" id="edit_resell" class="form-control rounded-3 shadow-sm" required>
+                            <label class="form-label small fw-bold">বিক্রয় মূল্য (৳) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="resell_price" id="edit_resell" class="form-control rounded-3 shadow-sm" required>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <label class="form-label small fw-bold">Buy Link / Info</label>
+                        <label class="form-label small fw-bold">বাই লিংক / ইনফো লিংক</label>
                         <input type="text" name="buylink" id="edit_buylink" class="form-control rounded-3 shadow-sm">
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">Update Service</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm"><i class="fa-solid fa-check me-1"></i>আপডেট করুন</button>
                 </div>
             </form>
         </div>
@@ -178,6 +206,28 @@
 
 @section('scripts')
 <script>
+    function previewSelectedImage(input, previewId, boxId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById(previewId);
+                const box = document.getElementById(boxId);
+                img.src = e.target.result;
+                box.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function previewUrlImage(url, previewId, boxId) {
+        if (url && url.trim().length > 5) {
+            const img = document.getElementById(previewId);
+            const box = document.getElementById(boxId);
+            img.src = url.trim();
+            box.style.display = 'block';
+        }
+    }
+
     function editService(id, name, desc, img, price, resell, link) {
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_desc').value = desc;
@@ -185,7 +235,20 @@
         document.getElementById('edit_price').value = price;
         document.getElementById('edit_resell').value = resell;
         document.getElementById('edit_buylink').value = link;
-        document.getElementById('editServiceForm').action = `{{ url('/services/online-services') }}/${id}`;
+        document.getElementById('edit_service_image_file').value = '';
+        
+        const previewImg = document.getElementById('edit_image_preview');
+        const previewBox = document.getElementById('edit_image_preview_box');
+        const previewCap = document.getElementById('edit_image_caption');
+        if (img) {
+            previewImg.src = img;
+            previewBox.style.display = 'block';
+            previewCap.textContent = 'বর্তমান ছবি';
+        } else {
+            previewBox.style.display = 'none';
+        }
+
+        document.getElementById('editServiceForm').action = `{{ route('admin.online-services.index') }}/${id}`;
         new bootstrap.Modal(document.getElementById('editServiceModal')).show();
     }
 </script>

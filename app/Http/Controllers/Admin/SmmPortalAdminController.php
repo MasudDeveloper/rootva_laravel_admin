@@ -47,6 +47,118 @@ class SmmPortalAdminController extends Controller
             return redirect()->route('admin.smm.login');
         }
 
+        $selectedPayoutMonth = $request->input('payout_month', date('Y-m'));
+        if (!preg_match('/^\d{4}-\d{2}$/', $selectedPayoutMonth)) {
+            $selectedPayoutMonth = date('Y-m');
+        }
+
+        // Handle Monthly CSV Export
+        if ($request->input('action') === 'export_monthly_payout_csv') {
+            $monthData = SmmSubmission::with('user')
+                ->where('status', 'approved')
+                ->where(function ($q) use ($selectedPayoutMonth) {
+                    $q->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth]);
+                })
+                ->orderBy('id', 'desc')
+                ->get();
+
+            $filename = "smm_monthly_payouts_" . $selectedPayoutMonth . "_" . date('Ymd_His') . ".csv";
+            $headers = [
+                "Content-type"        => "text/csv; charset=UTF-8",
+                "Content-Disposition" => "attachment; filename=$filename",
+                "Pragma"              => "no-cache",
+                "Expires"             => "0"
+            ];
+
+            return response()->stream(function () use ($monthData) {
+                $file = fopen('php://output', 'w');
+                fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+                fputcsv($file, [
+                    'Submission ID', 'User Name', 'User Phone', 'User Refer Code', 
+                    'Referred By', 'Task Type', 'Account / Username', 'Task Price (TK)', 
+                    'Net User Payout 90% (TK)', 'Referral Commission 10% (TK)', 'Status', 'Approved At / Date'
+                ]);
+
+                foreach ($monthData as $row) {
+                    $p = (double)$row->price;
+                    fputcsv($file, [
+                        $row->id,
+                        $row->user ? $row->user->name : 'N/A',
+                        $row->user ? $row->user->number : 'N/A',
+                        $row->user ? $row->user->referCode : 'N/A',
+                        $row->user ? ($row->user->referredBy ?: 'System') : 'System',
+                        strtoupper($row->task_type),
+                        $row->input_field_1,
+                        number_format($p, 2, '.', ''),
+                        number_format($p * 0.90, 2, '.', ''),
+                        number_format($p * 0.10, 2, '.', ''),
+                        strtoupper($row->status),
+                        $row->updated_at ?: $row->created_at
+                    ]);
+                }
+                fclose($file);
+            }, 200, $headers);
+        }
+
+        // 1. Overall stats
+        $statPending = SmmSubmission::where('status', 'pending')->count();
+        $statApproved = SmmSubmission::where('status', 'approved')->count();
+        $statRejected = SmmSubmission::where('status', 'rejected')->count();
+        $statTotalPayout = (double)SmmSubmission::where('status', 'approved')->sum('price');
+
+        // 2. Today's Approved Payout
+        $todayStr = date('Y-m-d');
+        $statTodayPayout = (double)SmmSubmission::where('status', 'approved')
+            ->whereDate(DB::raw('COALESCE(updated_at, created_at)'), $todayStr)
+            ->sum('price');
+        $statTodayCount = SmmSubmission::where('status', 'approved')
+            ->whereDate(DB::raw('COALESCE(updated_at, created_at)'), $todayStr)
+            ->count();
+
+        // 3. This Month's Approved Payout
+        $thisMonthStr = date('Y-m');
+        $statThisMonthPayout = (double)SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$thisMonthStr])
+            ->sum('price');
+        $statThisMonthCount = SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$thisMonthStr])
+            ->count();
+
+        // 4. Last Month's Approved Payout
+        $lastMonthStr = date('Y-m', strtotime('first day of -1 month'));
+        $statLastMonthPayout = (double)SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$lastMonthStr])
+            ->sum('price');
+        $statLastMonthCount = SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$lastMonthStr])
+            ->count();
+
+        // 5. Selected Month Breakdown
+        $selectedMonthTotal = (double)SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth])
+            ->sum('price');
+        $selectedMonthCount = SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth])
+            ->count();
+        $selectedMonthUsers = SmmSubmission::where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth])
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $selectedMonthTaskBreakdown = SmmSubmission::select('task_type', DB::raw('COUNT(*) as count'), DB::raw('SUM(price) as total'))
+            ->where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth])
+            ->groupBy('task_type')
+            ->orderByDesc('total')
+            ->get();
+
+        $selectedMonthDailyBreakdown = SmmSubmission::select(DB::raw('DATE(COALESCE(updated_at, created_at)) as day_date'), DB::raw('COUNT(*) as count'), DB::raw('SUM(price) as total'))
+            ->where('status', 'approved')
+            ->whereRaw("DATE_FORMAT(COALESCE(updated_at, created_at), '%Y-%m') = ?", [$selectedPayoutMonth])
+            ->groupBy('day_date')
+            ->orderByDesc('day_date')
+            ->get();
+
         $status = $request->input('status', 'pending');
         $submissions = SmmSubmission::with('user')
             ->where('status', $status)
@@ -57,7 +169,15 @@ class SmmPortalAdminController extends Controller
         $configs = SmmTaskConfig::where('task_type', '!=', 'global_notice')->get();
         $globalNotice = SmmTaskConfig::find('global_notice');
 
-        return view('admin.smm.dashboard', compact('submissions', 'status', 'configs', 'globalNotice'));
+        return view('admin.smm.dashboard', compact(
+            'submissions', 'status', 'configs', 'globalNotice',
+            'statPending', 'statApproved', 'statRejected', 'statTotalPayout',
+            'statTodayPayout', 'statTodayCount',
+            'statThisMonthPayout', 'statThisMonthCount',
+            'statLastMonthPayout', 'statLastMonthCount',
+            'selectedPayoutMonth', 'selectedMonthTotal', 'selectedMonthCount', 'selectedMonthUsers',
+            'selectedMonthTaskBreakdown', 'selectedMonthDailyBreakdown'
+        ));
     }
 
     /**

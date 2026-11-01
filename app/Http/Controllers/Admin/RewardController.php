@@ -14,16 +14,54 @@ use Carbon\Carbon;
 class RewardController extends Controller
 {
     /**
-     * Daily Bonus Section
+     * Daily Bonus Section - Monthly Report & Ledger
      */
-    public function dailyIndex()
+    public function dailyIndex(Request $request)
     {
-        $winners = Transaction::with('user')
-            ->where('payment_gateway', 'Daily Bonus')
-            ->orderBy('id', 'desc')
-            ->paginate(25);
+        $availableMonths = Transaction::where('payment_gateway', 'Daily Bonus')
+            ->selectRaw('SUBSTRING(date, 1, 7) as m, count(*) as count, COALESCE(sum(amount), 0) as total')
+            ->groupBy('m')
+            ->orderBy('m', 'desc')
+            ->get();
 
-        return view('admin.rewards.daily', compact('winners'));
+        $defaultMonth = $availableMonths->first()->m ?? date('Y-m');
+        $selectedMonth = $request->input('month', $defaultMonth);
+        $selectedDate = $request->input('date');
+
+        try {
+            $monthCarbon = Carbon::createFromFormat('Y-m', $selectedMonth);
+        } catch (\Exception $e) {
+            $monthCarbon = Carbon::createFromFormat('Y-m', $defaultMonth);
+            $selectedMonth = $defaultMonth;
+        }
+
+        $startDate = $monthCarbon->copy()->startOfMonth()->format('Y-m-d 00:00:00');
+        $endDate = $monthCarbon->copy()->endOfMonth()->format('Y-m-d 23:59:59');
+
+        $stats = Transaction::where('payment_gateway', 'Daily Bonus')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(amount), 0) as total_amount, COUNT(DISTINCT user_id) as unique_users, COALESCE(MAX(amount), 0) as max_amount, COALESCE(AVG(amount), 0) as avg_amount')
+            ->first();
+
+        $dailyBreakdown = Transaction::where('payment_gateway', 'Daily Bonus')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw('DATE(date) as day, COUNT(*) as count, COALESCE(SUM(amount), 0) as total, COUNT(DISTINCT user_id) as users_count')
+            ->groupBy('day')
+            ->orderBy('day', 'desc')
+            ->get();
+
+        $query = Transaction::with('user')
+            ->where('payment_gateway', 'Daily Bonus');
+
+        if (!empty($selectedDate)) {
+            $query->whereDate('date', $selectedDate);
+        } else {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        $winners = $query->orderBy('id', 'desc')->paginate(25)->withQueryString();
+
+        return view('admin.rewards.daily', compact('winners', 'stats', 'dailyBreakdown', 'availableMonths', 'selectedMonth', 'selectedDate'));
     }
 
     public function runDailyDistribution(\App\Services\BonusDistributionService $service)
@@ -38,16 +76,54 @@ class RewardController extends Controller
     }
 
     /**
-     * Weekly Bonus Section
+     * Weekly Bonus Section - Monthly Report & Ledger
      */
-    public function weeklyIndex()
+    public function weeklyIndex(Request $request)
     {
-        $winners = Transaction::with('user')
-            ->where('payment_gateway', 'Weekly Bonus')
-            ->orderBy('id', 'desc')
-            ->paginate(25);
+        $availableMonths = Transaction::where('payment_gateway', 'Weekly Bonus')
+            ->selectRaw('SUBSTRING(date, 1, 7) as m, count(*) as count, COALESCE(sum(amount), 0) as total')
+            ->groupBy('m')
+            ->orderBy('m', 'desc')
+            ->get();
 
-        return view('admin.rewards.weekly', compact('winners'));
+        $defaultMonth = $availableMonths->first()->m ?? date('Y-m');
+        $selectedMonth = $request->input('month', $defaultMonth);
+        $selectedDate = $request->input('date');
+
+        try {
+            $monthCarbon = Carbon::createFromFormat('Y-m', $selectedMonth);
+        } catch (\Exception $e) {
+            $monthCarbon = Carbon::createFromFormat('Y-m', $defaultMonth);
+            $selectedMonth = $defaultMonth;
+        }
+
+        $startDate = $monthCarbon->copy()->startOfMonth()->format('Y-m-d 00:00:00');
+        $endDate = $monthCarbon->copy()->endOfMonth()->format('Y-m-d 23:59:59');
+
+        $stats = Transaction::where('payment_gateway', 'Weekly Bonus')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(amount), 0) as total_amount, COUNT(DISTINCT user_id) as unique_users, COALESCE(MAX(amount), 0) as max_amount, COALESCE(AVG(amount), 0) as avg_amount')
+            ->first();
+
+        $dailyBreakdown = Transaction::where('payment_gateway', 'Weekly Bonus')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw('DATE(date) as day, COUNT(*) as count, COALESCE(SUM(amount), 0) as total, COUNT(DISTINCT user_id) as users_count')
+            ->groupBy('day')
+            ->orderBy('day', 'desc')
+            ->get();
+
+        $query = Transaction::with('user')
+            ->where('payment_gateway', 'Weekly Bonus');
+
+        if (!empty($selectedDate)) {
+            $query->whereDate('date', $selectedDate);
+        } else {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        $winners = $query->orderBy('id', 'desc')->paginate(25)->withQueryString();
+
+        return view('admin.rewards.weekly', compact('winners', 'stats', 'dailyBreakdown', 'availableMonths', 'selectedMonth', 'selectedDate'));
     }
 
     public function runWeeklyDistribution(\App\Services\BonusDistributionService $service)

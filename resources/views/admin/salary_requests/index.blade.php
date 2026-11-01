@@ -10,7 +10,11 @@
             <h4 class="fw-bold mb-0">Salary Claims: {{ $requests->total() }}</h4>
             <p class="text-muted small mb-0">Manage monthly salary payouts for qualified users</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.rewards.salary-bonus-report') }}" 
+               class="btn btn-outline-primary rounded-pill px-3 shadow-sm">
+               <i class="fa-solid fa-chart-pie me-1"></i>মাসিক বেতন ও বোনাস রিপোর্ট
+            </a>
             <a href="{{ route('admin.salary-requests.index', ['status' => 'Pending']) }}" 
                class="btn btn-{{ $status == 'Pending' ? 'primary' : 'light' }} rounded-pill px-4 shadow-sm">Pending</a>
             <a href="{{ route('admin.salary-requests.index', ['status' => 'Approved']) }}" 
