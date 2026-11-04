@@ -121,6 +121,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
         // Notifications & Popups
         Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/target-count', [\App\Http\Controllers\Admin\NotificationController::class, 'getTargetCount'])->name('notifications.target_count');
         Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
         Route::get('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'savedIndex'])->name('notifications.saved.index');
         Route::post('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'saveDraft'])->name('notifications.saved.store');

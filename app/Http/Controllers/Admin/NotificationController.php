@@ -8,6 +8,7 @@ use App\Models\SignUp;
 use App\Models\Notification;
 use App\Models\SavedPushNotification;
 use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class NotificationController extends Controller
 {
@@ -15,6 +16,165 @@ class NotificationController extends Controller
     {
         $notifications = Notification::orderBy('id', 'desc')->paginate(20);
         return view('admin.notifications.index', compact('notifications'));
+    }
+
+    private function toBengaliDigits($str)
+    {
+        $en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        return str_replace($en, $bn, (string)$str);
+    }
+
+    private function getTargetUsersQuery(Request $request)
+    {
+        $target = $request->input('target', 'all');
+        $referCode = $request->input('referCode');
+        $dateFilter = $request->input('date_filter', 'all');
+        $customDate = $request->input('custom_date');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        $query = SignUp::whereNotNull('fcm_token')->where('fcm_token', '!=', '');
+
+        if ($target === 'specific') {
+            return $query->where('referCode', $referCode);
+        }
+
+        if ($target === 'verified') {
+            $query->whereIn('is_verified', [1, 3]);
+
+            if ($dateFilter && $dateFilter !== 'all') {
+                $this->applyDateFilterToQuery($query, $dateFilter, $customDate, $dateFrom, $dateTo, 'verified');
+            }
+            return $query;
+        }
+
+        if ($target === 'unverified') {
+            $query->whereNotIn('is_verified', [1, 3]);
+
+            if ($dateFilter && $dateFilter !== 'all') {
+                $this->applyDateFilterToQuery($query, $dateFilter, $customDate, $dateFrom, $dateTo, 'registration');
+            }
+            return $query;
+        }
+
+        if ($target === 'registered') {
+            if ($dateFilter && $dateFilter !== 'all') {
+                $this->applyDateFilterToQuery($query, $dateFilter, $customDate, $dateFrom, $dateTo, 'registration');
+            }
+            return $query;
+        }
+
+        // target === 'all'
+        if ($dateFilter && $dateFilter !== 'all') {
+            $this->applyDateFilterToQuery($query, $dateFilter, $customDate, $dateFrom, $dateTo, 'registration');
+        }
+
+        return $query;
+    }
+
+    private function applyDateFilterToQuery($query, $filterType, $customDate, $dateFrom, $dateTo, $mode = 'verified')
+    {
+        $today = Carbon::now('Asia/Dhaka')->toDateString();
+        $yesterday = Carbon::yesterday('Asia/Dhaka')->toDateString();
+
+        if ($filterType === 'today') {
+            $this->applySingleDate($query, $today, $mode);
+        } elseif ($filterType === 'yesterday') {
+            $this->applySingleDate($query, $yesterday, $mode);
+        } elseif ($filterType === 'custom' && !empty($customDate)) {
+            $this->applySingleDate($query, $customDate, $mode);
+        } elseif ($filterType === 'range' && !empty($dateFrom) && !empty($dateTo)) {
+            $this->applyDateRange($query, $dateFrom, $dateTo, $mode);
+        }
+    }
+
+    private function applySingleDate($query, $date, $mode)
+    {
+        $carbon = Carbon::parse($date);
+        $dmyEn = $carbon->format('d-m-Y');
+        $dmyBn = $this->toBengaliDigits($dmyEn);
+
+        if ($mode === 'verified') {
+            $query->where(function ($q) use ($date, $dmyEn, $dmyBn) {
+                $q->whereDate('verified_raw_time', $date)
+                  ->orWhere('verified_at', 'LIKE', "{$dmyEn}%")
+                  ->orWhere('verified_at', 'LIKE', "{$dmyBn}%");
+            });
+        } else {
+            $query->where(function ($q) use ($date, $dmyEn, $dmyBn) {
+                $q->where('created_at', 'LIKE', "{$dmyEn}%")
+                  ->orWhere('created_at', 'LIKE', "{$dmyBn}%")
+                  ->orWhere('created_at', 'LIKE', "{$date}%");
+            });
+        }
+    }
+
+    private function applyDateRange($query, $dateFrom, $dateTo, $mode)
+    {
+        $fromCarbon = Carbon::parse($dateFrom)->startOfDay();
+        $toCarbon = Carbon::parse($dateTo)->endOfDay();
+
+        if ($fromCarbon->gt($toCarbon)) {
+            $temp = $fromCarbon;
+            $fromCarbon = $toCarbon->copy()->startOfDay();
+            $toCarbon = $temp->copy()->endOfDay();
+        }
+
+        $fromStr = $fromCarbon->toDateTimeString();
+        $toStr = $toCarbon->toDateTimeString();
+
+        if ($mode === 'verified') {
+            $query->where(function ($q) use ($fromStr, $toStr, $fromCarbon, $toCarbon) {
+                $q->whereBetween('verified_raw_time', [$fromStr, $toStr]);
+                $diffDays = $fromCarbon->diffInDays($toCarbon);
+                if ($diffDays <= 31) {
+                    $cursor = $fromCarbon->copy();
+                    while ($cursor->lte($toCarbon)) {
+                        $dmyEn = $cursor->format('d-m-Y');
+                        $dmyBn = $this->toBengaliDigits($dmyEn);
+                        $q->orWhere('verified_at', 'LIKE', "{$dmyEn}%")
+                          ->orWhere('verified_at', 'LIKE', "{$dmyBn}%");
+                        $cursor->addDay();
+                    }
+                }
+            });
+        } else {
+            $query->where(function ($q) use ($fromStr, $toStr, $fromCarbon, $toCarbon) {
+                $diffDays = $fromCarbon->diffInDays($toCarbon);
+                if ($diffDays <= 31) {
+                    $cursor = $fromCarbon->copy();
+                    while ($cursor->lte($toCarbon)) {
+                        $dmyEn = $cursor->format('d-m-Y');
+                        $dmyBn = $this->toBengaliDigits($dmyEn);
+                        $dayStr = $cursor->format('Y-m-d');
+                        $q->orWhere('created_at', 'LIKE', "{$dmyEn}%")
+                          ->orWhere('created_at', 'LIKE', "{$dmyBn}%")
+                          ->orWhere('created_at', 'LIKE', "{$dayStr}%");
+                        $cursor->addDay();
+                    }
+                } else {
+                    $q->whereBetween('created_at', [$fromStr, $toStr]);
+                }
+            });
+        }
+    }
+
+    public function getTargetCount(Request $request)
+    {
+        try {
+            $count = $this->getTargetUsersQuery($request)->count();
+            return response()->json([
+                'success' => true,
+                'count' => $count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'count' => 0,
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function send(Request $request)
@@ -26,8 +186,12 @@ class NotificationController extends Controller
         $request->validate([
             'title' => 'required|string',
             'body' => 'required|string',
-            'target' => 'required|in:all,specific,verified,unverified',
+            'target' => 'required|in:all,specific,verified,unverified,registered',
             'referCode' => 'required_if:target,specific',
+            'date_filter' => 'nullable|in:all,today,yesterday,custom,range',
+            'custom_date' => 'nullable|date',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'image_url_input' => 'nullable|url',
             'link' => 'nullable|string'
@@ -35,8 +199,6 @@ class NotificationController extends Controller
 
         $title = $request->title;
         $body = $request->body;
-        $target = $request->target;
-        $referCode = $request->referCode;
         $link = $request->link;
         
         $image = null;
@@ -49,20 +211,10 @@ class NotificationController extends Controller
             $image = $request->image_url_input;
         }
 
-        $users = [];
-
-        if ($target === 'all') {
-            $users = SignUp::whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'specific') {
-            $users = SignUp::where('referCode', $referCode)->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'verified') {
-            $users = SignUp::whereIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'unverified') {
-            $users = SignUp::whereNotIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        }
+        $users = $this->getTargetUsersQuery($request)->get();
 
         if ($users->isEmpty()) {
-            return back()->with('error', 'No eligible users found with valid FCM tokens.');
+            return back()->with('error', 'No eligible users found with valid FCM tokens for the selected criteria.');
         }
 
         $successCount = $this->sendNotificationsToUsers($users, $title, $body, $image, $link);
@@ -122,27 +274,18 @@ class NotificationController extends Controller
         $draft = SavedPushNotification::findOrFail($id);
 
         $request->validate([
-            'target' => 'required|in:all,specific,verified,unverified',
+            'target' => 'required|in:all,specific,verified,unverified,registered',
             'referCode' => 'required_if:target,specific',
+            'date_filter' => 'nullable|in:all,today,yesterday,custom,range',
+            'custom_date' => 'nullable|date',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
         ]);
 
-        $target = $request->target;
-        $referCode = $request->referCode;
-
-        $users = [];
-
-        if ($target === 'all') {
-            $users = SignUp::whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'specific') {
-            $users = SignUp::where('referCode', $referCode)->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'verified') {
-            $users = SignUp::whereIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        } elseif ($target === 'unverified') {
-            $users = SignUp::whereNotIn('is_verified', [1, 3])->whereNotNull('fcm_token')->where('fcm_token', '!=', '')->get();
-        }
+        $users = $this->getTargetUsersQuery($request)->get();
 
         if (empty($users) || $users->isEmpty()) {
-            return back()->with('error', 'No eligible users found with valid FCM tokens.');
+            return back()->with('error', 'No eligible users found with valid FCM tokens for the selected criteria.');
         }
 
         $successCount = $this->sendNotificationsToUsers($users, $draft->title, $draft->body, $draft->image, $draft->link);

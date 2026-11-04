@@ -18,7 +18,7 @@
                         <div class="alert alert-danger border-0 shadow-sm">{{ session('error') }}</div>
                     @endif
 
-                    <form action="{{ route('admin.notifications.send') }}" method="POST" enctype="multipart/form-data">
+                    <form id="sendNotificationForm" action="{{ route('admin.notifications.send') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-bold small">Notification Title</label>
@@ -35,27 +35,91 @@
                         
                         <div class="mb-3">
                             <label class="form-label d-block fw-bold small">Target Audience</label>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="target" id="targetAll" value="all" checked onclick="toggleReferInput()">
-                                <label class="form-check-label" for="targetAll">All Users</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="target" id="targetSpecific" value="specific" onclick="toggleReferInput()">
-                                <label class="form-check-label" for="targetSpecific">Specific Refer Code</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="target" id="targetVerified" value="verified" onclick="toggleReferInput()">
-                                <label class="form-check-label" for="targetVerified">Verified Users</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="target" id="targetUnverified" value="unverified" onclick="toggleReferInput()">
-                                <label class="form-check-label" for="targetUnverified">Unverified Users</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target" id="targetAll" value="all" checked onchange="handleTargetChange()">
+                                    <label class="form-check-label small" for="targetAll">All Users</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target" id="targetSpecific" value="specific" onchange="handleTargetChange()">
+                                    <label class="form-check-label small" for="targetSpecific">Specific Refer Code</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target" id="targetVerified" value="verified" onchange="handleTargetChange()">
+                                    <label class="form-check-label small" for="targetVerified">Verified Users (ভেরিফাইড)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target" id="targetUnverified" value="unverified" onchange="handleTargetChange()">
+                                    <label class="form-check-label small" for="targetUnverified">Unverified Users (আনভেরিফাইড)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target" id="targetRegistered" value="registered" onchange="handleTargetChange()">
+                                    <label class="form-check-label small" for="targetRegistered">New Account / Registered (নতুন একাউন্ট)</label>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-4" id="referCodeDiv" style="display: none;">
-                            <label class="form-label fw-bold small">Refer Code</label>
-                            <input type="text" name="referCode" class="form-control" placeholder="Enter User Refer Code">
+                        <div class="mb-3" id="referCodeDiv" style="display: none;">
+                            <label class="form-label fw-bold small">Refer Code <span class="text-danger">*</span></label>
+                            <input type="text" name="referCode" id="referCodeInput" class="form-control form-control-sm" placeholder="Enter User Refer Code" oninput="updateRecipientCount()">
+                        </div>
+
+                        <!-- Date Filter Section -->
+                        <div class="card border border-info-subtle bg-light mb-3" id="dateFilterDiv" style="display: none;">
+                            <div class="card-body p-3">
+                                <label class="form-label fw-bold small d-block mb-2 text-dark" id="dateFilterTitle">
+                                    <i class="fa-regular fa-calendar-days text-primary me-1"></i> Date Filter (তারিখ ফিল্টার)
+                                </label>
+                                
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="radio" name="date_filter" id="dateAll" value="all" checked onchange="handleDateFilterChange()">
+                                        <label class="form-check-label small" for="dateAll">All Time (সব সময়)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="radio" name="date_filter" id="dateToday" value="today" onchange="handleDateFilterChange()">
+                                        <label class="form-check-label small" for="dateToday">Today (আজকে)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="radio" name="date_filter" id="dateYesterday" value="yesterday" onchange="handleDateFilterChange()">
+                                        <label class="form-check-label small" for="dateYesterday">Yesterday (গতকাল)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="radio" name="date_filter" id="dateCustom" value="custom" onchange="handleDateFilterChange()">
+                                        <label class="form-check-label small" for="dateCustom">Specific Date (নির্দিষ্ট তারিখ)</label>
+                                    </div>
+                                    <div class="form-check form-check-inline mb-0">
+                                        <input class="form-check-input" type="radio" name="date_filter" id="dateRange" value="range" onchange="handleDateFilterChange()">
+                                        <label class="form-check-label small" for="dateRange">Date Range (তারিখ রেঞ্জ)</label>
+                                    </div>
+                                </div>
+
+                                <!-- Single Custom Date Picker -->
+                                <div id="customDateDiv" style="display: none;" class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Select Date:</label>
+                                    <input type="date" name="custom_date" id="customDateInput" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" onchange="updateRecipientCount()">
+                                </div>
+
+                                <!-- Date Range Pickers -->
+                                <div id="rangeDateDiv" style="display: none;" class="mb-2">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">From:</label>
+                                            <input type="date" name="date_from" id="dateFromInput" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" onchange="updateRecipientCount()">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">To:</label>
+                                            <input type="date" name="date_to" id="dateToInput" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" onchange="updateRecipientCount()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Recipient Counter Badge -->
+                        <div class="d-flex align-items-center justify-content-between p-2 px-3 bg-light rounded-3 border mb-3">
+                            <span class="small text-muted"><i class="fa-solid fa-users me-1 text-primary"></i> Target Recipients:</span>
+                            <span id="recipientCountBadge" class="badge bg-primary fs-6">Loading...</span>
                         </div>
 
                         <div class="mb-3">
@@ -140,11 +204,100 @@
 </div>
 
 <script>
-    function toggleReferInput() {
+    let countDebounceTimer = null;
+
+    function handleTargetChange() {
         const specificRadio = document.getElementById('targetSpecific');
         const referInputDiv = document.getElementById('referCodeDiv');
-        referInputDiv.style.display = specificRadio.checked ? 'block' : 'none';
+        const referInput = document.getElementById('referCodeInput');
+        const dateFilterDiv = document.getElementById('dateFilterDiv');
+        const dateFilterTitle = document.getElementById('dateFilterTitle');
+        const selectedTarget = document.querySelector('input[name="target"]:checked')?.value;
+
+        if (specificRadio && referInputDiv) {
+            referInputDiv.style.display = specificRadio.checked ? 'block' : 'none';
+            if (referInput) referInput.required = specificRadio.checked;
+        }
+
+        if (dateFilterDiv && dateFilterTitle) {
+            if (selectedTarget === 'verified') {
+                dateFilterDiv.style.display = 'block';
+                dateFilterTitle.innerHTML = '<i class="fa-regular fa-calendar-check text-success me-1"></i> Verification Date (ভেরিফিকেশনের তারিখ)';
+            } else if (selectedTarget === 'unverified') {
+                dateFilterDiv.style.display = 'block';
+                dateFilterTitle.innerHTML = '<i class="fa-regular fa-calendar-days text-warning me-1"></i> Registration Date (একাউন্ট খোলার তারিখ)';
+            } else if (selectedTarget === 'registered') {
+                dateFilterDiv.style.display = 'block';
+                dateFilterTitle.innerHTML = '<i class="fa-regular fa-calendar-plus text-info me-1"></i> Registration Date (একাউন্ট খোলার তারিখ)';
+            } else {
+                dateFilterDiv.style.display = 'none';
+            }
+        }
+
+        updateRecipientCount();
     }
+
+    function handleDateFilterChange() {
+        const selectedFilter = document.querySelector('input[name="date_filter"]:checked')?.value;
+        const customDateDiv = document.getElementById('customDateDiv');
+        const rangeDateDiv = document.getElementById('rangeDateDiv');
+
+        if (customDateDiv && rangeDateDiv) {
+            if (selectedFilter === 'custom') {
+                customDateDiv.style.display = 'block';
+                rangeDateDiv.style.display = 'none';
+            } else if (selectedFilter === 'range') {
+                customDateDiv.style.display = 'none';
+                rangeDateDiv.style.display = 'block';
+            } else {
+                customDateDiv.style.display = 'none';
+                rangeDateDiv.style.display = 'none';
+            }
+        }
+
+        updateRecipientCount();
+    }
+
+    function updateRecipientCount() {
+        clearTimeout(countDebounceTimer);
+        const badge = document.getElementById('recipientCountBadge');
+        if (!badge) return;
+        badge.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+        countDebounceTimer = setTimeout(() => {
+            const form = document.getElementById('sendNotificationForm');
+            if (!form) return;
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            for (let [key, val] of formData.entries()) {
+                if (key !== '_token' && key !== 'image') {
+                    params.append(key, val);
+                }
+            }
+
+            fetch(`{{ route('admin.notifications.target_count') }}?` + params.toString())
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success) {
+                        badge.className = data.count > 0 ? 'badge bg-success fs-6' : 'badge bg-secondary fs-6';
+                        badge.innerText = data.count + ' user(s)';
+                    } else {
+                        badge.className = 'badge bg-secondary fs-6';
+                        badge.innerText = '0 user(s)';
+                    }
+                })
+                .catch(() => {
+                    badge.className = 'badge bg-secondary fs-6';
+                    badge.innerText = '-';
+                });
+        }, 300);
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        handleTargetChange();
+        handleDateFilterChange();
+    });
 
     function previewImage(input, type) {
         const previewContainer = document.getElementById('imagePreviewContainer');
