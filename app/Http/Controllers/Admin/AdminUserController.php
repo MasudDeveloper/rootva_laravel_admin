@@ -24,6 +24,7 @@ class AdminUserController extends Controller
             'withdrawals' => 'Withdrawal Requests (উইথড্র রিকোয়েস্ট অনুমোদন)',
             'leadership'  => 'Leadership & Salary (লিডারশিপ ও স্যালারি)',
             'sub_admins'  => 'Sub-Admin Management (সাব-এডমিন তৈরি ও পারমিশন)',
+            'popups'      => 'Popup Controller (অ্যাপ পপআপ ব্যানার পরিচালনা)',
         ];
     }
 

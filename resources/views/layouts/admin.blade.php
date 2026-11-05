@@ -54,14 +54,27 @@
                 <span>দৈনিক রেজিস্ট্রেশন ও ভেরিফাই</span>
                 <span class="badge bg-primary text-white ms-auto" style="font-size: 9px;">রিপোর্ট</span>
             </a>
-            
+            @endif
+
+            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.users.top-holders') }}" class="nav-link {{ request()->is('admin/users/top-holders*') ? 'active' : '' }}">
                 <i class="fa-solid fa-vault text-success"></i>
                 <span>Top Wallet Holders</span>
             </a>
             @endif
             
+            @php
+                $hasServiceModules = auth()->user()->isSuperAdmin() || 
+                    auth()->user()->hasPermission('microjobs') || 
+                    auth()->user()->hasPermission('sim_offers') || 
+                    auth()->user()->hasPermission('reselling') || 
+                    auth()->user()->hasPermission('courses') || 
+                    auth()->user()->hasPermission('smm');
+            @endphp
+            
+            @if($hasServiceModules)
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Service Modules</div>
+            @endif
             
             @if(auth()->user()->hasPermission('microjobs'))
             <a href="{{ route('admin.microjobs.index') }}" class="nav-link {{ request()->is('admin/microjobs*') ? 'active' : '' }}">
@@ -80,7 +93,7 @@
             </a>
             @endif
 
-            @if(auth()->user()->hasPermission('users'))
+            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.verifications.index') }}" class="nav-link {{ request()->is('admin/services/verifications*') ? 'active' : '' }}">
                 <i class="fa-solid fa-shield-check"></i>
                 <span>User Verifications</span>
@@ -145,11 +158,21 @@
             </a>
             @endif
 
-            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins'))
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins') || auth()->user()->hasPermission('popups'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
+            @endif
+
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins'))
             <a href="{{ route('admin.sub-admins.index') }}" class="nav-link {{ request()->is('admin/sub-admins*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-shield text-warning"></i>
                 <span>Sub-Admin Staff</span>
+            </a>
+            @endif
+
+            @if(auth()->user()->hasPermission('popups'))
+            <a href="{{ route('admin.popups.index') }}" class="nav-link {{ request()->is('admin/popups*') ? 'active' : '' }}">
+                <i class="fa-solid fa-window-maximize text-info"></i>
+                <span>Popup Banners</span>
             </a>
             @endif
 
@@ -161,10 +184,6 @@
             <a href="{{ route('admin.notifications.saved.index') }}" class="nav-link {{ request()->is('admin/notifications/saved*') ? 'active' : '' }}">
                 <i class="fa-solid fa-bookmark"></i>
                 <span>Saved Notifications</span>
-            </a>
-            <a href="{{ route('admin.popups.index') }}" class="nav-link {{ request()->is('admin/popups*') ? 'active' : '' }}">
-                <i class="fa-solid fa-window-maximize"></i>
-                <span>Popup Banners</span>
             </a>
             @endif
 

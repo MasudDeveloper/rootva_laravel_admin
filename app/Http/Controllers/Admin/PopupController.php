@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\PopupBanner;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Cache;
 
 class PopupController extends Controller
 {
@@ -35,6 +36,8 @@ class PopupController extends Controller
                 'button_url' => $request->button_url ?? '',
             ]);
 
+            Cache::forget('api_popup_banner');
+
             return back()->with('success', 'Popup banner uploaded successfully!');
         }
 
@@ -52,6 +55,8 @@ class PopupController extends Controller
         }
 
         $popup->delete();
+
+        Cache::forget('api_popup_banner');
 
         return back()->with('success', 'Popup banner deleted successfully!');
     }

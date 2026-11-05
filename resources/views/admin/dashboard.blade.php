@@ -43,9 +43,9 @@
     @endif
 
     <div class="row g-4 mb-5">
-        @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('users'))
-        <!-- User Statistics -->
-        <div class="{{ (auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('withdrawals') || auth()->user()->hasPermission('microjobs') || auth()->user()->hasPermission('reselling') || auth()->user()->hasPermission('sim_offers') || auth()->user()->hasPermission('courses') || auth()->user()->hasPermission('leadership')) ? 'col-lg-8' : 'col-lg-12' }}">
+        @if(auth()->user()->isSuperAdmin())
+        <!-- User Statistics (Super Admin Only) -->
+        <div class="col-lg-8">
             <h6 class="text-uppercase text-muted small fw-bold mb-3">User Statistics</h6>
             <div class="row g-3">
                 <div class="col-md-4">
@@ -132,12 +132,22 @@
         </div>
         @endif
 
+        @php
+            $hasPendingModules = auth()->user()->isSuperAdmin() || 
+                auth()->user()->hasPermission('withdrawals') || 
+                auth()->user()->hasPermission('reselling') || 
+                auth()->user()->hasPermission('sim_offers') || 
+                auth()->user()->hasPermission('courses') || 
+                auth()->user()->hasPermission('leadership');
+        @endphp
+
+        @if($hasPendingModules)
         <!-- Pending Requests Table Style (Module Permission Filtered) -->
-        <div class="{{ (auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('users')) ? 'col-lg-4' : 'col-lg-12' }}">
+        <div class="{{ auth()->user()->isSuperAdmin() ? 'col-lg-4' : 'col-lg-12' }}">
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Pending Action Required</h6>
             <div class="card-modern shadow-sm border-0">
                 <ul class="list-group list-group-flush" id="pending-requests-list">
-                    @if(auth()->user()->hasPermission('users'))
+                    @if(auth()->user()->isSuperAdmin())
                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2 border-bottom">
                         <a href="{{ route('admin.verifications.index') }}" class="text-decoration-none d-flex align-items-center gap-3 text-dark">
                             <div class="bg-info-soft p-2 rounded-pill text-info" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-id-card small"></i></div>
@@ -213,6 +223,7 @@
                 </ul>
             </div>
         </div>
+        @endif
     </div>
 
     <!-- Quick Actions Grid (Permission-Filtered Navigation) -->

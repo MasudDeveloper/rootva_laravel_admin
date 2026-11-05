@@ -128,10 +128,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::delete('/notifications/saved/{id}', [\App\Http\Controllers\Admin\NotificationController::class, 'deleteDraft'])->name('notifications.saved.destroy');
         Route::post('/notifications/saved/{id}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'sendDraft'])->name('notifications.saved.send');
 
-        Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
-        Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
-        Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
-
         // Crash Reports & Analysis
         Route::get('/crash-reports', [\App\Http\Controllers\Admin\CrashReportController::class, 'index'])->name('crash-reports.index');
         Route::get('/crash-reports/{id}', [\App\Http\Controllers\Admin\CrashReportController::class, 'show'])->name('crash-reports.show');
@@ -150,10 +146,27 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::delete('/sub-admins/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'destroy'])->name('sub-admins.destroy');
     });
 
+    // Popups Management (permission: popups)
+    Route::middleware('permission:popups')->group(function () {
+        Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
+        Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
+        Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
+    });
+
+    // Top Wallet Holders & Verifications (Super Admin Only)
+    Route::middleware('permission:super_admin')->group(function () {
+        Route::get('/users/top-holders', [UserController::class, 'topHolders'])->name('users.top-holders');
+
+        // Verifications
+        Route::get('/services/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
+        Route::get('/services/verifications', [VerificationRequestController::class, 'index'])->name('verifications.index');
+        Route::post('/services/verifications/{id}/approve', [VerificationRequestController::class, 'approve'])->name('verifications.approve');
+        Route::post('/services/verifications/{id}/reject', [VerificationRequestController::class, 'reject'])->name('verifications.reject');
+    });
+
     // Users (permission: users)
     Route::middleware('permission:users')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::get('/users/top-holders', [UserController::class, 'topHolders'])->name('users.top-holders');
         Route::get('/users/daily-report', [\App\Http\Controllers\Admin\UserDailyReportController::class, 'index'])->name('users.daily-report');
         Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
         Route::patch('/users/{id}', [UserController::class, 'update'])->name('users.update');
@@ -161,12 +174,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/users/{id}/withdraw-money', [UserController::class, 'withdrawMoney'])->name('users.withdraw-money');
         Route::post('/users/{id}/transfer-voucher', [UserController::class, 'transferVoucher'])->name('users.transfer-voucher');
         Route::post('/users/{id}/add-demo-order', [UserController::class, 'addDemoOrder'])->name('users.add-demo-order');
-
-        // Verifications
-        Route::get('/services/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
-        Route::get('/services/verifications', [VerificationRequestController::class, 'index'])->name('verifications.index');
-        Route::post('/services/verifications/{id}/approve', [VerificationRequestController::class, 'approve'])->name('verifications.approve');
-        Route::post('/services/verifications/{id}/reject', [VerificationRequestController::class, 'reject'])->name('verifications.reject');
     });
 
     // Financials & Withdrawals (permission: withdrawals)
