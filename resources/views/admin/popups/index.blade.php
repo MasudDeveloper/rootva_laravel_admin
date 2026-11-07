@@ -53,21 +53,48 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold">Current Active Popups</h5>
+                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-layer-group text-primary me-2"></i>সেভ করা পপআপ তালিকা (Saved Popups)</h5>
+                    <span class="badge bg-light text-muted border">{{ count($popups) }} টি পপআপ</span>
                 </div>
                 <div class="card-body p-4">
+                    @if(session('info'))
+                        <div class="alert alert-info border-0 shadow-sm">{{ session('info') }}</div>
+                    @endif
+
                     <div class="row g-4">
+                        @php
+                            $activePopupId = $popups->first() ? $popups->first()->id : null;
+                        @endphp
+
                         @forelse($popups as $popup)
                         <div class="col-md-6">
-                            <div class="card h-100 border rounded-4 overflow-hidden shadow-sm hover-shadow transition">
+                            <div class="card h-100 border rounded-4 overflow-hidden shadow-sm hover-shadow transition {{ $popup->id === $activePopupId ? 'border-success border-2' : '' }}">
                                 <div class="position-relative">
                                     <img src="{{ $popup->image_url }}" class="card-img-top" alt="Popup" style="height: 220px; object-fit: cover;">
-                                    <div class="position-absolute top-0 end-0 p-2">
+                                    
+                                    @if($popup->id === $activePopupId)
+                                    <div class="position-absolute top-0 start-0 p-2">
+                                        <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">
+                                            <i class="fa-solid fa-circle-check me-1"></i>বর্তমানে সক্রিয় (Active)
+                                        </span>
+                                    </div>
+                                    @endif
+
+                                    <div class="position-absolute top-0 end-0 p-2 d-flex gap-1">
+                                        @if($popup->id !== $activePopupId)
+                                        <form action="{{ route('admin.popups.activate', $popup->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 shadow" title="এই সেভ করা পপআপটি অ্যাপে সক্রিয় করুন">
+                                                <i class="fa-solid fa-paper-plane me-1"></i>অ্যাপে দিন
+                                            </button>
+                                        </form>
+                                        @endif
+
                                         <form action="{{ route('admin.popups.destroy', $popup->id) }}" method="POST" onsubmit="return confirm('Delete this popup?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 shadow">
-                                                <i class="fa-solid fa-trash me-1"></i>Delete
+                                            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-2 shadow" title="মুছে ফেলুন">
+                                                <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </form>
                                     </div>

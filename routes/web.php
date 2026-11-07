@@ -119,15 +119,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
 
-        // Notifications & Popups
-        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
-        Route::get('/notifications/target-count', [\App\Http\Controllers\Admin\NotificationController::class, 'getTargetCount'])->name('notifications.target_count');
-        Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
-        Route::get('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'savedIndex'])->name('notifications.saved.index');
-        Route::post('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'saveDraft'])->name('notifications.saved.store');
-        Route::delete('/notifications/saved/{id}', [\App\Http\Controllers\Admin\NotificationController::class, 'deleteDraft'])->name('notifications.saved.destroy');
-        Route::post('/notifications/saved/{id}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'sendDraft'])->name('notifications.saved.send');
-
         // Crash Reports & Analysis
         Route::get('/crash-reports', [\App\Http\Controllers\Admin\CrashReportController::class, 'index'])->name('crash-reports.index');
         Route::get('/crash-reports/{id}', [\App\Http\Controllers\Admin\CrashReportController::class, 'show'])->name('crash-reports.show');
@@ -146,10 +137,22 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::delete('/sub-admins/{id}', [\App\Http\Controllers\Admin\AdminUserController::class, 'destroy'])->name('sub-admins.destroy');
     });
 
+    // Push Notifications Management (permission: notifications)
+    Route::middleware('permission:notifications')->group(function () {
+        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
+        Route::get('/notifications/target-count', [\App\Http\Controllers\Admin\NotificationController::class, 'getTargetCount'])->name('notifications.target_count');
+        Route::get('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'savedIndex'])->name('notifications.saved.index');
+        Route::post('/notifications/saved', [\App\Http\Controllers\Admin\NotificationController::class, 'saveDraft'])->name('notifications.saved.store');
+        Route::delete('/notifications/saved/{id}', [\App\Http\Controllers\Admin\NotificationController::class, 'deleteDraft'])->name('notifications.saved.destroy');
+        Route::post('/notifications/saved/{id}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'sendDraft'])->name('notifications.saved.send');
+    });
+
     // Popups Management (permission: popups)
     Route::middleware('permission:popups')->group(function () {
         Route::get('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'index'])->name('popups.index');
         Route::post('/popups', [\App\Http\Controllers\Admin\PopupController::class, 'store'])->name('popups.store');
+        Route::post('/popups/{id}/activate', [\App\Http\Controllers\Admin\PopupController::class, 'setActive'])->name('popups.activate');
         Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
     });
 

@@ -158,7 +158,7 @@
             </a>
             @endif
 
-            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins') || auth()->user()->hasPermission('popups'))
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('sub_admins') || auth()->user()->hasPermission('notifications') || auth()->user()->hasPermission('popups'))
             <div class="px-4 mt-4 mb-2 text-uppercase text-muted small fw-bold">Admin Tools</div>
             @endif
 
@@ -169,21 +169,21 @@
             </a>
             @endif
 
+            @if(auth()->user()->hasPermission('notifications'))
+            <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications') || request()->is('admin/notifications/send') ? 'active' : '' }}">
+                <i class="fa-solid fa-bullhorn text-danger"></i>
+                <span>Push Notifications</span>
+            </a>
+            <a href="{{ route('admin.notifications.saved.index') }}" class="nav-link {{ request()->is('admin/notifications/saved*') ? 'active' : '' }}">
+                <i class="fa-solid fa-bookmark text-primary"></i>
+                <span>Saved Notifications</span>
+            </a>
+            @endif
+
             @if(auth()->user()->hasPermission('popups'))
             <a href="{{ route('admin.popups.index') }}" class="nav-link {{ request()->is('admin/popups*') ? 'active' : '' }}">
                 <i class="fa-solid fa-window-maximize text-info"></i>
                 <span>Popup Banners</span>
-            </a>
-            @endif
-
-            @if(auth()->user()->isSuperAdmin())
-            <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->is('admin/notifications') || request()->is('admin/notifications/send') ? 'active' : '' }}">
-                <i class="fa-solid fa-bullhorn"></i>
-                <span>Push Notifications</span>
-            </a>
-            <a href="{{ route('admin.notifications.saved.index') }}" class="nav-link {{ request()->is('admin/notifications/saved*') ? 'active' : '' }}">
-                <i class="fa-solid fa-bookmark"></i>
-                <span>Saved Notifications</span>
             </a>
             @endif
 

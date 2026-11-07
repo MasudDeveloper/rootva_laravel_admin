@@ -23,8 +23,9 @@ class AdminUserController extends Controller
             'courses'     => 'Courses & Digital Items (ডিজিটাল কোর্স)',
             'withdrawals' => 'Withdrawal Requests (উইথড্র রিকোয়েস্ট অনুমোদন)',
             'leadership'  => 'Leadership & Salary (লিডারশিপ ও স্যালারি)',
-            'sub_admins'  => 'Sub-Admin Management (সাব-এডমিন তৈরি ও পারমিশন)',
-            'popups'      => 'Popup Controller (অ্যাপ পপআপ ব্যানার পরিচালনা)',
+            'sub_admins'    => 'Sub-Admin Management (সাব-এডমিন তৈরি ও পারমিশন)',
+            'notifications' => 'Push Notifications (পুশ নোটিফিকেশন ও সেভড নোটিশ প্রেরণ)',
+            'popups'        => 'Popup Controller (অ্যাপ পপআপ ব্যানার পরিচালনা)',
         ];
     }
 

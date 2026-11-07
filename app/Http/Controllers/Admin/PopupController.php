@@ -44,6 +44,35 @@ class PopupController extends Controller
         return back()->with('error', 'Failed to upload image.');
     }
 
+    public function setActive($id)
+    {
+        $popup = PopupBanner::findOrFail($id);
+
+        $latestPopup = PopupBanner::orderBy('id', 'desc')->first();
+        if ($latestPopup && $latestPopup->id == $popup->id) {
+            return back()->with('info', 'এই পপআপটি ইতোমধ্যে অ্যাপে সক্রিয় আছে।');
+        }
+
+        $rawImageUrl = $popup->getRawOriginal('image_url') ?? $popup->image_url;
+        $message = $popup->message;
+        $buttonText = $popup->button_text;
+        $buttonUrl = $popup->button_url;
+
+        // Delete old row and re-create to give it highest ID (making it active in the app)
+        $popup->delete();
+
+        PopupBanner::create([
+            'image_url' => $rawImageUrl,
+            'message' => $message,
+            'button_text' => $buttonText,
+            'button_url' => $buttonUrl,
+        ]);
+
+        Cache::forget('api_popup_banner');
+
+        return back()->with('success', 'পপআপটি সফলভাবে অ্যাপে সক্রিয় করা হয়েছে!');
+    }
+
     public function destroy($id)
     {
         $popup = PopupBanner::findOrFail($id);
