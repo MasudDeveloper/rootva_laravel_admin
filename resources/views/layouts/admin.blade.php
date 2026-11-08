@@ -44,7 +44,7 @@
             </a>
             
             @if(auth()->user()->hasPermission('users'))
-            <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*') && !request()->is('admin/users/daily-report*'))) ? 'active' : '' }}">
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ (request()->is('admin/users') || (request()->is('admin/users/*') && !request()->is('admin/users/top-holders*') && !request()->is('admin/users/daily-report*') && !request()->is('admin/users/upline-logs*'))) ? 'active' : '' }}">
                 <i class="fa-solid fa-users"></i>
                 <span>Users Management</span>
             </a>
@@ -53,6 +53,11 @@
                 <i class="fa-solid fa-chart-line text-primary"></i>
                 <span>দৈনিক রেজিস্ট্রেশন ও ভেরিফাই</span>
                 <span class="badge bg-primary text-white ms-auto" style="font-size: 9px;">রিপোর্ট</span>
+            </a>
+
+            <a href="{{ route('admin.users.upline-logs') }}" class="nav-link {{ request()->is('admin/users/upline-logs*') ? 'active' : '' }}">
+                <i class="fa-solid fa-clock-rotate-left text-warning"></i>
+                <span>Upline Change Logs</span>
             </a>
             @endif
 

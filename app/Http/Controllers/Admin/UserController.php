@@ -212,7 +212,16 @@ class UserController extends Controller
             \Illuminate\Support\Facades\Log::error("Error calculating leadership/salary stats for user {$user->id}: " . $e->getMessage());
         }
         
-        return view('admin.users.show', compact('user', 'transactions', 'leadership', 'salaryProgress'));
+        $uplineLogs = [];
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('upline_change_logs')) {
+                $uplineLogs = \App\Models\UplineChangeLog::where('user_id', $user->id)
+                    ->orderBy('id', 'desc')
+                    ->get();
+            }
+        } catch (\Throwable $e) {}
+
+        return view('admin.users.show', compact('user', 'transactions', 'leadership', 'salaryProgress', 'uplineLogs'));
     }
 
     public function update(Request $request, $id)
@@ -256,6 +265,58 @@ class UserController extends Controller
             $data['video_earning'] = $user->video_earning + 3;
         }
 
+        // --- Log Upline / ReferredBy Changes ---
+        $oldReferredBy = trim((string)$user->referredBy);
+        $newReferredBy = isset($data['referredBy']) ? trim((string)$data['referredBy']) : '';
+
+        if ($oldReferredBy !== $newReferredBy) {
+            $oldUpline = !empty($oldReferredBy) ? SignUp::where('referCode', $oldReferredBy)->first() : null;
+            $newUpline = !empty($newReferredBy) ? SignUp::where('referCode', $newReferredBy)->first() : null;
+            $currentAdmin = auth()->user();
+
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('upline_change_logs')) {
+                    \Illuminate\Support\Facades\Schema::create('upline_change_logs', function ($table) {
+                        $table->id();
+                        $table->unsignedBigInteger('admin_id')->nullable()->index();
+                        $table->string('admin_name')->nullable();
+                        $table->string('admin_username')->nullable();
+                        $table->unsignedBigInteger('user_id')->index();
+                        $table->string('user_name')->nullable();
+                        $table->string('user_number')->nullable();
+                        $table->string('user_refer_code')->nullable();
+                        $table->string('old_upline_code')->nullable();
+                        $table->string('old_upline_name')->nullable();
+                        $table->string('old_upline_number')->nullable();
+                        $table->string('new_upline_code')->nullable();
+                        $table->string('new_upline_name')->nullable();
+                        $table->string('new_upline_number')->nullable();
+                        $table->string('ip_address', 45)->nullable();
+                        $table->timestamps();
+                    });
+                }
+
+                \App\Models\UplineChangeLog::create([
+                    'admin_id'          => $currentAdmin ? $currentAdmin->id : null,
+                    'admin_name'        => $currentAdmin ? ($currentAdmin->name ?: $currentAdmin->username) : 'System Admin',
+                    'admin_username'    => $currentAdmin ? $currentAdmin->username : 'admin',
+                    'user_id'           => $user->id,
+                    'user_name'         => $user->name,
+                    'user_number'       => $user->number,
+                    'user_refer_code'   => $user->referCode,
+                    'old_upline_code'   => $oldReferredBy ?: null,
+                    'old_upline_name'   => $oldUpline ? $oldUpline->name : null,
+                    'old_upline_number' => $oldUpline ? $oldUpline->number : null,
+                    'new_upline_code'   => $newReferredBy ?: null,
+                    'new_upline_name'   => $newUpline ? $newUpline->name : null,
+                    'new_upline_number' => $newUpline ? $newUpline->number : null,
+                    'ip_address'        => $request->ip(),
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Upline change log failed: ' . $e->getMessage());
+            }
+        }
+
         $user->update($data);
 
         return back()->with('success', 'User profile updated successfully.');
@@ -263,6 +324,10 @@ class UserController extends Controller
 
     public function addMoney(Request $request, $id)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! ব্যালেন্স অ্যাড করার অনুমতি শুধুমাত্র সুপার এডমিনের রয়েছে।');
+        }
+
         $user = SignUp::findOrFail($id);
         $amount = (float) $request->input('amount');
         $gateway = $request->input('payment_gateway', 'Admin Panel');
@@ -333,6 +398,10 @@ class UserController extends Controller
 
     public function withdrawMoney(Request $request, $id)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! উইথড্র করার অনুমতি শুধুমাত্র সুপার এডমিনের রয়েছে।');
+        }
+
         $user = SignUp::findOrFail($id);
         $amount = (float) $request->input('amount');
 
@@ -417,6 +486,10 @@ class UserController extends Controller
 
     public function transferVoucher(Request $request, $id)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! ভাউচার ব্যালেন্স ট্রান্সফারের অনুমতি শুধুমাত্র সুপার এডমিনের রয়েছে।');
+        }
+
         $user = SignUp::findOrFail($id);
         $amount = (float) $request->input('amount');
 
@@ -461,6 +534,10 @@ class UserController extends Controller
 
     public function addDemoOrder(Request $request, $id)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! ডেমো অর্ডার যুক্ত করার অনুমতি শুধুমাত্র সুপার এডমিনের রয়েছে।');
+        }
+
         $user = SignUp::findOrFail($id);
         
         $request->validate([

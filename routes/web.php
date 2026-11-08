@@ -156,9 +156,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::delete('/popups/{id}', [\App\Http\Controllers\Admin\PopupController::class, 'destroy'])->name('popups.destroy');
     });
 
-    // Top Wallet Holders & Verifications (Super Admin Only)
+    // Top Wallet Holders & Verifications & User Financial Actions (Super Admin Only)
     Route::middleware('permission:super_admin')->group(function () {
         Route::get('/users/top-holders', [UserController::class, 'topHolders'])->name('users.top-holders');
+        Route::post('/users/{id}/add-money', [UserController::class, 'addMoney'])->name('users.add-money');
+        Route::post('/users/{id}/withdraw-money', [UserController::class, 'withdrawMoney'])->name('users.withdraw-money');
+        Route::post('/users/{id}/transfer-voucher', [UserController::class, 'transferVoucher'])->name('users.transfer-voucher');
+        Route::post('/users/{id}/add-demo-order', [UserController::class, 'addDemoOrder'])->name('users.add-demo-order');
 
         // Verifications
         Route::get('/services/verifications/bulk-cards-data', [VerificationRequestController::class, 'bulkCardsData'])->name('verifications.bulk-cards-data');
@@ -171,12 +175,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::middleware('permission:users')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/daily-report', [\App\Http\Controllers\Admin\UserDailyReportController::class, 'index'])->name('users.daily-report');
+        Route::get('/users/upline-logs', [\App\Http\Controllers\Admin\UplineChangeLogController::class, 'index'])->name('users.upline-logs');
         Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
         Route::patch('/users/{id}', [UserController::class, 'update'])->name('users.update');
-        Route::post('/users/{id}/add-money', [UserController::class, 'addMoney'])->name('users.add-money');
-        Route::post('/users/{id}/withdraw-money', [UserController::class, 'withdrawMoney'])->name('users.withdraw-money');
-        Route::post('/users/{id}/transfer-voucher', [UserController::class, 'transferVoucher'])->name('users.transfer-voucher');
-        Route::post('/users/{id}/add-demo-order', [UserController::class, 'addDemoOrder'])->name('users.add-demo-order');
     });
 
     // Financials & Withdrawals (permission: withdrawals)

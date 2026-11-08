@@ -9,6 +9,7 @@
         <a href="{{ route('admin.users.index') }}" class="btn btn-light rounded-pill shadow-sm">
             <i class="fa-solid fa-arrow-left me-2"></i>Back to List
         </a>
+        @if(auth()->user()->isSuperAdmin())
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-success rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#addMoneyModal">
                 <i class="fa-solid fa-plus me-2"></i>Add Balance
@@ -23,6 +24,7 @@
                 <i class="fa-solid fa-cart-plus me-2"></i>Add Demo Order
             </button>
         </div>
+        @endif
     </div>
 
     @if(session('success'))
@@ -97,9 +99,40 @@
                             @endif
                         @endif
                     </div>
+                    @php
+                        $verifyDate = $user->verified_at ?: ($user->verified_raw_time ? \Carbon\Carbon::parse($user->verified_raw_time)->format('d-m-Y h:i A') : null);
+                        if (!$verifyDate && ($user->is_verified == 1 || $user->is_verified == 3)) {
+                            try {
+                                $vReq = \App\Models\VerificationRequest::where('user_id', $user->id)->where('status', 'Approved')->first();
+                                if ($vReq && $vReq->created_at) {
+                                    $verifyDate = \Carbon\Carbon::parse($vReq->created_at)->format('d-m-Y h:i A');
+                                }
+                            } catch (\Throwable $e) {}
+                        }
+                    @endphp
+                    <div class="mb-3">
+                        <label class="extra-small text-muted text-uppercase fw-bold d-block">Account Created (একাউন্ট তৈরির তারিখ)</label>
+                        <div class="small fw-medium"><i class="fa-solid fa-calendar-plus text-primary me-1"></i>{{ $user->created_at ?: 'N/A' }}</div>
+                    </div>
                     <div class="mb-0">
-                        <label class="extra-small text-muted text-uppercase fw-bold d-block">Member Since</label>
-                        <div class="small fw-medium">{{ $user->created_at }}</div>
+                        <label class="extra-small text-muted text-uppercase fw-bold d-block">Verified At (ভেরিফিকেশন তারিখ)</label>
+                        @if($verifyDate)
+                            <div class="small fw-bold text-success">
+                                <i class="fa-solid fa-circle-check text-success me-1"></i>{{ $verifyDate }}
+                            </div>
+                        @elseif($user->is_verified == 1 || $user->is_verified == 3)
+                            <div class="small fw-bold text-success">
+                                <i class="fa-solid fa-circle-check text-success me-1"></i>Verified (তারিখ সংরক্ষিত নেই)
+                            </div>
+                        @elseif($user->is_verified == 2)
+                            <div class="small fw-bold text-warning">
+                                <i class="fa-solid fa-clock text-warning me-1"></i>Verification Pending
+                            </div>
+                        @else
+                            <div class="small text-muted">
+                                <span class="badge bg-light text-muted border"><i class="fa-solid fa-circle-xmark me-1"></i>এখনো ভেরিফাই করা হয়নি (Unverified)</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -347,6 +380,67 @@
                 </form>
             </div>
 
+            <!-- Upline Change History Card -->
+            @if(isset($uplineLogs) && count($uplineLogs) > 0)
+            <div class="card-modern mb-4 shadow-sm border-0 rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-clock-rotate-left text-warning me-2"></i>আপলাইন পরিবর্তনের ইতিহাস (Upline Logs)
+                    </h5>
+                    <a href="{{ route('admin.users.upline-logs', ['search' => $user->referCode]) }}" class="btn btn-sm btn-light rounded-pill px-3">
+                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>লগ পেজে দেখুন
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-2 text-muted extra-small text-uppercase fw-bold">তারিখ ও সময়</th>
+                                <th class="py-2 text-muted extra-small text-uppercase fw-bold">কে পরিবর্তন করেছে</th>
+                                <th class="py-2 text-muted extra-small text-uppercase fw-bold">আগের আপলাইন</th>
+                                <th class="py-2 text-muted extra-small text-uppercase fw-bold">নতুন আপলাইন</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($uplineLogs as $log)
+                            <tr>
+                                <td class="py-2 small">
+                                    <div class="fw-bold text-dark">{{ $log->created_at ? $log->created_at->timezone('Asia/Dhaka')->format('d M, Y') : '' }}</div>
+                                    <div class="text-muted extra-small">{{ $log->created_at ? $log->created_at->timezone('Asia/Dhaka')->format('h:i A') : '' }}</div>
+                                </td>
+                                <td class="py-2 small">
+                                    <span class="badge bg-primary-soft text-primary rounded-pill px-2 py-1">
+                                        <i class="fa-solid fa-user-shield me-1"></i>{{ $log->admin_name ?: $log->admin_username }}
+                                    </span>
+                                </td>
+                                <td class="py-2 small">
+                                    @if($log->old_upline_code)
+                                        <span class="badge bg-danger-soft text-danger fw-bold">{{ $log->old_upline_code }}</span>
+                                        @if($log->old_upline_name)
+                                            <span class="extra-small text-muted d-block">{{ $log->old_upline_name }}</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted extra-small">ডিরেক্ট</span>
+                                    @endif
+                                </td>
+                                <td class="py-2 small">
+                                    @if($log->new_upline_code)
+                                        <span class="badge bg-success-soft text-success fw-bold">{{ $log->new_upline_code }}</span>
+                                        @if($log->new_upline_name)
+                                            <span class="extra-small text-muted d-block">{{ $log->new_upline_name }}</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted extra-small">রিমুভড</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             <!-- Transactions List -->
             <div class="card-modern p-0 overflow-hidden">
                 <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center bg-light">
@@ -404,6 +498,7 @@
     </div>
 </div>
 
+@if(auth()->user()->isSuperAdmin())
 <!-- Add Money Modal -->
 <div class="modal fade" id="addMoneyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -530,6 +625,7 @@
         </form>
     </div>
 </div>
+@endif
 
 @if($user->is_verified == 1)
 <!-- Hidden Card for Download -->
