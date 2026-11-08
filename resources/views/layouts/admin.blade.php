@@ -54,14 +54,14 @@
                 <span>দৈনিক রেজিস্ট্রেশন ও ভেরিফাই</span>
                 <span class="badge bg-primary text-white ms-auto" style="font-size: 9px;">রিপোর্ট</span>
             </a>
+            @endif
 
+            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.users.upline-logs') }}" class="nav-link {{ request()->is('admin/users/upline-logs*') ? 'active' : '' }}">
                 <i class="fa-solid fa-clock-rotate-left text-warning"></i>
                 <span>Upline Change Logs</span>
             </a>
-            @endif
 
-            @if(auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.users.top-holders') }}" class="nav-link {{ request()->is('admin/users/top-holders*') ? 'active' : '' }}">
                 <i class="fa-solid fa-vault text-success"></i>
                 <span>Top Wallet Holders</span>

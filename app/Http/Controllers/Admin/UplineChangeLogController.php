@@ -12,6 +12,10 @@ class UplineChangeLogController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard')->with('error', 'অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে! আপলাইন পরিবর্তন লগ দেখার অনুমতি শুধুমাত্র সুপার এডমিনের রয়েছে।');
+        }
+
         // Ensure table exists safely
         if (!Schema::hasTable('upline_change_logs')) {
             Schema::create('upline_change_logs', function ($table) {

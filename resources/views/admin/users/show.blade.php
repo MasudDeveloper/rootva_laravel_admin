@@ -380,8 +380,8 @@
                 </form>
             </div>
 
-            <!-- Upline Change History Card -->
-            @if(isset($uplineLogs) && count($uplineLogs) > 0)
+            <!-- Upline Change History Card (Super Admin Only) -->
+            @if(auth()->user()->isSuperAdmin() && isset($uplineLogs) && count($uplineLogs) > 0)
             <div class="card-modern mb-4 shadow-sm border-0 rounded-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold mb-0 text-dark">
