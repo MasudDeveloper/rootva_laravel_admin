@@ -229,8 +229,8 @@ class LegacyAuthController extends Controller
                 'profile_pic_url' => '',
                 'gender' => 'Male',
                 'video_earning' => 1,
-                'verified_at' => '',
-                'verified_raw_time' => date('Y-m-d H:i:s'),
+                'verified_at' => null,
+                'verified_raw_time' => null,
             ]);
 
             if ($user) {

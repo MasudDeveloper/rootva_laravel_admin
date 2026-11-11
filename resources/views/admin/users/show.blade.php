@@ -100,14 +100,34 @@
                         @endif
                     </div>
                     @php
-                        $verifyDate = $user->verified_at ?: ($user->verified_raw_time ? \Carbon\Carbon::parse($user->verified_raw_time)->format('d-m-Y h:i A') : null);
-                        if (!$verifyDate && ($user->is_verified == 1 || $user->is_verified == 3)) {
+                        $isUserVerified = ($user->is_verified == 1 || $user->is_verified == 3);
+                        $verifyDate = null;
+                        
+                        if ($isUserVerified) {
+                            // 1. Check if there is an approved verification request record
                             try {
-                                $vReq = \App\Models\VerificationRequest::where('user_id', $user->id)->where('status', 'Approved')->first();
-                                if ($vReq && $vReq->created_at) {
-                                    $verifyDate = \Carbon\Carbon::parse($vReq->created_at)->format('d-m-Y h:i A');
+                                $vReq = \App\Models\VerificationRequest::where('user_id', $user->id)
+                                    ->where('status', 'Approved')
+                                    ->latest('id')
+                                    ->first();
+                                if ($vReq) {
+                                    $rawReqTime = $vReq->verified_raw_time ?? $vReq->updated_at ?? $vReq->created_at;
+                                    if ($rawReqTime) {
+                                        $verifyDate = \Carbon\Carbon::parse($rawReqTime)->format('d-m-Y h:i A');
+                                    }
                                 }
                             } catch (\Throwable $e) {}
+
+                            // 2. Fallback to user model's verified_at or verified_raw_time
+                            if (!$verifyDate) {
+                                if (!empty($user->verified_at)) {
+                                    $verifyDate = $user->verified_at;
+                                } elseif (!empty($user->verified_raw_time)) {
+                                    try {
+                                        $verifyDate = \Carbon\Carbon::parse($user->verified_raw_time)->format('d-m-Y h:i A');
+                                    } catch (\Throwable $e) {}
+                                }
+                            }
                         }
                     @endphp
                     <div class="mb-3">
@@ -116,21 +136,27 @@
                     </div>
                     <div class="mb-0">
                         <label class="extra-small text-muted text-uppercase fw-bold d-block">Verified At (ভেরিফিকেশন তারিখ)</label>
-                        @if($verifyDate)
-                            <div class="small fw-bold text-success">
-                                <i class="fa-solid fa-circle-check text-success me-1"></i>{{ $verifyDate }}
-                            </div>
-                        @elseif($user->is_verified == 1 || $user->is_verified == 3)
-                            <div class="small fw-bold text-success">
-                                <i class="fa-solid fa-circle-check text-success me-1"></i>Verified (তারিখ সংরক্ষিত নেই)
-                            </div>
+                        @if($isUserVerified)
+                            @if($verifyDate)
+                                <div class="small fw-bold text-success">
+                                    <i class="fa-solid fa-circle-check text-success me-1"></i>{{ $verifyDate }}
+                                </div>
+                            @else
+                                <div class="small fw-bold text-success">
+                                    <i class="fa-solid fa-circle-check text-success me-1"></i>Verified
+                                </div>
+                            @endif
                         @elseif($user->is_verified == 2)
                             <div class="small fw-bold text-warning">
                                 <i class="fa-solid fa-clock text-warning me-1"></i>Verification Pending
                             </div>
+                        @elseif($user->is_verified == 4)
+                            <div class="small fw-bold text-danger">
+                                <i class="fa-solid fa-ban text-danger me-1"></i>Account Suspended
+                            </div>
                         @else
                             <div class="small text-muted">
-                                <span class="badge bg-light text-muted border"><i class="fa-solid fa-circle-xmark me-1"></i>এখনো ভেরিফাই করা হয়নি (Unverified)</span>
+                                <span class="badge bg-light text-muted border"><i class="fa-solid fa-circle-xmark me-1 text-secondary"></i>এখনো ভেরিফাই করা হয়নি (Unverified)</span>
                             </div>
                         @endif
                     </div>
