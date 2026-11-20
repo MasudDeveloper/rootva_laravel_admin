@@ -378,7 +378,12 @@ class EpsPaymentService
                 ];
             }
 
-            $errMsg = $data['ErrorMessage'] ?? ($data['message'] ?? 'পেমেন্ট গেটওয়ে ইনিশিয়ালাইজ করতে সমস্যা হয়েছে।');
+            $errMsg = $data['ErrorMessage']
+                ?? $data['errorMessage']
+                ?? $data['message']
+                ?? (!empty($data['errors']) ? (is_array($data['errors']) ? implode(', ', array_map(function($e) { return is_array($e) ? implode('; ', $e) : (string)$e; }, $data['errors'])) : json_encode($data['errors'], JSON_UNESCAPED_UNICODE)) : null)
+                ?? $data['title']
+                ?? ('গেটওয়ে রেসপন্স ত্রুটি (HTTP ' . $response->status() . '): ' . substr($response->body(), 0, 120));
             Log::error('EPS InitializeEPS failed. Status: ' . $response->status() . '. Body: ' . $response->body());
             return ['success' => false, 'message' => 'EPS ত্রুটি: ' . $errMsg];
 
