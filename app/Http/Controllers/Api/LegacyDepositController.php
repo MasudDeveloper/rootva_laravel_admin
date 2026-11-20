@@ -139,6 +139,10 @@ class LegacyDepositController extends Controller
 
         $isEpsOn = (bool)($numbers->eps_enabled ?? false);
         $manualOn = isset($numbers->manual_payment_enabled) ? (bool)$numbers->manual_payment_enabled : true;
+        $bkashOn = isset($numbers->bkash_enabled) ? (bool)$numbers->bkash_enabled : true;
+        $nagadOn = isset($numbers->nagad_enabled) ? (bool)$numbers->nagad_enabled : true;
+        $rocketOn = isset($numbers->rocket_enabled) ? (bool)$numbers->rocket_enabled : true;
+        $upayOn = isset($numbers->upay_enabled) ? (bool)$numbers->upay_enabled : true;
         $banglaQrOn = isset($numbers->bangla_qr_enabled) ? (bool)$numbers->bangla_qr_enabled : true;
 
         $banglaQrImageUrl = null;
@@ -163,6 +167,10 @@ class LegacyDepositController extends Controller
             'verify_amount' => $numbers->verify_amount ?: '300',
             'eps_enabled' => $isEpsOn,
             'manual_payment_enabled' => $manualOn,
+            'bkash_enabled' => $bkashOn,
+            'nagad_enabled' => $nagadOn,
+            'rocket_enabled' => $rocketOn,
+            'upay_enabled' => $upayOn,
             'bangla_qr_enabled' => $banglaQrOn,
             'eps_auto_disable_others' => false,
         ]);

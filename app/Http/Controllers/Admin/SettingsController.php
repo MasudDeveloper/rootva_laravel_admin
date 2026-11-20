@@ -68,6 +68,17 @@ class SettingsController extends Controller
                             Log::warning('Could not auto-add bangla_qr_support_link column: ' . $colEx->getMessage());
                         }
                     }
+                    foreach (['bkash_enabled', 'nagad_enabled', 'rocket_enabled', 'upay_enabled'] as $toggleCol) {
+                        if (!Schema::hasColumn('payment_number', $toggleCol)) {
+                            try {
+                                Schema::table('payment_number', function ($table) use ($toggleCol) {
+                                    $table->tinyInteger($toggleCol)->default(1);
+                                });
+                            } catch (\Throwable $colEx) {
+                                Log::warning("Could not auto-add {$toggleCol} column: " . $colEx->getMessage());
+                            }
+                        }
+                    }
                 }
 
                 if (Schema::hasTable('social_links')) {
@@ -188,6 +199,18 @@ class SettingsController extends Controller
                         }
                         if (in_array('manual_payment_enabled', $paymentCols)) {
                             $payments->manual_payment_enabled = $request->has('manual_payment_enabled') ? 1 : 0;
+                        }
+                        if (in_array('bkash_enabled', $paymentCols)) {
+                            $payments->bkash_enabled = $request->has('bkash_enabled') ? 1 : 0;
+                        }
+                        if (in_array('nagad_enabled', $paymentCols)) {
+                            $payments->nagad_enabled = $request->has('nagad_enabled') ? 1 : 0;
+                        }
+                        if (in_array('rocket_enabled', $paymentCols)) {
+                            $payments->rocket_enabled = $request->has('rocket_enabled') ? 1 : 0;
+                        }
+                        if (in_array('upay_enabled', $paymentCols)) {
+                            $payments->upay_enabled = $request->has('upay_enabled') ? 1 : 0;
                         }
                         if (in_array('bangla_qr_enabled', $paymentCols)) {
                             $payments->bangla_qr_enabled = $request->has('bangla_qr_enabled') ? 1 : 0;

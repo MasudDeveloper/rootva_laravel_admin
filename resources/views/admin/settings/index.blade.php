@@ -388,21 +388,76 @@
                     </div>
                     <div class="card-body p-4">
                         <div class="row g-3">
+                            {{-- bKash --}}
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">bKash Number</label>
-                                <input type="text" name="bkash" class="form-control rounded-3" value="{{ $payments->bkash }}" placeholder="01xxxxxxxxx">
+                                <div class="p-3 rounded-3 border bg-light h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label small fw-bold mb-0 text-dark">
+                                            <i class="fa-solid fa-mobile-screen-button text-danger me-1"></i> bKash (বিকাশ)
+                                        </label>
+                                        <div class="form-check form-switch fs-6 mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="bkash_enabled" id="bkash_enabled" value="1" {{ (!isset($payments->bkash_enabled) || $payments->bkash_enabled) ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-semibold extra-small ms-1" for="bkash_enabled">
+                                                {{ (!isset($payments->bkash_enabled) || $payments->bkash_enabled) ? 'চালু' : 'বন্ধ' }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="bkash" class="form-control rounded-3" value="{{ $payments->bkash }}" placeholder="01xxxxxxxxx">
+                                </div>
                             </div>
+
+                            {{-- Nagad --}}
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Nagad Number</label>
-                                <input type="text" name="nagad" class="form-control rounded-3" value="{{ $payments->nagad }}" placeholder="01xxxxxxxxx">
+                                <div class="p-3 rounded-3 border bg-light h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label small fw-bold mb-0 text-dark">
+                                            <i class="fa-solid fa-mobile-screen-button text-warning me-1"></i> Nagad (নগদ)
+                                        </label>
+                                        <div class="form-check form-switch fs-6 mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="nagad_enabled" id="nagad_enabled" value="1" {{ (!isset($payments->nagad_enabled) || $payments->nagad_enabled) ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-semibold extra-small ms-1" for="nagad_enabled">
+                                                {{ (!isset($payments->nagad_enabled) || $payments->nagad_enabled) ? 'চালু' : 'বন্ধ' }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="nagad" class="form-control rounded-3" value="{{ $payments->nagad }}" placeholder="01xxxxxxxxx">
+                                </div>
                             </div>
+
+                            {{-- Rocket --}}
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Rocket Number</label>
-                                <input type="text" name="rocket" class="form-control rounded-3" value="{{ $payments->rocket }}" placeholder="01xxxxxxxxx">
+                                <div class="p-3 rounded-3 border bg-light h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label small fw-bold mb-0 text-dark">
+                                            <i class="fa-solid fa-mobile-screen-button text-primary me-1"></i> Rocket (রকেট)
+                                        </label>
+                                        <div class="form-check form-switch fs-6 mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="rocket_enabled" id="rocket_enabled" value="1" {{ (!isset($payments->rocket_enabled) || $payments->rocket_enabled) ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-semibold extra-small ms-1" for="rocket_enabled">
+                                                {{ (!isset($payments->rocket_enabled) || $payments->rocket_enabled) ? 'চালু' : 'বন্ধ' }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="rocket" class="form-control rounded-3" value="{{ $payments->rocket }}" placeholder="01xxxxxxxxx">
+                                </div>
                             </div>
+
+                            {{-- Upay --}}
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Upay Number</label>
-                                <input type="text" name="upay" class="form-control rounded-3" value="{{ $payments->upay }}" placeholder="01xxxxxxxxx">
+                                <div class="p-3 rounded-3 border bg-light h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label small fw-bold mb-0 text-dark">
+                                            <i class="fa-solid fa-mobile-screen-button text-info me-1"></i> Upay (উপায়)
+                                        </label>
+                                        <div class="form-check form-switch fs-6 mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" name="upay_enabled" id="upay_enabled" value="1" {{ (!isset($payments->upay_enabled) || $payments->upay_enabled) ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-semibold extra-small ms-1" for="upay_enabled">
+                                                {{ (!isset($payments->upay_enabled) || $payments->upay_enabled) ? 'চালু' : 'বন্ধ' }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="upay" class="form-control rounded-3" value="{{ $payments->upay }}" placeholder="01xxxxxxxxx">
+                                </div>
                             </div>
                         </div>
                     </div>
