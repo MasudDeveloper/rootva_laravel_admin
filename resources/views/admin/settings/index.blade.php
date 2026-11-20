@@ -329,27 +329,27 @@
 
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Merchant ID</label>
-                                <input type="text" name="eps_merchant_id" class="form-control rounded-3" value="{{ $payments->eps_merchant_id ?? '' }}" placeholder="EPS Merchant ID">
+                                <input type="text" name="eps_merchant_id" class="form-control rounded-3" value="{{ $payments->eps_merchant_id ?? '29e86e70-0ac6-45eb-ba04-9fcb0aaed12a' }}" placeholder="EPS Merchant ID">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Store ID</label>
-                                <input type="text" name="eps_store_id" class="form-control rounded-3" value="{{ $payments->eps_store_id ?? '' }}" placeholder="EPS Store ID">
+                                <input type="text" name="eps_store_id" class="form-control rounded-3" value="{{ $payments->eps_store_id ?? 'd44e705f-9e3a-41de-98b1-1674631637da' }}" placeholder="EPS Store ID">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Username (API)</label>
-                                <input type="text" name="eps_username" class="form-control rounded-3" value="{{ $payments->eps_username ?? '' }}" placeholder="API Username">
+                                <input type="text" name="eps_username" class="form-control rounded-3" value="{{ $payments->eps_username ?? 'Epsdemo@gmail.com' }}" placeholder="API Username">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Password (API)</label>
-                                <input type="text" name="eps_password" class="form-control rounded-3" value="{{ $payments->eps_password ?? '' }}" placeholder="API Password">
+                                <input type="text" name="eps_password" class="form-control rounded-3" value="{{ $payments->eps_password ?? 'Epsdemo258@' }}" placeholder="API Password">
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold">EPS Hash Key (Secret)</label>
-                                <input type="text" name="eps_hash_key" class="form-control rounded-3 font-monospace" value="{{ $payments->eps_hash_key ?? '' }}" placeholder="HMAC SHA512 Hash Key">
+                                <input type="text" name="eps_hash_key" class="form-control rounded-3 font-monospace" value="{{ $payments->eps_hash_key ?? 'FHZxyzeps56789gfhg678ygu876o=' }}" placeholder="HMAC SHA512 Hash Key">
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check form-switch pt-2">
-                                    <input class="form-check-input" type="checkbox" name="eps_sandbox" id="eps_sandbox" value="1" {{ !empty($payments->eps_sandbox) ? 'checked' : '' }}>
+                                    <input class="form-check-input" type="checkbox" name="eps_sandbox" id="eps_sandbox" value="1" {{ (!isset($payments->eps_sandbox) || $payments->eps_sandbox) ? 'checked' : '' }}>
                                     <label class="form-check-label small fw-bold" for="eps_sandbox">EPS Sandbox / Test Mode</label>
                                 </div>
                             </div>

@@ -85,12 +85,38 @@ class EpsPaymentService
     }
 
     /**
+     * Get Base API URL based on Sandbox mode
+     */
+    public function getBaseUrl(?PaymentNumber $settings = null): string
+    {
+        $settings = $settings ?? $this->getSettings();
+        if (!empty($settings->eps_sandbox)) {
+            return 'https://sandboxpgapi.eps.com.bd';
+        }
+        return 'https://pgapi.eps.com.bd';
+    }
+
+    /**
      * Get Settings
      */
     public function getSettings(): PaymentNumber
     {
         self::ensureSchema();
-        return PaymentNumber::first() ?? new PaymentNumber();
+        $settings = PaymentNumber::first() ?? new PaymentNumber();
+
+        // Default sandbox fallback credentials if none configured yet
+        if (empty($settings->eps_username)) {
+            $settings->eps_merchant_id = $settings->eps_merchant_id ?: '29e86e70-0ac6-45eb-ba04-9fcb0aaed12a';
+            $settings->eps_store_id    = $settings->eps_store_id ?: 'd44e705f-9e3a-41de-98b1-1674631637da';
+            $settings->eps_username    = $settings->eps_username ?: 'Epsdemo@gmail.com';
+            $settings->eps_password    = $settings->eps_password ?: 'Epsdemo258@';
+            $settings->eps_hash_key    = $settings->eps_hash_key ?: 'FHZxyzeps56789gfhg678ygu876o=';
+            if (!isset($settings->eps_sandbox)) {
+                $settings->eps_sandbox = 1;
+            }
+        }
+
+        return $settings;
     }
 
     /**
@@ -103,6 +129,7 @@ class EpsPaymentService
         $userName = trim((string)$settings->eps_username);
         $password = trim((string)$settings->eps_password);
         $hashKey  = trim((string)$settings->eps_hash_key);
+        $baseUrl  = $this->getBaseUrl($settings);
 
         if (empty($userName) || empty($password) || empty($hashKey)) {
             Log::error('EPS: Username, password, or hash key is missing in settings.');
@@ -110,7 +137,7 @@ class EpsPaymentService
         }
 
         // Cache token for 20 minutes (token expiry is typically longer)
-        $cacheKey = 'eps_auth_token_' . md5($userName . $password);
+        $cacheKey = 'eps_auth_token_' . md5($baseUrl . $userName . $password . $hashKey);
         $cachedToken = Cache::get($cacheKey);
         if ($cachedToken) {
             return $cachedToken;
@@ -123,7 +150,7 @@ class EpsPaymentService
                 'x-hash' => $xHash,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
-            ])->timeout(15)->post("{$this->baseUrl}/v1/Auth/GetToken", [
+            ])->timeout(15)->post("{$baseUrl}/v1/Auth/GetToken", [
                 'userName' => $userName,
                 'password' => $password,
             ]);
@@ -137,9 +164,9 @@ class EpsPaymentService
                 }
             }
 
-            Log::error('EPS GetToken failed. HTTP ' . $response->status() . ': ' . $response->body());
+            Log::error('EPS GetToken failed at ' . $baseUrl . '. HTTP ' . $response->status() . ': ' . $response->body());
         } catch (\Throwable $e) {
-            Log::error('EPS GetToken Exception: ' . $e->getMessage());
+            Log::error('EPS GetToken Exception at ' . $baseUrl . ': ' . $e->getMessage());
         }
 
         return null;
@@ -253,13 +280,15 @@ class EpsPaymentService
             ],
         ];
 
+        $baseUrl = $this->getBaseUrl($settings);
+
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'x-hash'        => $xHash,
                 'Content-Type'  => 'application/json',
                 'Accept'        => 'application/json'
-            ])->timeout(20)->post("{$this->baseUrl}/v1/EPSEngine/InitializeEPS", $payload);
+            ])->timeout(20)->post("{$baseUrl}/v1/EPSEngine/InitializeEPS", $payload);
 
             $data = $response->json();
 
@@ -314,8 +343,10 @@ class EpsPaymentService
         $hashKey = trim((string)$settings->eps_hash_key);
         $xHash = $this->generateHash($merchantTxnId, $hashKey);
 
+        $baseUrl = $this->getBaseUrl($settings);
+
         try {
-            $url = "{$this->baseUrl}/v1/EPSEngine/CheckMerchantTransactionStatus?merchantTransactionId={$merchantTxnId}";
+            $url = "{$baseUrl}/v1/EPSEngine/CheckMerchantTransactionStatus?merchantTransactionId={$merchantTxnId}";
             if (!empty($epsTxnId)) {
                 $url .= "&EPSTransactionId={$epsTxnId}";
             }
