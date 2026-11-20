@@ -25,7 +25,8 @@ class BottomBannerController extends Controller
 
         if ($request->hasFile('banner')) {
             $image = $request->file('banner');
-            $name = time() . '_' . $image->getClientOriginalName();
+            $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $image->getClientOriginalName());
+            $name = time() . '_' . $safeName;
             $destinationPath = public_path('/uploads/bottom_banners');
             
             if (!File::isDirectory($destinationPath)) {

@@ -25,8 +25,13 @@ class PopupController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('uploads/popups'), $imageName);
+            $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $image->getClientOriginalName());
+            $imageName = time() . '_' . $safeName;
+            $destinationPath = public_path('uploads/popups');
+            if (!File::isDirectory($destinationPath)) {
+                File::makeDirectory($destinationPath, 0777, true, true);
+            }
+            $image->move($destinationPath, $imageName);
             $imageUrl = '/uploads/popups/' . $imageName;
 
             PopupBanner::create([

@@ -82,9 +82,16 @@ class LegacyContentController extends Controller
             return DB::table('popup_banner')->latest('id')->first();
         });
         if ($popup) {
+            $imageUrl = $popup->image_url;
+            if ($imageUrl && !filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                $imageUrl = asset(ltrim($imageUrl, '/'));
+            }
+            if ($imageUrl) {
+                $imageUrl = str_replace(' ', '%20', $imageUrl);
+            }
             return response()->json([
                 'success' => true,
-                'image_url' => $popup->image_url,
+                'image_url' => $imageUrl,
                 'message' => $popup->message,
                 'button_text' => $popup->button_text,
                 'button_url' => $popup->button_url
