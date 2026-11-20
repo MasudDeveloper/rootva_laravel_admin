@@ -183,7 +183,7 @@
         </button>
 
         <div class="logo-footer">
-            <i class="fa-solid fa-shield-halved me-1 text-primary"></i> Rootva Secure Payment &bull; EPS
+            <i class="fa-solid fa-shield-halved me-1 text-primary"></i> Rootva Secure Payment &bull; Auto Payment
         </div>
     </div>
 

@@ -240,7 +240,7 @@ class EpsPaymentService
         $settings = $this->getSettings();
 
         if (empty($settings->eps_enabled)) {
-            return ['success' => false, 'message' => 'EPS পেমেন্ট গেটওয়ে বর্তমানে বন্ধ রয়েছে।'];
+            return ['success' => false, 'message' => 'অটো পেমেন্ট গেটওয়ে বর্তমানে বন্ধ রয়েছে।'];
         }
 
         if (empty($settings->eps_username) || empty($settings->eps_password) || empty($settings->eps_hash_key)) {
@@ -396,7 +396,7 @@ class EpsPaymentService
                     ?? ('গেটওয়ে রেসপন্স ত্রুটি (HTTP ' . $response->status() . '): ' . substr($response->body(), 0, 120));
             }
             Log::error('EPS InitializeEPS failed. Status: ' . $response->status() . '. Body: ' . $response->body());
-            return ['success' => false, 'message' => 'EPS ত্রুটি: ' . $errMsg];
+            return ['success' => false, 'message' => 'পেমেন্ট ত্রুটি: ' . $errMsg];
 
         } catch (\Throwable $e) {
             Log::error('EPS InitializeEPS Exception: ' . $e->getMessage());
@@ -498,7 +498,7 @@ class EpsPaymentService
                     // Notification
                     Notification::create([
                         'user_id'    => $user->id,
-                        'message'    => '🎉 অভিনন্দন! EPS পেমেন্টের মাধ্যমে আপনার Rootva অ্যাকাউন্ট সফলভাবে ভেরিফাই হয়েছে।',
+                        'message'    => '🎉 অভিনন্দন! অটো পেমেন্টের মাধ্যমে আপনার Rootva অ্যাকাউন্ট সফলভাবে ভেরিফাই হয়েছে।',
                         'is_read'    => 0,
                         'created_at' => $currentTime,
                     ]);
@@ -507,7 +507,7 @@ class EpsPaymentService
                         $this->sendFCMNotification(
                             $user->fcm_token,
                             '🎉 ভেরিফিকেশন সফল!',
-                            'EPS পেমেন্টের মাধ্যমে আপনার রুটবা অ্যাকাউন্ট সফলভাবে ভেরিফাই করা হয়েছে।'
+                            'অটো পেমেন্টের মাধ্যমে আপনার রুটবা অ্যাকাউন্ট সফলভাবে ভেরিফাই করা হয়েছে।'
                         );
                     }
 
@@ -549,7 +549,7 @@ class EpsPaymentService
 
                 Notification::create([
                     'user_id'    => $user->id,
-                    'message'    => '৳' . number_format($txn->amount, 2) . ' আপনার ওয়ালেটে সফলভাবে যুক্ত হয়েছে (EPS Gateway)।',
+                    'message'    => '৳' . number_format($txn->amount, 2) . ' আপনার ওয়ালেটে সফলভাবে যুক্ত হয়েছে (অটো পেমেন্ট)।',
                     'is_read'    => 0,
                     'created_at' => $currentTime,
                 ]);
