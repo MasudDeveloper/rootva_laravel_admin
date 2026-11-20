@@ -58,13 +58,14 @@ class EpsApiController extends Controller
     public function directCheckout(Request $request)
     {
         $userId = $request->query('user_id');
-        if (!$userId) {
-            return response("User ID is required", 400);
-        }
-
-        $user = SignUp::find($userId);
+        $user = $userId ? SignUp::find($userId) : null;
         if (!$user) {
-            return response("User not found", 404);
+            return view('admin.eps.result', [
+                'status'  => 'failed',
+                'title'   => 'ইউজার পাওয়া যায়নি',
+                'message' => 'ইউজার অ্যাকাউন্ট শনাক্ত করা যায়নি (User ID: ' . ($userId ?: 'Empty') . ')। অনুগ্রহ করে অ্যাপে ফিরে যান।',
+                'txn'     => null,
+            ]);
         }
 
         $purpose = $request->query('purpose', 'verification');

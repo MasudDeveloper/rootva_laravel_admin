@@ -137,7 +137,7 @@ class EpsPaymentService
                 }
             }
 
-            Log::error('EPS GetToken failed: ' . $response->body());
+            Log::error('EPS GetToken failed. HTTP ' . $response->status() . ': ' . $response->body());
         } catch (\Throwable $e) {
             Log::error('EPS GetToken Exception: ' . $e->getMessage());
         }
@@ -156,16 +156,33 @@ class EpsPaymentService
             return ['success' => false, 'message' => 'EPS পেমেন্ট গেটওয়ে বর্তমানে বন্ধ রয়েছে।'];
         }
 
+        if (empty($settings->eps_username) || empty($settings->eps_password) || empty($settings->eps_hash_key)) {
+            return [
+                'success' => false,
+                'message' => 'অ্যাডমিন প্যানেল থেকে EPS মার্চেন্ট ক্রেডেনশিয়াল (Username, Password, Hash Key) কনফিগার করা হয়নি। অনুগ্রহ করে Settings > Payments এ তথ্য পূরণ করুন।'
+            ];
+        }
+
         $token = $this->getToken($settings);
         if (!$token) {
-            return ['success' => false, 'message' => 'EPS গেটওয়ে অথেনটিকেশন ব্যর্থ হয়েছে। ক্রেডেনশিয়াল যাচাই করুন।'];
+            return [
+                'success' => false,
+                'message' => 'EPS গেটওয়ে অথেনটিকেশন ব্যর্থ হয়েছে। অনুগ্রহ করে অ্যাডমিন প্যানেল থেকে মার্চেন্ট Username, Password এবং Hash Key যাচাই করুন।'
+            ];
         }
 
         $storeId    = trim((string)$settings->eps_store_id);
         $merchantId = trim((string)$settings->eps_merchant_id);
         $hashKey    = trim((string)$settings->eps_hash_key);
 
-        // Generate unique Order ID & Merchant Transaction ID (min 10 digits)
+        if (empty($storeId) && empty($merchantId)) {
+            return [
+                'success' => false,
+                'message' => 'EPS Store ID বা Merchant ID প্রদান করা হয়নি। অনুগ্রহ করে অ্যাডমিন প্যানেল থেকে Store ID সেট করুন।'
+            ];
+        }
+
+        // Generate unique Order ID & Merchant Transaction ID (min 10 digits numeric)
         $merchantTxnId = date('YmdHis') . rand(1000, 9999);
         $customerOrderId = 'ROOTVA_' . strtoupper(substr($purpose, 0, 3)) . '_' . $user->id . '_' . time();
 
@@ -181,11 +198,14 @@ class EpsPaymentService
         $customerAddress = !empty($user->address) ? $user->address : 'Dhaka, Bangladesh';
 
         $payload = [
+            'storeId'               => $storeId ?: $merchantId,
             'merchantId'            => $merchantId ?: $storeId,
-            'storeId'               => $storeId,
             'CustomerOrderId'       => $customerOrderId,
             'merchantTransactionId' => $merchantTxnId,
-            'transactionTypeId'     => 2, // 2 = Android Devices, 1 = Web
+            'merchantTransactonId'  => $merchantTxnId, // Typo alias present in some versions of EPS API
+            'transactionTypeId'     => 1, // 1 = Web (hosted browser/webview checkout)
+            'financialEntityId'     => 0,
+            'transitionStatusId'    => 0,
             'totalAmount'           => (float) $amount,
             'ipAddress'             => request()->ip() ?: '127.0.0.1',
             'version'               => '1',
@@ -195,6 +215,7 @@ class EpsPaymentService
             'customerName'          => $customerName,
             'customerEmail'         => $customerEmail,
             'CustomerAddress'       => $customerAddress,
+            'CustomerAddress2'      => 'N/A',
             'CustomerCity'          => 'Dhaka',
             'CustomerState'         => 'Dhaka',
             'CustomerPostcode'      => '1200',
@@ -202,6 +223,7 @@ class EpsPaymentService
             'CustomerPhone'         => $customerPhone,
             'ShipmentName'          => $customerName,
             'ShipmentAddress'       => $customerAddress,
+            'ShipmentAddress2'      => 'N/A',
             'ShipmentCity'          => 'Dhaka',
             'ShipmentState'         => 'Dhaka',
             'ShipmentPostcode'      => '1200',
@@ -210,11 +232,25 @@ class EpsPaymentService
             'ValueB'                => $purpose,
             'ValueC'                => (string) $referenceId,
             'ValueD'                => (string) $amount,
+            'ShippingMethod'        => 'NO',
             'shippingMethod'        => 'NO',
+            'NoOfItem'              => '1',
             'noOfItem'              => '1',
-            'productName'           => 'Rootva Digital Service - ' . ucfirst($purpose),
+            'ProductName'           => 'Rootva Service - ' . ucfirst($purpose),
+            'productName'           => 'Rootva Service - ' . ucfirst($purpose),
+            'ProductProfile'        => 'general',
             'productProfile'        => 'general',
+            'ProductCategory'       => 'digital',
             'productCategory'       => 'digital',
+            'ProductList'           => [
+                [
+                    'ProductName'     => 'Rootva Service - ' . ucfirst($purpose),
+                    'NoOfItem'        => '1',
+                    'ProductProfile'  => 'general',
+                    'ProductCategory' => 'digital',
+                    'ProductPrice'    => (string) $amount,
+                ]
+            ],
         ];
 
         try {
@@ -255,8 +291,8 @@ class EpsPaymentService
             }
 
             $errMsg = $data['ErrorMessage'] ?? ($data['message'] ?? 'পেমেন্ট গেটওয়ে ইনিশিয়ালাইজ করতে সমস্যা হয়েছে।');
-            Log::error('EPS InitializeEPS failed: ' . json_encode($data));
-            return ['success' => false, 'message' => $errMsg];
+            Log::error('EPS InitializeEPS failed. Status: ' . $response->status() . '. Body: ' . $response->body());
+            return ['success' => false, 'message' => 'EPS ত্রুটি: ' . $errMsg];
 
         } catch (\Throwable $e) {
             Log::error('EPS InitializeEPS Exception: ' . $e->getMessage());
