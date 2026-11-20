@@ -39,6 +39,7 @@ class EpsPaymentService
                     'eps_hash_key' => "TEXT NULL",
                     'eps_store_id' => "VARCHAR(191) NULL",
                     'eps_merchant_id' => "VARCHAR(191) NULL",
+                    'eps_domain' => "VARCHAR(191) NULL",
                     'eps_sandbox' => "TINYINT DEFAULT 0",
                 ];
                 foreach ($cols as $col => $definition) {
@@ -162,15 +163,16 @@ class EpsPaymentService
         self::ensureSchema();
         $settings = PaymentNumber::first() ?? new PaymentNumber();
 
-        // Default sandbox fallback credentials if none configured yet
+        // Default official live credentials
         if (empty($settings->eps_username)) {
-            $settings->eps_merchant_id = $settings->eps_merchant_id ?: '29e86e70-0ac6-45eb-ba04-9fcb0aaed12a';
-            $settings->eps_store_id    = $settings->eps_store_id ?: 'd44e705f-9e3a-41de-98b1-1674631637da';
-            $settings->eps_username    = $settings->eps_username ?: 'Epsdemo@gmail.com';
-            $settings->eps_password    = $settings->eps_password ?: 'Epsdemo258@';
-            $settings->eps_hash_key    = $settings->eps_hash_key ?: 'FHZxyzeps56789gfhg678ygu876o=';
+            $settings->eps_merchant_id = $settings->eps_merchant_id ?: '9e9ff3da-aeac-4656-9bee-2ad732a9ddf8';
+            $settings->eps_store_id    = $settings->eps_store_id ?: 'D661A579-A489-4529-9E37-5C59AA13C8EB';
+            $settings->eps_username    = $settings->eps_username ?: 'hmismail2460@gmail.com';
+            $settings->eps_password    = $settings->eps_password ?: 'Merchant@123';
+            $settings->eps_hash_key    = $settings->eps_hash_key ?: 'FMUNISHOY2lWZEPSXTy8719ERODOTADIG';
+            $settings->eps_domain      = $settings->eps_domain ?: 'https://rootva.com';
             if (!isset($settings->eps_sandbox)) {
-                $settings->eps_sandbox = 1;
+                $settings->eps_sandbox = 0; // Live mode default
             }
         }
 
@@ -274,9 +276,14 @@ class EpsPaymentService
 
         $xHash = $this->generateHash($merchantTxnId, $hashKey);
 
-        $successUrl = route('api.eps.callback', ['status' => 'success', 'order_id' => $customerOrderId]);
-        $failUrl    = route('api.eps.callback', ['status' => 'failed', 'order_id' => $customerOrderId]);
-        $cancelUrl  = route('api.eps.callback', ['status' => 'cancelled', 'order_id' => $customerOrderId]);
+        $baseCallbackDomain = !empty($settings->eps_domain) ? rtrim($settings->eps_domain, '/') : 'https://rootva.com';
+        if (!empty($settings->eps_sandbox)) {
+            $baseCallbackDomain = 'https://rootvaadmin.rootvabd.com';
+        }
+
+        $successUrl = $baseCallbackDomain . '/api/eps/callback?status=success&order_id=' . urlencode($customerOrderId);
+        $failUrl    = $baseCallbackDomain . '/api/eps/callback?status=failed&order_id=' . urlencode($customerOrderId);
+        $cancelUrl  = $baseCallbackDomain . '/api/eps/callback?status=cancelled&order_id=' . urlencode($customerOrderId);
 
         $customerName    = $this->cleanCustomerName($user->name);
         $customerEmail   = $this->cleanCustomerEmail($user->email);
@@ -378,12 +385,16 @@ class EpsPaymentService
                 ];
             }
 
-            $errMsg = $data['ErrorMessage']
-                ?? $data['errorMessage']
-                ?? $data['message']
-                ?? (!empty($data['errors']) ? (is_array($data['errors']) ? implode(', ', array_map(function($e) { return is_array($e) ? implode('; ', $e) : (string)$e; }, $data['errors'])) : json_encode($data['errors'], JSON_UNESCAPED_UNICODE)) : null)
-                ?? $data['title']
-                ?? ('গেটওয়ে রেসপন্স ত্রুটি (HTTP ' . $response->status() . '): ' . substr($response->body(), 0, 120));
+            if (is_string($response->body()) && str_contains($response->body(), 'Domain mismatch')) {
+                $errMsg = 'EPS ডোমেন অমিল: ' . strip_tags($response->body());
+            } else {
+                $errMsg = $data['ErrorMessage']
+                    ?? $data['errorMessage']
+                    ?? $data['message']
+                    ?? (!empty($data['errors']) ? (is_array($data['errors']) ? implode(', ', array_map(function($e) { return is_array($e) ? implode('; ', $e) : (string)$e; }, $data['errors'])) : json_encode($data['errors'], JSON_UNESCAPED_UNICODE)) : null)
+                    ?? $data['title']
+                    ?? ('গেটওয়ে রেসপন্স ত্রুটি (HTTP ' . $response->status() . '): ' . substr($response->body(), 0, 120));
+            }
             Log::error('EPS InitializeEPS failed. Status: ' . $response->status() . '. Body: ' . $response->body());
             return ['success' => false, 'message' => 'EPS ত্রুটি: ' . $errMsg];
 

@@ -135,7 +135,7 @@ class SettingsController extends Controller
                 $paymentCols = Schema::hasTable('payment_number') ? Schema::getColumnListing('payment_number') : [];
                 $paymentFields = [
                     'bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'bangla_qr_support_link', 'verify_amount',
-                    'eps_username', 'eps_password', 'eps_hash_key', 'eps_store_id', 'eps_merchant_id'
+                    'eps_username', 'eps_password', 'eps_hash_key', 'eps_store_id', 'eps_merchant_id', 'eps_domain'
                 ];
                 $validPaymentFields = !empty($paymentCols) ? array_intersect($paymentFields, $paymentCols) : $paymentFields;
 

@@ -329,33 +329,40 @@
 
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Merchant ID</label>
-                                <input type="text" name="eps_merchant_id" class="form-control rounded-3" value="{{ $payments->eps_merchant_id ?? '29e86e70-0ac6-45eb-ba04-9fcb0aaed12a' }}" placeholder="EPS Merchant ID">
+                                <input type="text" name="eps_merchant_id" class="form-control rounded-3" value="{{ $payments->eps_merchant_id ?? '9e9ff3da-aeac-4656-9bee-2ad732a9ddf8' }}" placeholder="EPS Merchant ID">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Store ID</label>
-                                <input type="text" name="eps_store_id" class="form-control rounded-3" value="{{ $payments->eps_store_id ?? 'd44e705f-9e3a-41de-98b1-1674631637da' }}" placeholder="EPS Store ID">
+                                <input type="text" name="eps_store_id" class="form-control rounded-3" value="{{ $payments->eps_store_id ?? 'D661A579-A489-4529-9E37-5C59AA13C8EB' }}" placeholder="EPS Store ID">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Username (API)</label>
-                                <input type="text" name="eps_username" class="form-control rounded-3" value="{{ $payments->eps_username ?? 'Epsdemo@gmail.com' }}" placeholder="API Username">
+                                <input type="text" name="eps_username" class="form-control rounded-3" value="{{ $payments->eps_username ?? 'hmismail2460@gmail.com' }}" placeholder="API Username">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">EPS Password (API)</label>
-                                <input type="text" name="eps_password" class="form-control rounded-3" value="{{ $payments->eps_password ?? 'Epsdemo258@' }}" placeholder="API Password">
+                                <input type="text" name="eps_password" class="form-control rounded-3" value="{{ $payments->eps_password ?? 'Merchant@123' }}" placeholder="API Password">
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold">EPS Hash Key (Secret)</label>
-                                <input type="text" name="eps_hash_key" class="form-control rounded-3 font-monospace" value="{{ $payments->eps_hash_key ?? 'FHZxyzeps56789gfhg678ygu876o=' }}" placeholder="HMAC SHA512 Hash Key">
+                                <input type="text" name="eps_hash_key" class="form-control rounded-3 font-monospace" value="{{ $payments->eps_hash_key ?? 'FMUNISHOY2lWZEPSXTy8719ERODOTADIG' }}" placeholder="HMAC SHA512 Hash Key">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">EPS Registered Domain / Base URL</label>
+                                <input type="text" name="eps_domain" class="form-control rounded-3" value="{{ $payments->eps_domain ?? 'https://rootva.com' }}" placeholder="https://rootva.com">
+                                <div class="text-muted extra-small mt-1">
+                                    EPS মার্চেন্ট পোর্টালে (merchant.eps.com.bd) যে ডোমেন দিয়ে স্টোর নিবন্ধিত (ডিফল্ট: <code>https://rootva.com</code>)।
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check form-switch pt-2">
-                                    <input class="form-check-input" type="checkbox" name="eps_sandbox" id="eps_sandbox" value="1" {{ (!isset($payments->eps_sandbox) || $payments->eps_sandbox) ? 'checked' : '' }}>
-                                    <label class="form-check-label small fw-bold" for="eps_sandbox">EPS Sandbox / Test Mode</label>
+                                    <input class="form-check-input" type="checkbox" name="eps_sandbox" id="eps_sandbox" value="1" {{ !empty($payments->eps_sandbox) ? 'checked' : '' }}>
+                                    <label class="form-check-label small fw-bold" for="eps_sandbox">EPS Sandbox / Test Mode (ডেমো টেস্ট করতে চালু রাখুন)</label>
                                 </div>
                             </div>
                             <div class="col-md-6 text-md-end">
                                 <span class="badge bg-light text-dark border p-2 extra-small">
-                                    <i class="fa-solid fa-link me-1 text-primary"></i> Callback URL: <code>/public/api/eps/callback</code>
+                                    <i class="fa-solid fa-link me-1 text-primary"></i> Callback Path: <code>/api/eps/callback</code>
                                 </span>
                             </div>
                         </div>
