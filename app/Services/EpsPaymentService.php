@@ -85,6 +85,64 @@ class EpsPaymentService
     }
 
     /**
+     * Clean and format customer name for EPS (ASCII alphanumeric only, max 50 chars)
+     */
+    protected function cleanCustomerName(?string $name): string
+    {
+        if (empty($name)) {
+            return 'Rootva Customer';
+        }
+        $clean = trim(preg_replace('/[^A-Za-z0-9\s\.\-]/', '', $name));
+        $clean = trim(preg_replace('/\s+/', ' ', $clean));
+        if (empty($clean) || !preg_match('/[A-Za-z0-9]/', $clean)) {
+            return 'Rootva Customer';
+        }
+        return substr($clean, 0, 50);
+    }
+
+    /**
+     * Clean and format phone number for EPS (11 digits, standard BD format e.g. 017xxxxxxxx)
+     */
+    protected function cleanCustomerPhone(?string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string)$phone);
+        if (str_starts_with($digits, '880')) {
+            $digits = substr($digits, 2);
+        }
+        if (!str_starts_with($digits, '0') && strlen($digits) === 10) {
+            $digits = '0' . $digits;
+        }
+        return (strlen($digits) >= 11) ? substr($digits, 0, 11) : '01700000000';
+    }
+
+    /**
+     * Clean customer address for EPS (ASCII alphanumeric only, max 80 chars)
+     */
+    protected function cleanCustomerAddress(?string $address): string
+    {
+        if (empty($address)) {
+            return 'Dhaka, Bangladesh';
+        }
+        $clean = trim(preg_replace('/[^A-Za-z0-9\s\.\,\-]/', '', $address));
+        $clean = trim(preg_replace('/\s+/', ' ', $clean));
+        if (empty($clean) || !preg_match('/[A-Za-z0-9]/', $clean)) {
+            return 'Dhaka, Bangladesh';
+        }
+        return substr($clean, 0, 80);
+    }
+
+    /**
+     * Clean customer email for EPS
+     */
+    protected function cleanCustomerEmail(?string $email): string
+    {
+        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return substr($email, 0, 80);
+        }
+        return 'support@rootvabd.com';
+    }
+
+    /**
      * Get Base API URL based on Sandbox mode
      */
     public function getBaseUrl(?PaymentNumber $settings = null): string
@@ -211,7 +269,8 @@ class EpsPaymentService
 
         // Generate unique Order ID & Merchant Transaction ID (min 10 digits numeric)
         $merchantTxnId = date('YmdHis') . rand(1000, 9999);
-        $customerOrderId = 'ROOTVA_' . strtoupper(substr($purpose, 0, 3)) . '_' . $user->id . '_' . time();
+        $cleanPurpose = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $purpose), 0, 3)) ?: 'VER';
+        $customerOrderId = 'ROOTVA_' . $cleanPurpose . '_' . (int)$user->id . '_' . time();
 
         $xHash = $this->generateHash($merchantTxnId, $hashKey);
 
@@ -219,22 +278,27 @@ class EpsPaymentService
         $failUrl    = route('api.eps.callback', ['status' => 'failed', 'order_id' => $customerOrderId]);
         $cancelUrl  = route('api.eps.callback', ['status' => 'cancelled', 'order_id' => $customerOrderId]);
 
-        $customerName  = !empty($user->name) ? $user->name : 'Customer';
-        $customerEmail = !empty($user->email) ? $user->email : 'support@rootvabd.com';
-        $customerPhone = !empty($user->number) ? $user->number : '01700000000';
-        $customerAddress = !empty($user->address) ? $user->address : 'Dhaka, Bangladesh';
+        $customerName    = $this->cleanCustomerName($user->name);
+        $customerEmail   = $this->cleanCustomerEmail($user->email);
+        $customerPhone   = $this->cleanCustomerPhone($user->number);
+        $customerAddress = $this->cleanCustomerAddress($user->address);
+
+        $numericAmount = round((float) $amount, 2);
+
+        $clientIp = request()->ip();
+        if (empty($clientIp) || in_array($clientIp, ['127.0.0.1', '::1', 'localhost'])) {
+            $clientIp = '103.12.45.69';
+        }
 
         $payload = [
             'storeId'               => $storeId ?: $merchantId,
-            'merchantId'            => $merchantId ?: $storeId,
             'CustomerOrderId'       => $customerOrderId,
             'merchantTransactionId' => $merchantTxnId,
-            'merchantTransactonId'  => $merchantTxnId, // Typo alias present in some versions of EPS API
             'transactionTypeId'     => 1, // 1 = Web (hosted browser/webview checkout)
             'financialEntityId'     => 0,
             'transitionStatusId'    => 0,
-            'totalAmount'           => (float) $amount,
-            'ipAddress'             => request()->ip() ?: '127.0.0.1',
+            'totalAmount'           => $numericAmount,
+            'ipAddress'             => $clientIp,
             'version'               => '1',
             'successUrl'            => $successUrl,
             'failUrl'               => $failUrl,
@@ -258,24 +322,19 @@ class EpsPaymentService
             'ValueA'                => (string) $user->id,
             'ValueB'                => $purpose,
             'ValueC'                => (string) $referenceId,
-            'ValueD'                => (string) $amount,
+            'ValueD'                => (string) $numericAmount,
             'ShippingMethod'        => 'NO',
-            'shippingMethod'        => 'NO',
             'NoOfItem'              => '1',
-            'noOfItem'              => '1',
-            'ProductName'           => 'Rootva Service - ' . ucfirst($purpose),
-            'productName'           => 'Rootva Service - ' . ucfirst($purpose),
+            'ProductName'           => 'Rootva Verification',
             'ProductProfile'        => 'general',
-            'productProfile'        => 'general',
             'ProductCategory'       => 'digital',
-            'productCategory'       => 'digital',
             'ProductList'           => [
                 [
-                    'ProductName'     => 'Rootva Service - ' . ucfirst($purpose),
+                    'ProductName'     => 'Rootva Verification',
                     'NoOfItem'        => '1',
                     'ProductProfile'  => 'general',
                     'ProductCategory' => 'digital',
-                    'ProductPrice'    => (string) $amount,
+                    'ProductPrice'    => (string) $numericAmount,
                 ]
             ],
         ];
