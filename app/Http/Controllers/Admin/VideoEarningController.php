@@ -39,7 +39,7 @@ class VideoEarningController extends Controller
         ]);
 
         $videoId = VideoEarning::extractVideoId($request->youtube_url);
-        $duration = $request->input('duration') ? (int)$request->input('duration') : 60;
+        $duration = $request->input('duration') ? (int)$request->input('duration') : 20;
         
         $serial = $request->input('serial');
         if (empty($serial)) {
@@ -70,7 +70,7 @@ class VideoEarningController extends Controller
         ]);
 
         $videoId = VideoEarning::extractVideoId($request->youtube_url) ?: $video->video_id;
-        $duration = $request->input('duration') ? (int)$request->input('duration') : 60;
+        $duration = $request->input('duration') ? (int)$request->input('duration') : 20;
         $serial = $request->input('serial') ? (int)$request->input('serial') : $video->serial;
 
         $video->update([

@@ -201,7 +201,7 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold small text-muted">মিনিমাম দেখার সময় (সেকেন্ড)</label>
-                            <input type="number" name="duration" class="form-control rounded-3" value="60" min="10" required>
+                            <input type="number" name="duration" class="form-control rounded-3" value="20" min="10" required>
                         </div>
                     </div>
                 </div>

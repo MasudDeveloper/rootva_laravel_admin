@@ -55,7 +55,10 @@ class LegacyOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found']);
         }
 
-        if ($user->voucher_balance < $delivery_charge) {
+        $isVerified = ($user->is_verified == 1 || $user->is_verified == 3);
+
+        // Verified members do NOT need voucher balance to order products
+        if (!$isVerified && $user->voucher_balance < $delivery_charge) {
             return response()->json(['success' => false, 'message' => 'Insufficient balance']);
         }
 
@@ -84,27 +87,32 @@ class LegacyOrderController extends Controller
                 'order_status' => 'Pending'
             ]);
 
-            // Create Transaction
-            $currentTime2 = date('d-m-Y h:i A');
-            $transaction = Transaction::create([
-                'user_id' => $user_id,
-                'refer_id' => $user->referCode,
-                'amount' => $delivery_charge,
-                'payment_gateway' => 'Reselling Advance',
-                'type' => 'voucher_payment',
-                'description' => 'Payment For Reselling',
-                'update_at' => $currentTime2,
-                'created_at' => date('Y-m-d H:i:s'),
-                'date' => date('Y-m-d H:i:s')
-            ]);
+            // Deduct voucher balance only if paying via Advance and has enough voucher balance
+            $deductVoucher = ($payment_gateway === 'Wallet Balance Advance' && $user->voucher_balance >= $delivery_charge);
 
-            Log::info('Transaction created', ['id' => $transaction->id]);
+            if ($deductVoucher) {
+                // Create Transaction
+                $currentTime2 = date('d-m-Y h:i A');
+                $transaction = Transaction::create([
+                    'user_id' => $user_id,
+                    'refer_id' => $user->referCode,
+                    'amount' => $delivery_charge,
+                    'payment_gateway' => 'Reselling Advance',
+                    'type' => 'voucher_payment',
+                    'description' => 'Payment For Reselling',
+                    'update_at' => $currentTime2,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'date' => date('Y-m-d H:i:s')
+                ]);
 
-            // Deduct Balance
-            $user->decrement('voucher_balance', $delivery_charge);
+                Log::info('Transaction created', ['id' => $transaction->id]);
 
-            // Update Order with Transaction ID
-            $order->update(['transaction_id' => $transaction->id]);
+                // Deduct Balance
+                $user->decrement('voucher_balance', $delivery_charge);
+
+                // Update Order with Transaction ID
+                $order->update(['transaction_id' => $transaction->id]);
+            }
 
             DB::commit();
 

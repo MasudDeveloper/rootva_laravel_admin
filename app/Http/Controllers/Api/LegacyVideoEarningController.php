@@ -47,7 +47,7 @@ class LegacyVideoEarningController extends Controller
                     'title' => (string)$video->title,
                     'youtube_url' => (string)$video->youtube_url,
                     'video_id' => (string)($video->video_id ?: VideoEarning::extractVideoId($video->youtube_url)),
-                    'duration' => (int)($video->duration ?: 60),
+                    'duration' => (int)($video->duration && $video->duration <= 20 ? $video->duration : 20),
                     'serial' => (int)($video->serial ?: 1),
                     'status' => 1,
                 ];
@@ -104,11 +104,11 @@ class LegacyVideoEarningController extends Controller
             ], 404);
         }
 
-        // Validate minimum watch duration (minimum 58 seconds to allow slight network delay)
-        if ($watchTime < 55) {
+        // Validate minimum watch duration (minimum 18 seconds to allow slight network delay)
+        if ($watchTime < 18) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'কমপক্ষে ১ মিনিট ভিডিওটি দেখতে হবে।'
+                'message' => 'কমপক্ষে ২০ সেকেন্ড ভিডিওটি দেখতে হবে।'
             ]);
         }
 
