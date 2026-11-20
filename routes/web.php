@@ -27,7 +27,12 @@ use App\Http\Controllers\Admin\PcashSettingsController;
 use App\Http\Controllers\Admin\PcashSimOfferController;
 use App\Http\Controllers\Admin\PcashLogController;
 use App\Http\Controllers\Admin\SupportAdminReportController;
+use App\Http\Controllers\Api\EpsApiController;
 use Illuminate\Support\Facades\Route;
+
+// EPS Public Web Routes
+Route::get('eps/checkout', [EpsApiController::class, 'directCheckout'])->name('eps.checkout');
+Route::match(['get', 'post'], 'eps/callback', [EpsApiController::class, 'callback'])->name('eps.callback');
 
 Route::get('/', function () {
     $host = request()->getHost();

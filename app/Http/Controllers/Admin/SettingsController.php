@@ -120,20 +120,50 @@ class SettingsController extends Controller
                 $social->save();
                 Cache::forget('api_social_links');
 
+                // Ensure EPS & payment toggle columns exist
+                try {
+                    \App\Services\EpsPaymentService::ensureSchema();
+                } catch (\Throwable $ex) {
+                    Log::warning('Schema ensure in SettingsController: ' . $ex->getMessage());
+                }
+
                 // 2. Update Payment Numbers
                 $payments = PaymentNumber::first();
                 if (!$payments) {
                     $payments = new PaymentNumber();
                 }
                 $paymentCols = Schema::hasTable('payment_number') ? Schema::getColumnListing('payment_number') : [];
-                $paymentFields = ['bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'bangla_qr_support_link', 'verify_amount'];
+                $paymentFields = [
+                    'bkash', 'nagad', 'rocket', 'upay', 'bangla_qr', 'bangla_qr_support_link', 'verify_amount',
+                    'eps_username', 'eps_password', 'eps_hash_key', 'eps_store_id', 'eps_merchant_id'
+                ];
                 $validPaymentFields = !empty($paymentCols) ? array_intersect($paymentFields, $paymentCols) : $paymentFields;
 
-                if ($request->hasAny($validPaymentFields)) {
+                if ($request->hasAny($validPaymentFields) || $request->has('payment_settings_submitted')) {
                     $payments->fill($request->only($validPaymentFields));
                     if ($banglaQrLink !== null && in_array('bangla_qr_support_link', $paymentCols)) {
                         $payments->bangla_qr_support_link = $banglaQrLink;
                     }
+
+                    // Toggles
+                    if ($request->has('payment_settings_submitted') || $request->has('eps_enabled') || $request->has('manual_payment_enabled') || $request->has('bangla_qr_enabled')) {
+                        if (in_array('eps_enabled', $paymentCols)) {
+                            $payments->eps_enabled = $request->has('eps_enabled') ? 1 : 0;
+                        }
+                        if (in_array('eps_auto_disable_others', $paymentCols)) {
+                            $payments->eps_auto_disable_others = $request->has('eps_auto_disable_others') ? 1 : 0;
+                        }
+                        if (in_array('manual_payment_enabled', $paymentCols)) {
+                            $payments->manual_payment_enabled = $request->has('manual_payment_enabled') ? 1 : 0;
+                        }
+                        if (in_array('bangla_qr_enabled', $paymentCols)) {
+                            $payments->bangla_qr_enabled = $request->has('bangla_qr_enabled') ? 1 : 0;
+                        }
+                        if (in_array('eps_sandbox', $paymentCols)) {
+                            $payments->eps_sandbox = $request->has('eps_sandbox') ? 1 : 0;
+                        }
+                    }
+
                     $payments->save();
                 }
 

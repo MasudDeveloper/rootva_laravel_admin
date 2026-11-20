@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\LegacyCouponController;
 use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\PcashApiController;
 use App\Http\Controllers\Api\ECommerceApiController;
+use App\Http\Controllers\Api\EpsApiController;
 
 Route::post('/login', [LegacyAuthController::class, 'login']);
 Route::post('/register', [LegacyAuthController::class, 'register']);
@@ -52,6 +53,12 @@ Route::post('reset_password.php', [App\Http\Controllers\Api\LegacyAuthController
 // SMM Task APIs
 Route::post('get_smm_status.php', [\App\Http\Controllers\Api\SmmJobController::class, 'getStatus']);
 Route::post('submit_smm_task.php', [\App\Http\Controllers\Api\SmmJobController::class, 'submitTask']);
+
+// --- EPS Automated Payment Gateway APIs ---
+Route::post('eps/initiate', [EpsApiController::class, 'initiate'])->name('api.eps.initiate');
+Route::get('eps/checkout', [EpsApiController::class, 'directCheckout'])->name('api.eps.checkout');
+Route::match(['get', 'post'], 'eps/callback', [EpsApiController::class, 'callback'])->name('api.eps.callback');
+Route::get('eps/status/{merchantTransactionId}', [EpsApiController::class, 'checkStatus'])->name('api.eps.status');
 
 // --- Public Legacy APIs ---
 Route::post('report_app_crash.php', [LegacyContentController::class, 'reportAppCrash']);

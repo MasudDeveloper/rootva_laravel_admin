@@ -115,6 +115,12 @@ class LegacyDepositController extends Controller
      */
     public function getPaymentNumbers()
     {
+        try {
+            \App\Services\EpsPaymentService::ensureSchema();
+        } catch (\Throwable $e) {
+            // Ignore schema ensure issues in read mode
+        }
+
         $numbers = PaymentNumber::orderBy('id', 'desc')->first();
         if (!$numbers) {
             return response()->json([
@@ -131,6 +137,17 @@ class LegacyDepositController extends Controller
             }
         }
 
+        $isEpsOn = (bool)($numbers->eps_enabled ?? false);
+        $autoDisableOthers = isset($numbers->eps_auto_disable_others) ? (bool)$numbers->eps_auto_disable_others : true;
+
+        if ($isEpsOn && $autoDisableOthers) {
+            $manualOn = false;
+            $banglaQrOn = false;
+        } else {
+            $manualOn = isset($numbers->manual_payment_enabled) ? (bool)$numbers->manual_payment_enabled : true;
+            $banglaQrOn = isset($numbers->bangla_qr_enabled) ? (bool)$numbers->bangla_qr_enabled : true;
+        }
+
         return response()->json([
             'error' => false,
             'bkash' => $numbers->bkash,
@@ -139,7 +156,11 @@ class LegacyDepositController extends Controller
             'upay' => $numbers->upay,
             'bangla_qr' => $numbers->bangla_qr ?? '01577095615',
             'bangla_qr_support_link' => $banglaQrSupportLink,
-            'verify_amount' => $numbers->verify_amount ?: '300'
+            'verify_amount' => $numbers->verify_amount ?: '300',
+            'eps_enabled' => $isEpsOn,
+            'manual_payment_enabled' => $manualOn,
+            'bangla_qr_enabled' => $banglaQrOn,
+            'eps_auto_disable_others' => $autoDisableOthers,
         ]);
     }
 }

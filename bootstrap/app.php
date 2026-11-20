@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'legacy.auth' => \App\Http\Middleware\VerifyLegacyApiAuth::class,
             'permission'  => \App\Http\Middleware\CheckAdminPermission::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            'eps/*',
+            'api/eps/*',
+            'payment_sms_hook.php',
+        ]);
         $middleware->redirectTo(
             guests: '/admin/login'
         );
