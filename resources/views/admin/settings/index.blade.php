@@ -24,7 +24,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.settings.update') }}" method="POST">
+    <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         
         {{-- Custom Tabs --}}
@@ -316,13 +316,14 @@
                     <div class="card-body p-4">
                         <div class="row g-3">
                             <div class="col-12">
-                                <div class="form-check form-switch bg-light p-3 rounded-3 border">
-                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="eps_auto_disable_others" id="eps_auto_disable_others" value="1" {{ (!isset($payments->eps_auto_disable_others) || $payments->eps_auto_disable_others) ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-semibold text-dark small" for="eps_auto_disable_others">
-                                        EPS চালু থাকলে ম্যানুয়াল ক্যাশ-ইন এবং বাংলা কিউআর স্বয়ংক্রিয়ভাবে বন্ধ রাখুন (Auto-override)
-                                    </label>
-                                    <div class="text-muted extra-small ms-4 mt-1">
-                                        চালু রাখলে ইউজাররা অ্যাপে শুধুমাত্র EPS ইনস্ট্যান্ট পেমেন্ট গেটওয়ে দেখতে পাবে।
+                                <input type="hidden" name="eps_auto_disable_others" value="0">
+                                <div class="bg-light p-3 rounded-3 border d-flex align-items-center">
+                                    <i class="fa-solid fa-circle-info text-primary fs-5 me-3"></i>
+                                    <div>
+                                        <div class="fw-semibold text-dark small">পেমেন্ট গেটওয়ে কন্ট্রোল (Multi-Gateway Support)</div>
+                                        <div class="text-muted extra-small">
+                                            এখন অটো পেমেন্ট (EPS), ম্যানুয়াল পেমেন্ট (বিকাশ/নগদ/রকেট/উপায়) এবং বাংলা কিউআর প্রতিটি আলাদাভাবে চালু বা বন্ধ রাখা যায়। আপনি চাইলে ৩টি অপশনই একসাথে চালু রাখতে পারবেন।
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -432,6 +433,44 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-success"><i class="fa-solid fa-headset me-1"></i> Bangla QR Support Center Link</label>
                                 <input type="text" name="bangla_qr_support_link" class="form-control rounded-3" value="{{ $payments->bangla_qr_support_link ?? $social->bangla_qr_support_link }}" placeholder="https://t.me/... বা https://wa.me/...">
+                            </div>
+
+                            {{-- Bangla QR Card Image Upload --}}
+                            <div class="col-12 mt-3">
+                                <label class="form-label small fw-bold text-dark">
+                                    <i class="fa-solid fa-image text-warning me-1"></i> বাংলা কিউআর কার্ড ছবি (Bangla QR Card Image)
+                                </label>
+                                
+                                @if(!empty($payments->bangla_qr_image))
+                                    <div class="d-flex align-items-center gap-3 p-3 mb-2 rounded-3 border bg-light">
+                                        <img src="{{ asset('uploads/payments/' . $payments->bangla_qr_image) }}" alt="Bangla QR" class="img-thumbnail" style="max-height: 120px; max-width: 120px; object-fit: contain;">
+                                        <div>
+                                            <span class="badge bg-success mb-1"><i class="fa-solid fa-check me-1"></i>কাস্টম কিউআর ছবি সক্রিয়</span>
+                                            <p class="mb-1 text-muted small">ফাইল: <code>{{ $payments->bangla_qr_image }}</code></p>
+                                            <div class="d-flex align-items-center gap-2 mt-2">
+                                                <a href="{{ asset('uploads/payments/' . $payments->bangla_qr_image) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fa-solid fa-eye me-1"></i> বড় করে দেখুন
+                                                </a>
+                                                <div class="form-check ms-2 mb-0">
+                                                    <input class="form-check-input" type="checkbox" name="remove_bangla_qr_image" id="remove_bangla_qr_image" value="1">
+                                                    <label class="form-check-label text-danger small fw-semibold" for="remove_bangla_qr_image">
+                                                        ছবি মুছে ডিফল্ট ছবিতে ফিরে যান
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="p-3 mb-2 rounded-3 border bg-light d-flex align-items-center text-muted small">
+                                        <i class="fa-solid fa-circle-info text-primary fs-5 me-2"></i>
+                                        <span>বর্তমানে অ্যাপের ইন-বিল্ট <strong>বাংলা কিউআর কার্ড</strong> প্রদর্শিত হচ্ছে। আপনি নিচে থেকে নতুন ছবি আপলোড করলে গ্রাহকরা অ্যাপে তাৎক্ষণিকভাবে নতুন ছবিটি দেখতে পাবে।</span>
+                                    </div>
+                                @endif
+
+                                <input type="file" name="bangla_qr_image" id="bangla_qr_image" class="form-control rounded-3 shadow-sm" accept="image/png, image/jpeg, image/jpg, image/webp">
+                                <div class="form-text extra-small text-muted mt-1">
+                                    সমর্থিত ফরম্যাট: PNG, JPG, JPEG, WEBP। প্রস্তাবিত সাইজ: 800×800 বা 1000×1000 পিক্সেল।
+                                </div>
                             </div>
                         </div>
                     </div>

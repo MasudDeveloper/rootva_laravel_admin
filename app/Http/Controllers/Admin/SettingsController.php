@@ -39,7 +39,7 @@ class SettingsController extends Controller
     {
         try {
             DB::transaction(function () use ($request) {
-                // Auto ensure bangla_qr and bangla_qr_support_link columns exist
+                // Auto ensure bangla_qr, bangla_qr_support_link and bangla_qr_image columns exist
                 if (Schema::hasTable('payment_number')) {
                     if (!Schema::hasColumn('payment_number', 'bangla_qr')) {
                         try {
@@ -50,10 +50,19 @@ class SettingsController extends Controller
                             Log::warning('Could not auto-add bangla_qr column: ' . $colEx->getMessage());
                         }
                     }
+                    if (!Schema::hasColumn('payment_number', 'bangla_qr_image')) {
+                        try {
+                            Schema::table('payment_number', function ($table) {
+                                $table->string('bangla_qr_image', 255)->nullable()->after('bangla_qr');
+                            });
+                        } catch (\Throwable $colEx) {
+                            Log::warning('Could not auto-add bangla_qr_image column: ' . $colEx->getMessage());
+                        }
+                    }
                     if (!Schema::hasColumn('payment_number', 'bangla_qr_support_link')) {
                         try {
                             Schema::table('payment_number', function ($table) {
-                                $table->string('bangla_qr_support_link', 255)->nullable()->after('bangla_qr');
+                                $table->string('bangla_qr_support_link', 255)->nullable()->after('bangla_qr_image');
                             });
                         } catch (\Throwable $colEx) {
                             Log::warning('Could not auto-add bangla_qr_support_link column: ' . $colEx->getMessage());
@@ -139,10 +148,34 @@ class SettingsController extends Controller
                 ];
                 $validPaymentFields = !empty($paymentCols) ? array_intersect($paymentFields, $paymentCols) : $paymentFields;
 
-                if ($request->hasAny($validPaymentFields) || $request->has('payment_settings_submitted')) {
+                if ($request->hasAny($validPaymentFields) || $request->has('payment_settings_submitted') || $request->hasFile('bangla_qr_image') || $request->has('remove_bangla_qr_image')) {
                     $payments->fill($request->only($validPaymentFields));
                     if ($banglaQrLink !== null && in_array('bangla_qr_support_link', $paymentCols)) {
                         $payments->bangla_qr_support_link = $banglaQrLink;
+                    }
+
+                    // Handle Bangla QR Image upload or removal
+                    if ($request->hasFile('bangla_qr_image')) {
+                        $file = $request->file('bangla_qr_image');
+                        if ($file->isValid()) {
+                            $uploadDir = public_path('uploads/payments');
+                            if (!file_exists($uploadDir)) {
+                                @mkdir($uploadDir, 0777, true);
+                            }
+                            $filename = 'bangla_qr_' . time() . '_' . rand(100, 999) . '.' . $file->getClientOriginalExtension();
+                            $file->move($uploadDir, $filename);
+
+                            // Delete previous image if exists
+                            if (!empty($payments->bangla_qr_image) && file_exists($uploadDir . '/' . $payments->bangla_qr_image)) {
+                                @unlink($uploadDir . '/' . $payments->bangla_qr_image);
+                            }
+                            $payments->bangla_qr_image = $filename;
+                        }
+                    } elseif ($request->has('remove_bangla_qr_image') && $request->input('remove_bangla_qr_image') == '1') {
+                        if (!empty($payments->bangla_qr_image) && file_exists(public_path('uploads/payments/' . $payments->bangla_qr_image))) {
+                            @unlink(public_path('uploads/payments/' . $payments->bangla_qr_image));
+                        }
+                        $payments->bangla_qr_image = null;
                     }
 
                     // Toggles

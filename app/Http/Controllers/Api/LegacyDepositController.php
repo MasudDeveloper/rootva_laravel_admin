@@ -138,14 +138,16 @@ class LegacyDepositController extends Controller
         }
 
         $isEpsOn = (bool)($numbers->eps_enabled ?? false);
-        $autoDisableOthers = isset($numbers->eps_auto_disable_others) ? (bool)$numbers->eps_auto_disable_others : true;
+        $manualOn = isset($numbers->manual_payment_enabled) ? (bool)$numbers->manual_payment_enabled : true;
+        $banglaQrOn = isset($numbers->bangla_qr_enabled) ? (bool)$numbers->bangla_qr_enabled : true;
 
-        if ($isEpsOn && $autoDisableOthers) {
-            $manualOn = false;
-            $banglaQrOn = false;
-        } else {
-            $manualOn = isset($numbers->manual_payment_enabled) ? (bool)$numbers->manual_payment_enabled : true;
-            $banglaQrOn = isset($numbers->bangla_qr_enabled) ? (bool)$numbers->bangla_qr_enabled : true;
+        $banglaQrImageUrl = null;
+        if (!empty($numbers->bangla_qr_image)) {
+            if (filter_var($numbers->bangla_qr_image, FILTER_VALIDATE_URL)) {
+                $banglaQrImageUrl = $numbers->bangla_qr_image;
+            } else {
+                $banglaQrImageUrl = asset('uploads/payments/' . ltrim($numbers->bangla_qr_image, '/'));
+            }
         }
 
         return response()->json([
@@ -155,12 +157,14 @@ class LegacyDepositController extends Controller
             'rocket' => $numbers->rocket,
             'upay' => $numbers->upay,
             'bangla_qr' => $numbers->bangla_qr ?? '01577095615',
+            'bangla_qr_image' => $numbers->bangla_qr_image ?? null,
+            'bangla_qr_image_url' => $banglaQrImageUrl,
             'bangla_qr_support_link' => $banglaQrSupportLink,
             'verify_amount' => $numbers->verify_amount ?: '300',
             'eps_enabled' => $isEpsOn,
             'manual_payment_enabled' => $manualOn,
             'bangla_qr_enabled' => $banglaQrOn,
-            'eps_auto_disable_others' => $autoDisableOthers,
+            'eps_auto_disable_others' => false,
         ]);
     }
 }
