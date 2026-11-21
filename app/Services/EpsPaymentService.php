@@ -7,6 +7,7 @@ use App\Models\EpsTransaction;
 use App\Models\SignUp;
 use App\Models\Transaction;
 use App\Models\VerificationRequest;
+use App\Models\MoneyRequest;
 use App\Models\Notification;
 use App\Models\Order;
 use App\Traits\LegacyFCMTrait;
@@ -476,17 +477,19 @@ class EpsPaymentService
             if ($txn->purpose === 'verification') {
                 if ($user->is_verified != 1) {
                     $user->update([
-                        'is_verified'       => 1,
-                        'verified_at'       => $currentTime,
-                        'verified_raw_time' => $verifiedRawTime,
-                        'video_earning'     => $user->video_earning + 3,
+                        'is_verified'              => 1,
+                        'verified_at'              => $currentTime,
+                        'verified_raw_time'        => $verifiedRawTime,
+                        'video_earning'            => $user->video_earning + 3,
+                        'verification_popup_shown' => 0,
                     ]);
 
                     // Create approved verification request record
                     VerificationRequest::create([
                         'user_id'           => $user->id,
+                        'refer_id'          => $user->referCode ?: '',
                         'transaction_id'    => $epsTxnId ?: $txn->merchant_transaction_id,
-                        'account_number'    => $user->number,
+                        'account_number'    => $user->number ?: '',
                         'payment_gateway'   => 'EPS (' . $financialEntity . ')',
                         'amount'            => $txn->amount,
                         'status'            => 'Approved',
@@ -511,10 +514,10 @@ class EpsPaymentService
                         );
                     }
 
-                    // Distribute Referral Bonus
+                    // Distribute Referral Bonus across 10 levels
                     $this->distributeReferralBonus($user, $currentTime);
 
-                    // Referrer rewards
+                    // Referrer rewards (only for direct referrer)
                     if ($user->referredBy) {
                         SignUp::where('referCode', $user->referredBy)->increment('math_game', 4);
                         SignUp::where('referCode', $user->referredBy)->increment('video_earning', 3);
@@ -523,36 +526,63 @@ class EpsPaymentService
                     // Log Income Transaction
                     Transaction::create([
                         'user_id'         => $user->id,
+                        'refer_id'        => $user->referCode ?: '',
                         'amount'          => $txn->amount,
                         'type'            => 'verification_fee',
                         'payment_gateway' => 'EPS - ' . $financialEntity,
                         'description'     => 'Verification fee paid online via EPS Gateway',
                         'update_at'       => $currentTime,
                         'created_at'      => $verifiedRawTime,
+                        'date'            => now(),
                     ]);
                 }
             }
 
-            // 2. Add Balance Purpose
+            // 2. Add Balance Purpose (Auto Add Money - Adds to Voucher Balance)
             elseif ($txn->purpose === 'add_balance') {
-                $user->increment('wallet_balance', $txn->amount);
+                // In Rootva, Add Money adds to voucher_balance (exactly like manual approval)
+                $user->increment('voucher_balance', $txn->amount);
 
+                // Create approved money request record so it shows in user's Add Money history
+                MoneyRequest::create([
+                    'user_id'         => $user->id,
+                    'title'           => $user->name ?: 'Auto Deposit',
+                    'account_number'  => $user->number ?: '',
+                    'amount'          => $txn->amount,
+                    'transaction_id'  => $epsTxnId ?: $txn->merchant_transaction_id,
+                    'payment_gateway' => 'EPS (' . $financialEntity . ')',
+                    'status'          => 'Approved',
+                    'created_at'      => $currentTime,
+                    'updated_at'      => $currentTime,
+                ]);
+
+                // Create Transaction record with type 'voucher_convert'
                 Transaction::create([
                     'user_id'         => $user->id,
+                    'refer_id'        => $user->referCode ?: '',
                     'amount'          => $txn->amount,
-                    'type'            => 'income',
-                    'payment_gateway' => 'EPS - ' . $financialEntity,
-                    'description'     => 'Deposit added via EPS Gateway (' . $financialEntity . ')',
+                    'type'            => 'voucher_convert',
+                    'payment_gateway' => 'EPS (' . $financialEntity . ')',
+                    'description'     => 'Add Money Approved (Voucher - Auto Payment)',
                     'update_at'       => $currentTime,
                     'created_at'      => $verifiedRawTime,
+                    'date'            => now(),
                 ]);
 
                 Notification::create([
                     'user_id'    => $user->id,
-                    'message'    => '৳' . number_format($txn->amount, 2) . ' আপনার ওয়ালেটে সফলভাবে যুক্ত হয়েছে (অটো পেমেন্ট)।',
+                    'message'    => 'অভিনন্দন! আপনার ৳' . number_format($txn->amount, 2) . ' অটো অ্যাড মানি সম্পন্ন হয়েছে এবং ভাউচার ব্যালেন্স যুক্ত করা হয়েছে।',
                     'is_read'    => 0,
                     'created_at' => $currentTime,
                 ]);
+
+                if (!empty($user->fcm_token)) {
+                    $this->sendFCMNotification(
+                        $user->fcm_token,
+                        '💰 ব্যালেন্স যুক্ত হয়েছে!',
+                        '৳' . number_format($txn->amount, 2) . ' সফলভাবে আপনার ভাউচার ব্যালেন্সে যুক্ত করা হয়েছে।'
+                    );
+                }
             }
 
             // 3. Reselling Order Payment
@@ -574,40 +604,49 @@ class EpsPaymentService
     }
 
     /**
-     * Distribute referral bonus across 5 levels (Same logic as VerificationRequestController)
+     * Distribute referral bonus across 10 levels (Matching VerificationRequestController)
      */
     private function distributeReferralBonus(SignUp $user, string $currentTime): void
     {
-        $currentReferrerCode = $user->referredBy;
-        $bonusPercentages = [
-            1 => 0.50, // 50%
-            2 => 0.05, // 5%
-            3 => 0.05, // 5%
-            4 => 0.05, // 5%
-            5 => 0.05, // 5%
-        ];
+        $levels = [90, 40, 15, 10, 5, 2, 2, 2, 2, 2]; // 10 Levels
+        $currentLevel = 1;
+        $referredByCode = $user->referredBy;
 
-        for ($level = 1; $level <= 5; $level++) {
-            if (!$currentReferrerCode) break;
+        while ($currentLevel <= count($levels) && $referredByCode) {
+            $referrer = SignUp::where('referCode', $referredByCode)->first();
+            if ($referrer) {
+                $bonus = $levels[$currentLevel - 1];
 
-            $referrer = SignUp::where('referCode', $currentReferrerCode)->first();
-            if (!$referrer) break;
+                // Add balance to referrer wallet
+                $referrer->increment('wallet_balance', $bonus);
 
-            $bonusAmount = 250 * $bonusPercentages[$level];
+                // Transaction Record
+                Transaction::create([
+                    'user_id'         => $referrer->id,
+                    'refer_id'        => $user->referCode ?: '',
+                    'amount'          => $bonus,
+                    'type'            => 'commission',
+                    'payment_gateway' => 'Account Verification',
+                    'description'     => "লেভেল {$currentLevel} এফিলিয়েট বোনাস যুক্ত হয়েছে",
+                    'update_at'       => $currentTime,
+                    'created_at'      => $currentTime,
+                    'date'            => now(),
+                ]);
 
-            Transaction::create([
-                'user_id'         => $referrer->id,
-                'refer_id'        => $user->referCode,
-                'amount'          => $bonusAmount,
-                'type'            => 'bonus',
-                'payment_gateway' => 'system',
-                'description'     => "Level {$level} referral bonus from {$user->name}",
-                'update_at'       => $currentTime,
-                'created_at'      => now()->toDateTimeString(),
-            ]);
+                // Push notification for affiliate bonus
+                if (!empty($referrer->fcm_token)) {
+                    $this->sendFCMNotification(
+                        $referrer->fcm_token,
+                        '🎁 এফিলিয়েট বোনাস যুক্ত হয়েছে!',
+                        "লেভেল {$currentLevel} রেফারেল বোনাস ৳{$bonus} আপনার অ্যাকাউন্টে জমা হয়েছে।"
+                    );
+                }
 
-            $referrer->increment('wallet_balance', $bonusAmount);
-            $currentReferrerCode = $referrer->referredBy;
+                $referredByCode = $referrer->referredBy;
+                $currentLevel++;
+            } else {
+                break;
+            }
         }
     }
 }
