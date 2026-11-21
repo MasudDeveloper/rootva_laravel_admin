@@ -19,6 +19,12 @@ class GeoBlockMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        // Check if Geo Blocking is enabled via environment (default: false for Play Store review & global compatibility)
+        $isGeoBlockEnabled = filter_var(env('GEO_BLOCK_ENABLED', false), FILTER_VALIDATE_BOOLEAN);
+        if (!$isGeoBlockEnabled) {
+            return $next($request);
+        }
+
         $ip = $request->ip();
 
         // Localhost IPs bypass geo-blocking
