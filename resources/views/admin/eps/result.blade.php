@@ -189,7 +189,8 @@
 
     <script>
         function returnToApp() {
-            window.location.href = "rootva://payment/done?status={{ $status }}";
+            var purpose = "{{ $txn ? $txn->purpose : 'verification' }}";
+            window.location.href = "rootva://payment/done?status={{ $status }}&purpose=" + encodeURIComponent(purpose);
             setTimeout(function() {
                 if (window.history.length > 1) {
                     window.history.back();
