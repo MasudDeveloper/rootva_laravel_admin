@@ -92,13 +92,10 @@ class LegacyVerifyController extends Controller
                         'refer_id'        => $user->referCode ?: '',
                         'amount'          => $amount,
                         'payment_gateway' => 'Voucher Balance',
-                        'account_number'  => $user->number ?: '',
-                        'transaction_id'  => $txnId,
-                        'time'            => $current_time,
-                        'created_at'      => $current_time,
-                        'update_at'       => $current_time,
                         'type'            => 'voucher_payment',
                         'description'     => 'Verification Fee Paid from Voucher Balance',
+                        'created_at'      => $current_time,
+                        'update_at'       => $current_time,
                         'date'            => now()
                     ]);
                 } else {
@@ -110,13 +107,10 @@ class LegacyVerifyController extends Controller
                         'refer_id'        => $user->referCode ?: '',
                         'amount'          => $amount,
                         'payment_gateway' => 'Wallet Balance',
-                        'account_number'  => $user->number ?: '',
-                        'transaction_id'  => $txnId,
-                        'time'            => $current_time,
-                        'created_at'      => $current_time,
-                        'update_at'       => $current_time,
                         'type'            => 'payment',
                         'description'     => 'Verification Fee Paid from Main Balance',
+                        'created_at'      => $current_time,
+                        'update_at'       => $current_time,
                         'date'            => now()
                     ]);
                 }
